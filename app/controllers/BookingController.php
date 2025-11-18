@@ -1,0 +1,71 @@
+<?php
+namespace controllers;
+
+class BookingController {
+    public function create() {
+        requireAuth();
+        
+        $vehicleId = $_POST['vehicle_id'] ?? 0;
+        $bookingDate = $_POST['booking_date'] ?? '';
+        $startTime = $_POST['start_time'] ?? '';
+        $duration = $_POST['duration'] ?? 4;
+        $pickupLocation = $_POST['pickup_location'] ?? '';
+        $eventType = $_POST['event_type'] ?? 'other';
+        $specialRequirements = $_POST['special_requirements'] ?? '';
+        
+        $vehicle = db()->fetch("SELECT * FROM vehicles WHERE id = ?", [$vehicleId]);
+        
+        if (!$vehicle) {
+            flash('error', 'Vehicle not found');
+            redirect('/vehicles');
+        }
+        
+        $baseAmount = $vehicle['hourly_rate'] * $duration;
+        $commissionRate = 15.00;
+        $commissionAmount = $baseAmount * ($commissionRate / 100);
+        $totalAmount = $baseAmount;
+        
+        $endTime = date('H:i', strtotime($startTime) + ($duration * 3600));
+        
+        $bookingReference = generateBookingReference();
+        
+        $sql = "INSERT INTO bookings (booking_reference, customer_id, vehicle_id, owner_id, booking_date, 
+                start_time, end_time, duration_hours, pickup_location, event_type, special_requirements, 
+                base_amount, total_amount, commission_rate, commission_amount, status) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')";
+        
+        db()->execute($sql, [
+            $bookingReference,
+            $_SESSION['user_id'],
+            $vehicleId,
+            $vehicle['owner_id'],
+            $bookingDate,
+            $startTime,
+            $endTime,
+            $duration,
+            $pickupLocation,
+            $eventType,
+            $specialRequirements,
+            $baseAmount,
+            $totalAmount,
+            $commissionRate,
+            $commissionAmount
+        ]);
+        
+        $bookingId = db()->lastInsertId();
+        
+        // Create calendar event
+        db()->execute("INSERT INTO calendar_events (user_id, booking_id, title, start_datetime, end_datetime, event_type) 
+                      VALUES (?, ?, ?, ?, ?, 'booking')", 
+                     [$vehicle['owner_id'], $bookingId, "Booking: {$vehicle['make']} {$vehicle['model']}", 
+                      "$bookingDate $startTime", "$bookingDate $endTime"]);
+        
+        createNotification($vehicle['owner_id'], 'new_booking', 'New Booking', 
+                          "You have a new booking for your {$vehicle['make']} {$vehicle['model']}");
+        
+        logAudit('create_booking', 'bookings', $bookingId);
+        
+        flash('success', 'Booking created successfully. Reference: ' . $bookingReference);
+        redirect('/customer/bookings');
+    }
+}
