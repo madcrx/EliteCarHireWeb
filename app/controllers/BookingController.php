@@ -4,7 +4,14 @@ namespace controllers;
 class BookingController {
     public function create() {
         requireAuth();
-        
+
+        // Verify CSRF token
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token. Please try again.');
+            redirect('/vehicles');
+        }
+
         $vehicleId = $_POST['vehicle_id'] ?? 0;
         $bookingDate = $_POST['booking_date'] ?? '';
         $startTime = $_POST['start_time'] ?? '';

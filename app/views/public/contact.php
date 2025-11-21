@@ -16,6 +16,8 @@
         
         <h2>Send us a message</h2>
         <form method="POST" action="/contact/submit">
+            <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
+
             <div class="form-group">
                 <label>Name *</label>
                 <input type="text" name="name" required>

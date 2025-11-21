@@ -73,8 +73,9 @@
                     
                     <?php if (auth()): ?>
                         <form method="POST" action="/booking/create" style="margin-top: 2rem;">
+                            <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
                             <input type="hidden" name="vehicle_id" value="<?= $vehicle['id'] ?>">
-                            
+
                             <div class="form-group">
                                 <label>Date</label>
                                 <input type="date" name="booking_date" required min="<?= date('Y-m-d') ?>">
