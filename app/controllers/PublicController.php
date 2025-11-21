@@ -55,11 +55,26 @@ class PublicController {
         $phone = $_POST['phone'] ?? '';
         $subject = $_POST['subject'] ?? '';
         $message = $_POST['message'] ?? '';
-        
-        db()->execute("INSERT INTO contact_submissions (name, email, phone, subject, message) VALUES (?, ?, ?, ?, ?)", 
+
+        db()->execute("INSERT INTO contact_submissions (name, email, phone, subject, message) VALUES (?, ?, ?, ?, ?)",
                      [$name, $email, $phone, $subject, $message]);
-        
+
         flash('success', 'Thank you for contacting us. We will respond soon.');
         redirect('/contact');
+    }
+
+    public function about() {
+        $page = db()->fetch("SELECT * FROM cms_pages WHERE page_key = 'about'");
+        view('public/page', ['page' => $page, 'title' => 'About Us']);
+    }
+
+    public function services() {
+        $page = db()->fetch("SELECT * FROM cms_pages WHERE page_key = 'services'");
+        view('public/page', ['page' => $page, 'title' => 'Our Services']);
+    }
+
+    public function support() {
+        $page = db()->fetch("SELECT * FROM cms_pages WHERE page_key = 'support'");
+        view('public/page', ['page' => $page, 'title' => 'Support']);
     }
 }

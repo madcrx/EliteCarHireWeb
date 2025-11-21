@@ -6,11 +6,11 @@
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
             <div>
                 <h3><i class="fas fa-phone"></i> Phone</h3>
-                <p>1300 ECHIRE (1300 324 473)</p>
+                <p>0406 907 849</p>
             </div>
             <div>
                 <h3><i class="fas fa-envelope"></i> Email</h3>
-                <p>info@elitecarhire.au</p>
+                <p>support@elitecarhire.au</p>
             </div>
         </div>
         

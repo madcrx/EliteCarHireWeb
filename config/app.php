@@ -22,7 +22,7 @@ return [
     ],
     
     'email' => [
-        'from_address' => 'info@elitecarhire.au',
+        'from_address' => 'support@elitecarhire.au',
         'from_name' => 'Elite Car Hire',
         'smtp_host' => getenv('SMTP_HOST') ?: 'localhost',
         'smtp_port' => getenv('SMTP_PORT') ?: 587,

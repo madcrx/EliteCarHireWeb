@@ -87,6 +87,9 @@ $router->get('/privacy', 'PublicController@privacy');
 $router->get('/faq', 'PublicController@faq');
 $router->get('/contact', 'PublicController@contact');
 $router->post('/contact/submit', 'PublicController@submitContact');
+$router->get('/about', 'PublicController@about');
+$router->get('/services', 'PublicController@services');
+$router->get('/support', 'PublicController@support');
 
 // API routes for AJAX
 $router->post('/api/payment/process', 'PaymentController@process');

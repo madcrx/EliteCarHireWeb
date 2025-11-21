@@ -128,7 +128,7 @@
                     
                     <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--medium-gray);">
                         <p style="text-align: center;">
-                            <i class="fas fa-phone"></i> 1300 ECHIRE<br>
+                            <i class="fas fa-phone"></i> 0406 907 849<br>
                             <small>Need help? Call us!</small>
                         </p>
                     </div>

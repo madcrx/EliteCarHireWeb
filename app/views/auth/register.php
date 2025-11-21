@@ -4,6 +4,8 @@
         <h2 style="text-align: center; color: var(--primary-gold); margin-bottom: 2rem;">Create Your Account</h2>
         
         <form method="POST" action="/register">
+            <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
+
             <div class="form-group">
                 <label>First Name</label>
                 <input type="text" name="first_name" value="<?= old('first_name') ?>" required>
