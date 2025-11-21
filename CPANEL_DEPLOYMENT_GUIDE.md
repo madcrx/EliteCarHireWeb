@@ -61,20 +61,42 @@ This guide provides step-by-step instructions for deploying Elite Car Hire to a 
 8. Wait for the success message: "Import has been successfully finished, XX queries executed"
 9. Verify: You should now see 20+ tables in the left sidebar (users, vehicles, bookings, etc.)
 
-## Step 5: Configure Application
+## Step 5: Configure Database Connection
+
+**IMPORTANT**: This step must be completed BEFORE uploading files.
 
 1. On your Windows PC, open the application folder
-2. Navigate to `config/database.php`
-3. Open with Notepad or Notepad++
-4. Update the following values:
+2. Navigate to the `config` folder
+3. Find the file `database.example.php`
+4. **Copy** this file and rename the copy to `database.php`
+   - You should now have both files: `database.example.php` and `database.php`
+5. Open `database.php` with Notepad or Notepad++
+6. Update the following values with YOUR database details from Step 3:
    ```php
-   'host' => 'localhost',
-   'database' => 'yourusername_elite_car_hire',  // Note: cPanel adds prefix
-   'username' => 'yourusername_eliteadmin',      // Note: cPanel adds prefix
-   'password' => 'YOUR_DATABASE_PASSWORD',       // Password from Step 3
-   'charset' => 'utf8mb4',
+   return [
+       'host' => 'localhost',
+       'database' => 'yourusername_elite_car_hire',  // Replace with YOUR database name
+       'username' => 'yourusername_eliteadmin',      // Replace with YOUR database user
+       'password' => 'YOUR_DATABASE_PASSWORD',       // Replace with YOUR password from Step 3
+       'charset' => 'utf8mb4',
+   ];
    ```
-5. Save the file
+
+   **Example with actual values**:
+   ```php
+   return [
+       'host' => 'localhost',
+       'database' => 'cyberlog_elite_car_hire',
+       'username' => 'cyberlog_ECHadmin',
+       'password' => 'MySecurePass123!',
+       'charset' => 'utf8mb4',
+   ];
+   ```
+7. **Save the file** - Make sure you save as `database.php`
+8. **Verify**: The `config` folder should now contain:
+   - `app.php` (don't modify)
+   - `database.example.php` (template - don't modify)
+   - `database.php` (your configured file - upload this)
 
 ## Step 6: Upload Files via FileZilla
 
@@ -233,9 +255,17 @@ This guide provides step-by-step instructions for deploying Elite Car Hire to a 
 - Check error logs in cPanel → **Error Log**
 
 ### "Database Connection Failed"
-- Verify database credentials in `config/database.php`
-- Ensure database user has ALL PRIVILEGES
-- Check that cPanel prefix is included in database name and username
+**Common causes**:
+1. **Missing database.php file**
+   - Check if `config/database.php` exists
+   - If not, copy `config/database.example.php` to `config/database.php`
+   - Update with your actual database credentials
+2. **Wrong credentials**
+   - Verify database credentials in `config/database.php` match Step 3
+   - Ensure database user has ALL PRIVILEGES
+   - Check that cPanel prefix is included in database name and username
+3. **Database not selected in phpMyAdmin**
+   - Make sure you imported the schema into the correct database
 
 ### White/Blank Screen
 - Enable error display temporarily: Edit `public/index.php`
