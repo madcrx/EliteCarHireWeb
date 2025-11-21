@@ -44,12 +44,22 @@ This guide provides step-by-step instructions for deploying Elite Car Hire to a 
 
 ## Step 4: Import Database Schema
 
+**IMPORTANT**: Make sure your database is created in Step 3 before proceeding.
+
 1. In cPanel, click **phpMyAdmin**
-2. Select your database from the left sidebar
-3. Click the **Import** tab
-4. Click **Choose File** and select `database/complete_schema.sql` from your application files
-5. Click **Go** at the bottom of the page
-6. Wait for the success message
+2. **CRITICAL**: In the left sidebar, click on your database name (e.g., `yourusername_elite_car_hire`)
+   - The database name should be highlighted/selected
+   - You should see "No tables found in database" in the main panel
+3. Click the **Import** tab at the top of the page
+4. Click **Choose File** button
+5. Navigate to your application folder and select:
+   - **File**: `database/cpanel_schema.sql`
+   - **⚠️ IMPORTANT**: Use `cpanel_schema.sql` NOT `complete_schema.sql`
+   - The cpanel version is specifically designed for shared hosting
+6. Leave all other settings at default
+7. Scroll down and click the **Go** button at the bottom
+8. Wait for the success message: "Import has been successfully finished, XX queries executed"
+9. Verify: You should now see 20+ tables in the left sidebar (users, vehicles, bookings, etc.)
 
 ## Step 5: Configure Application
 
@@ -200,6 +210,22 @@ This guide provides step-by-step instructions for deploying Elite Car Hire to a 
    - FAQ
 
 ## Troubleshooting
+
+### Database Import Error: "Access denied to database"
+**Error**: `#1044 - Access denied for user 'xxx' to database 'elite_car_hire'`
+
+**Solution**:
+1. Make sure you're using `cpanel_schema.sql` NOT `complete_schema.sql`
+2. Ensure you selected your database in the left sidebar before clicking Import
+3. The database must already exist (created in Step 3)
+4. Verify your database user has ALL PRIVILEGES on the database
+
+**If you already tried importing `complete_schema.sql`**:
+1. In phpMyAdmin, select your database from the left sidebar
+2. Click on all tables (if any were created) and drop them
+3. Go back to Import tab
+4. This time select `database/cpanel_schema.sql`
+5. Click Go
 
 ### "500 Internal Server Error"
 - Check `.htaccess` file is correctly configured
