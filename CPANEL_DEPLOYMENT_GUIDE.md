@@ -160,15 +160,46 @@ This guide provides step-by-step instructions for deploying Elite Car Hire to a 
    ```
 5. Click **Save Changes**
 
-## Step 9: Update Document Root (Critical)
+## Step 9: Update Document Root (CRITICAL - DO NOT SKIP)
 
-**IMPORTANT**: Your web server must point to the `/public` directory, NOT the root.
+**⚠️ CRITICAL**: This is the most important step. Without this, you'll see a blank "Coming Soon" page.
 
-1. In cPanel, go to **Domains** or **Addon Domains**
-2. Find your domain
-3. Click **Manage**
-4. Change **Document Root** from `/public_html` to `/public_html/public`
-5. Click **Change**
+Your web server MUST point to the `/public` directory inside your application, NOT the root folder.
+
+### Method 1: Using cPanel Domains (Recommended)
+
+1. In cPanel, locate and click **Domains** (or **Addon Domains** depending on your cPanel version)
+2. Find your domain in the list
+3. Click **Manage** or the settings icon next to your domain
+4. Look for **Document Root** field
+5. **Current value** is probably: `/public_html` or `/home/username/public_html`
+6. **Change it to**: `/public_html/public` (add `/public` at the end)
+   - If your files are in a subfolder, adjust accordingly
+   - Example: `/public_html/myapp/public`
+7. Click **Change** or **Save**
+8. Wait 1-2 minutes for the change to take effect
+
+### Method 2: Using .htaccess Redirect (Alternative)
+
+If you cannot change the document root, add this to `/public_html/.htaccess`:
+
+1. In cPanel File Manager, navigate to `public_html`
+2. Check if `.htaccess` exists. If not, create it: Click **+ File** → Name: `.htaccess`
+3. Right-click `.htaccess` → **Edit**
+4. Add this at the TOP of the file:
+   ```apache
+   <IfModule mod_rewrite.c>
+       RewriteEngine On
+       RewriteRule ^(.*)$ public/$1 [L]
+   </IfModule>
+   ```
+5. Click **Save Changes**
+
+### Verify the Change:
+
+1. In your browser, go to: `http://yourdomain.com`
+2. You should now see the Elite Car Hire homepage (NOT "Coming Soon")
+3. If you still see "Coming Soon", wait 2-3 minutes and clear your browser cache (Ctrl+F5)
 
 ## Step 10: Create Admin Account (First-Time Setup)
 
@@ -232,6 +263,51 @@ This guide provides step-by-step instructions for deploying Elite Car Hire to a 
    - FAQ
 
 ## Troubleshooting
+
+### Blank Page with "Coming Soon" in Browser Tab
+**Symptom**: When you visit your domain, you see a blank/white page with "Coming Soon" in the browser tab.
+
+**Cause**: This is cPanel's default page. Your web server's document root is NOT pointing to the `/public` folder.
+
+**Solutions** (Try in order):
+
+**Solution 1: Change Document Root**
+1. Go to cPanel → **Domains**
+2. Click **Manage** next to your domain
+3. Find **Document Root** field
+4. Change from `/public_html` to `/public_html/public`
+5. Click **Save**
+6. Wait 2 minutes, then refresh browser (Ctrl+F5)
+
+**Solution 2: Check File Upload Location**
+1. In cPanel File Manager, go to `/public_html/public`
+2. Verify `index.php` exists there
+3. If not, you uploaded to the wrong location:
+   - Your files should be in `/public_html/` (root)
+   - So the public folder is at `/public_html/public/`
+   - NOT inside a subfolder
+
+**Solution 3: Use .htaccess Redirect**
+If you can't change document root:
+1. Go to `/public_html/` (your document root)
+2. Create/edit `.htaccess` file
+3. Add this at the top:
+   ```apache
+   <IfModule mod_rewrite.c>
+       RewriteEngine On
+       RewriteRule ^(.*)$ public/$1 [L]
+   </IfModule>
+   ```
+4. Save and test
+
+**Solution 4: Delete Default Coming Soon Page**
+1. In File Manager, check `/public_html/` for these files:
+   - `index.html`
+   - `index.htm`
+   - `coming_soon.html`
+   - `default.html`
+2. Delete or rename them (they take priority over `index.php`)
+3. Refresh your browser
 
 ### Database Import Error: "Access denied to database"
 **Error**: `#1044 - Access denied for user 'xxx' to database 'elite_car_hire'`
