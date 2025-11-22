@@ -45,15 +45,15 @@ class OwnerController {
             'hourly_rate' => $_POST['hourly_rate'] ?? 0,
             'max_passengers' => $_POST['max_passengers'] ?? 4,
         ];
-        
-        $sql = "INSERT INTO vehicles (owner_id, make, model, year, color, category, description, hourly_rate, max_passengers, status) 
+
+        $sql = "INSERT INTO vehicles (owner_id, make, model, year, color, category, description, hourly_rate, max_passengers, status)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')";
-        
-        db()->execute($sql, [$ownerId, $data['make'], $data['model'], $data['year'], $data['color'], 
+
+        db()->execute($sql, [$ownerId, $data['make'], $data['model'], $data['year'], $data['color'],
                             $data['category'], $data['description'], $data['hourly_rate'], $data['max_passengers']]);
-        
+
         $vehicleId = db()->lastInsertId();
-        
+
         // Handle image uploads
         if (!empty($_FILES['images']['name'][0])) {
             foreach ($_FILES['images']['name'] as $key => $name) {
@@ -65,21 +65,87 @@ class OwnerController {
                         'error' => $_FILES['images']['error'][$key],
                         'size' => $_FILES['images']['size'][$key],
                     ];
-                    
+
                     $path = uploadFile($file, 'vehicles');
                     if ($path) {
-                        db()->execute("INSERT INTO vehicle_images (vehicle_id, image_path, is_primary, display_order) VALUES (?, ?, ?, ?)", 
+                        db()->execute("INSERT INTO vehicle_images (vehicle_id, image_path, is_primary, display_order) VALUES (?, ?, ?, ?)",
                                      [$vehicleId, $path, $key === 0 ? 1 : 0, $key]);
                     }
                 }
             }
         }
-        
+
         logAudit('create_vehicle', 'vehicles', $vehicleId);
         flash('success', 'Vehicle listing submitted for approval');
         redirect('/owner/listings');
     }
-    
+
+    public function editListing($id) {
+        $ownerId = $_SESSION['user_id'];
+
+        // Get vehicle and verify ownership
+        $vehicle = db()->fetch("SELECT * FROM vehicles WHERE id = ? AND owner_id = ?", [$id, $ownerId]);
+
+        if (!$vehicle) {
+            flash('error', 'Vehicle not found or access denied');
+            redirect('/owner/listings');
+        }
+
+        view('owner/edit-listing', compact('vehicle'));
+    }
+
+    public function updateListing($id) {
+        requireAuth('owner');
+
+        // Verify CSRF token
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token. Please try again.');
+            redirect('/owner/listings/' . $id . '/edit');
+        }
+
+        $ownerId = $_SESSION['user_id'];
+
+        // Verify ownership
+        $vehicle = db()->fetch("SELECT id FROM vehicles WHERE id = ? AND owner_id = ?", [$id, $ownerId]);
+        if (!$vehicle) {
+            flash('error', 'Vehicle not found or access denied');
+            redirect('/owner/listings');
+        }
+
+        // Get form data
+        $make = $_POST['make'] ?? '';
+        $model = $_POST['model'] ?? '';
+        $year = $_POST['year'] ?? '';
+        $color = $_POST['color'] ?? '';
+        $category = $_POST['category'] ?? '';
+        $description = $_POST['description'] ?? '';
+        $hourlyRate = $_POST['hourly_rate'] ?? 0;
+        $maxPassengers = $_POST['max_passengers'] ?? 4;
+        $registrationNumber = $_POST['registration_number'] ?? '';
+
+        // Validate required fields
+        if (empty($make) || empty($model) || empty($year) || empty($hourlyRate)) {
+            flash('error', 'Make, model, year, and hourly rate are required');
+            redirect('/owner/listings/' . $id . '/edit');
+        }
+
+        // Update vehicle
+        db()->execute("UPDATE vehicles SET make = ?, model = ?, year = ?, color = ?, category = ?,
+                      description = ?, hourly_rate = ?, max_passengers = ?, registration_number = ?, updated_at = NOW()
+                      WHERE id = ? AND owner_id = ?",
+                     [$make, $model, $year, $color, $category, $description, $hourlyRate, $maxPassengers, $registrationNumber, $id, $ownerId]);
+
+        logAudit('update_vehicle', 'vehicles', $id, [
+            'make' => $make,
+            'model' => $model,
+            'hourly_rate' => $hourlyRate
+        ]);
+
+        flash('success', 'Vehicle updated successfully');
+        redirect('/owner/listings');
+    }
+
     public function bookings() {
         $ownerId = $_SESSION['user_id'];
         $bookings = db()->fetchAll("SELECT b.*, v.make, v.model, u.first_name, u.last_name 
