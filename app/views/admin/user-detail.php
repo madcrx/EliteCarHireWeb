@@ -5,7 +5,14 @@
     <div class="main-content">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
             <h1>User Details</h1>
-            <a href="/admin/users" class="btn btn-primary">Back to Users</a>
+            <div style="display: flex; gap: 1rem;">
+                <a href="/admin/users/<?= $user['id'] ?>/edit" class="btn btn-primary">
+                    <i class="fas fa-edit"></i> Edit User
+                </a>
+                <a href="/admin/users" class="btn" style="background: var(--medium-gray);">
+                    <i class="fas fa-arrow-left"></i> Back to Users
+                </a>
+            </div>
         </div>
 
         <div class="card">

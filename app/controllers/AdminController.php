@@ -79,7 +79,96 @@ class AdminController {
         flash('success', 'User rejected');
         redirect('/admin/users');
     }
-    
+
+    public function editUser($id) {
+        $user = db()->fetch("SELECT * FROM users WHERE id = ?", [$id]);
+        if (!$user) {
+            flash('error', 'User not found');
+            redirect('/admin/users');
+        }
+
+        view('admin/user-edit', compact('user'));
+    }
+
+    public function updateUser($id) {
+        // Verify CSRF token
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token. Please try again.');
+            redirect('/admin/users/' . $id);
+        }
+
+        $user = db()->fetch("SELECT * FROM users WHERE id = ?", [$id]);
+        if (!$user) {
+            flash('error', 'User not found');
+            redirect('/admin/users');
+        }
+
+        // Get common fields
+        $firstName = $_POST['first_name'] ?? '';
+        $lastName = $_POST['last_name'] ?? '';
+        $email = $_POST['email'] ?? '';
+        $phone = $_POST['phone'] ?? '';
+        $status = $_POST['status'] ?? '';
+        $role = $_POST['role'] ?? '';
+
+        // Validate required fields
+        if (empty($firstName) || empty($lastName) || empty($email)) {
+            flash('error', 'First name, last name, and email are required');
+            redirect('/admin/users/' . $id . '/edit');
+        }
+
+        // Check if email is already taken by another user
+        $existingUser = db()->fetch("SELECT id FROM users WHERE email = ? AND id != ?", [$email, $id]);
+        if ($existingUser) {
+            flash('error', 'Email address is already in use by another user');
+            redirect('/admin/users/' . $id . '/edit');
+        }
+
+        // Update user basic info
+        db()->execute("UPDATE users SET first_name = ?, last_name = ?, email = ?, phone = ?, status = ?, role = ?, updated_at = NOW() WHERE id = ?",
+                     [$firstName, $lastName, $email, $phone, $status, $role, $id]);
+
+        // Handle password change if provided
+        $newPassword = $_POST['new_password'] ?? '';
+        $confirmPassword = $_POST['confirm_password'] ?? '';
+
+        if (!empty($newPassword)) {
+            if ($newPassword !== $confirmPassword) {
+                flash('error', 'Passwords do not match');
+                redirect('/admin/users/' . $id . '/edit');
+            }
+
+            if (strlen($newPassword) < 8) {
+                flash('error', 'Password must be at least 8 characters');
+                redirect('/admin/users/' . $id . '/edit');
+            }
+
+            $hashedPassword = password_hash($newPassword, PASSWORD_BCRYPT);
+            db()->execute("UPDATE users SET password = ? WHERE id = ?", [$hashedPassword, $id]);
+            logAudit('change_user_password', 'users', $id);
+        }
+
+        // Role-specific fields
+        if ($role === 'owner') {
+            $companyName = $_POST['company_name'] ?? '';
+            $abn = $_POST['abn'] ?? '';
+            $licenseNumber = $_POST['license_number'] ?? '';
+
+            db()->execute("UPDATE users SET company_name = ?, abn = ?, license_number = ? WHERE id = ?",
+                         [$companyName, $abn, $licenseNumber, $id]);
+        }
+
+        logAudit('update_user', 'users', $id, [
+            'email' => $email,
+            'role' => $role,
+            'status' => $status
+        ]);
+
+        flash('success', 'User updated successfully');
+        redirect('/admin/users/' . $id);
+    }
+
     public function vehicles() {
         $status = $_GET['status'] ?? 'all';
         
