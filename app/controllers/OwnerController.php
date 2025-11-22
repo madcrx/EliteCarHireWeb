@@ -208,6 +208,8 @@ class OwnerController {
         $startDate = $_POST['start_date'] ?? '';
         $endDate = $_POST['end_date'] ?? '';
         $reason = $_POST['reason'] ?? '';
+        $frequency = $_POST['frequency'] ?? 'daily';
+        $customDays = $_POST['days'] ?? [];
 
         // Validate inputs
         if (empty($vehicleId) || empty($startDate) || empty($endDate)) {
@@ -228,32 +230,87 @@ class OwnerController {
             redirect('/owner/calendar');
         }
 
-        // Check for overlapping blocked dates
-        $overlap = db()->fetch("SELECT id FROM vehicle_blocked_dates
-                               WHERE vehicle_id = ?
-                               AND ((start_date <= ? AND end_date >= ?)
-                                    OR (start_date <= ? AND end_date >= ?)
-                                    OR (start_date >= ? AND end_date <= ?))",
-                              [$vehicleId, $startDate, $startDate, $endDate, $endDate, $startDate, $endDate]);
+        // Generate dates based on frequency
+        $datesToBlock = $this->generateBlockDates($startDate, $endDate, $frequency, $customDays);
 
-        if ($overlap) {
-            flash('error', 'Date range overlaps with existing blocked dates');
+        if (empty($datesToBlock)) {
+            flash('error', 'No valid dates to block based on your selection');
             redirect('/owner/calendar');
         }
 
-        // Insert blocked dates
-        db()->execute("INSERT INTO vehicle_blocked_dates (vehicle_id, owner_id, start_date, end_date, reason, created_at)
-                      VALUES (?, ?, ?, ?, ?, NOW())",
-                     [$vehicleId, $ownerId, $startDate, $endDate, $reason]);
+        // Block each date individually
+        $blockedCount = 0;
+        foreach ($datesToBlock as $dateToBlock) {
+            // Check for overlapping blocked dates for this specific date
+            $overlap = db()->fetch("SELECT id FROM vehicle_blocked_dates
+                                   WHERE vehicle_id = ?
+                                   AND ? BETWEEN start_date AND end_date",
+                                  [$vehicleId, $dateToBlock]);
 
-        logAudit('block_vehicle_dates', 'vehicle_blocked_dates', db()->lastInsertId(), [
-            'vehicle_id' => $vehicleId,
-            'start_date' => $startDate,
-            'end_date' => $endDate
-        ]);
+            if (!$overlap) {
+                // Insert blocked date (single day blocks)
+                db()->execute("INSERT INTO vehicle_blocked_dates (vehicle_id, owner_id, start_date, end_date, reason, created_at)
+                              VALUES (?, ?, ?, ?, ?, NOW())",
+                             [$vehicleId, $ownerId, $dateToBlock, $dateToBlock, $reason]);
+                $blockedCount++;
+            }
+        }
 
-        flash('success', 'Dates blocked successfully');
+        if ($blockedCount > 0) {
+            logAudit('block_vehicle_dates', 'vehicle_blocked_dates', null, [
+                'vehicle_id' => $vehicleId,
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'frequency' => $frequency,
+                'blocked_count' => $blockedCount
+            ]);
+
+            flash('success', $blockedCount . ' date(s) blocked successfully');
+        } else {
+            flash('warning', 'No new dates were blocked (all dates already blocked or no matching days)');
+        }
+
         redirect('/owner/calendar');
+    }
+
+    private function generateBlockDates($startDate, $endDate, $frequency, $customDays) {
+        $dates = [];
+        $current = new DateTime($startDate);
+        $end = new DateTime($endDate);
+
+        while ($current <= $end) {
+            $dayOfWeek = (int)$current->format('w'); // 0 = Sunday, 6 = Saturday
+            $shouldBlock = false;
+
+            switch ($frequency) {
+                case 'daily':
+                    $shouldBlock = true;
+                    break;
+
+                case 'weekdays':
+                    // Monday = 1, Friday = 5
+                    $shouldBlock = ($dayOfWeek >= 1 && $dayOfWeek <= 5);
+                    break;
+
+                case 'weekends':
+                    // Saturday = 6, Sunday = 0
+                    $shouldBlock = ($dayOfWeek == 0 || $dayOfWeek == 6);
+                    break;
+
+                case 'custom':
+                    // Check if current day of week is in custom days array
+                    $shouldBlock = in_array((string)$dayOfWeek, $customDays);
+                    break;
+            }
+
+            if ($shouldBlock) {
+                $dates[] = $current->format('Y-m-d');
+            }
+
+            $current->modify('+1 day');
+        }
+
+        return $dates;
     }
 
     public function unblockDate() {

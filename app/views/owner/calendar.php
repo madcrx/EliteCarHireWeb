@@ -97,7 +97,7 @@
     white-space: nowrap;
 }
 
-.vehicle-legend {
+.vehicle-selector {
     display: flex;
     flex-wrap: wrap;
     gap: 1rem;
@@ -105,10 +105,33 @@
     background: var(--light-gray);
 }
 
-.legend-item {
+.vehicle-checkbox-item {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: white;
+    border: 2px solid var(--medium-gray);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.vehicle-checkbox-item:hover {
+    border-color: var(--primary-gold);
+    background: #fffbf0;
+}
+
+.vehicle-checkbox-item.selected {
+    border-color: var(--primary-gold);
+    background: var(--primary-gold);
+    color: white;
+}
+
+.vehicle-checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
 }
 
 .legend-color {
@@ -156,6 +179,43 @@
     cursor: pointer;
     color: var(--dark-gray);
 }
+
+.day-selector {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.day-checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--light-gray);
+    border: 2px solid var(--medium-gray);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.day-checkbox-item:hover {
+    border-color: var(--primary-gold);
+}
+
+.day-checkbox-item.checked {
+    background: var(--primary-gold);
+    border-color: var(--primary-gold);
+    color: white;
+}
+
+.calendar-filter-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    background: white;
+    border-bottom: 1px solid var(--medium-gray);
+}
 </style>
 
 <div class="sidebar-layout">
@@ -164,7 +224,7 @@
     <div class="main-content">
         <h1><i class="fas fa-calendar-alt"></i> Calendar & Date Blocking</h1>
         <p style="color: var(--dark-gray); margin-bottom: 2rem;">
-            Visual calendar showing vehicle availability. Click on any date to block or unblock it for your vehicles.
+            Select a vehicle below, then click any date on the calendar to block or unblock it.
         </p>
 
         <?php if (empty($vehicles)): ?>
@@ -174,18 +234,24 @@
                 <a href="/owner/listings" class="btn btn-primary" style="margin-top: 1rem;">View My Listings</a>
             </div>
         <?php else: ?>
-            <!-- Vehicle Legend -->
+            <!-- Vehicle Selection -->
             <div class="card" style="padding: 0;">
-                <div class="vehicle-legend">
-                    <strong style="width: 100%; margin-bottom: 0.5rem;"><i class="fas fa-car"></i> Your Vehicles:</strong>
+                <div style="padding: 1rem 1.5rem; border-bottom: 1px solid var(--medium-gray); background: var(--light-gray);">
+                    <strong style="display: block; margin-bottom: 0.5rem;"><i class="fas fa-car"></i> Select Vehicle to Block Dates:</strong>
+                    <p style="margin: 0; font-size: 0.9rem; color: var(--dark-gray);">Click a vehicle to select it, then click dates on the calendar to block/unblock.</p>
+                </div>
+                <div class="vehicle-selector">
                     <?php
                         $colors = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#34495e', '#e67e22'];
                         foreach ($vehicles as $index => $vehicle):
                             $vehicleColor = $colors[$index % count($colors)];
                     ?>
-                        <div class="legend-item">
+                        <div class="vehicle-checkbox-item" data-vehicle-id="<?= $vehicle['id'] ?>" data-color="<?= $vehicleColor ?>" onclick="selectVehicle(<?= $vehicle['id'] ?>, '<?= $vehicleColor ?>')">
+                            <input type="checkbox" class="vehicle-checkbox" id="vehicle_<?= $vehicle['id'] ?>" value="<?= $vehicle['id'] ?>">
                             <div class="legend-color" style="background: <?= $vehicleColor ?>"></div>
-                            <span><?= e($vehicle['make'] . ' ' . $vehicle['model']) ?></span>
+                            <label for="vehicle_<?= $vehicle['id'] ?>" style="cursor: pointer; margin: 0;">
+                                <?= e($vehicle['make'] . ' ' . $vehicle['model']) ?>
+                            </label>
                         </div>
                     <?php endforeach; ?>
                 </div>
@@ -194,6 +260,26 @@
             <!-- Visual Calendar -->
             <div class="card" style="padding: 0;">
                 <div class="calendar-container">
+                    <!-- Filter Bar -->
+                    <div class="calendar-filter-bar">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <label for="vehicleFilter" style="font-weight: 600; margin: 0;">
+                                <i class="fas fa-filter"></i> View:
+                            </label>
+                            <select id="vehicleFilter" onchange="filterCalendar()" style="padding: 0.5rem; border: 1px solid var(--medium-gray); border-radius: var(--border-radius);">
+                                <option value="all">All Vehicles</option>
+                                <?php foreach ($vehicles as $vehicle): ?>
+                                    <option value="<?= $vehicle['id'] ?>">
+                                        <?= e($vehicle['make'] . ' ' . $vehicle['model']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div id="selectedVehicleIndicator" style="color: var(--dark-gray); font-style: italic;">
+                            No vehicle selected for blocking
+                        </div>
+                    </div>
+
                     <div class="calendar-header">
                         <div class="calendar-nav">
                             <button onclick="changeMonth(-1)"><i class="fas fa-chevron-left"></i> Prev</button>
@@ -211,21 +297,21 @@
                 </div>
             </div>
 
-            <!-- Quick Block Form (Traditional Form as Backup) -->
+            <!-- Quick Block Form -->
             <div class="card">
                 <h2><i class="fas fa-calendar-plus"></i> Quick Block Dates</h2>
                 <p style="margin-bottom: 1.5rem; color: var(--dark-gray);">
-                    Select a vehicle and date range to block availability.
+                    Block multiple dates at once with advanced frequency options.
                 </p>
 
                 <form method="POST" action="/owner/calendar/block" id="blockForm">
                     <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                         <div class="form-group" style="margin: 0;">
-                            <label for="vehicle_id">Vehicle</label>
-                            <select name="vehicle_id" id="vehicle_id" required>
-                                <option value="">-- Select --</option>
+                            <label for="quick_vehicle_id">Vehicle *</label>
+                            <select name="vehicle_id" id="quick_vehicle_id" required>
+                                <option value="">-- Select Vehicle --</option>
                                 <?php foreach ($vehicles as $vehicle): ?>
                                     <option value="<?= $vehicle['id'] ?>">
                                         <?= e($vehicle['make'] . ' ' . $vehicle['model']) ?>
@@ -235,14 +321,64 @@
                         </div>
 
                         <div class="form-group" style="margin: 0;">
-                            <label for="start_date">Start Date</label>
+                            <label for="start_date">Start Date *</label>
                             <input type="date" name="start_date" id="start_date" min="<?= date('Y-m-d') ?>" required>
                         </div>
 
                         <div class="form-group" style="margin: 0;">
-                            <label for="end_date">End Date</label>
+                            <label for="end_date">End Date *</label>
                             <input type="date" name="end_date" id="end_date" min="<?= date('Y-m-d') ?>" required>
                         </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="frequency">Frequency *</label>
+                        <select name="frequency" id="frequency" required onchange="toggleDaySelector()">
+                            <option value="daily">Daily (Every day in range)</option>
+                            <option value="weekdays">Weekdays Only (Mon-Fri)</option>
+                            <option value="weekends">Weekends Only (Sat-Sun)</option>
+                            <option value="custom">Custom Days (Select below)</option>
+                        </select>
+                        <small style="color: var(--dark-gray); display: block; margin-top: 0.5rem;">
+                            Choose which days within the date range should be blocked
+                        </small>
+                    </div>
+
+                    <div class="form-group" id="daySelectorGroup" style="display: none;">
+                        <label>Select Days of Week to Block *</label>
+                        <div class="day-selector">
+                            <div class="day-checkbox-item" onclick="toggleDay(this, 1)">
+                                <input type="checkbox" name="days[]" value="1" id="day_mon">
+                                <label for="day_mon" style="cursor: pointer; margin: 0;">Mo</label>
+                            </div>
+                            <div class="day-checkbox-item" onclick="toggleDay(this, 2)">
+                                <input type="checkbox" name="days[]" value="2" id="day_tue">
+                                <label for="day_tue" style="cursor: pointer; margin: 0;">Tu</label>
+                            </div>
+                            <div class="day-checkbox-item" onclick="toggleDay(this, 3)">
+                                <input type="checkbox" name="days[]" value="3" id="day_wed">
+                                <label for="day_wed" style="cursor: pointer; margin: 0;">We</label>
+                            </div>
+                            <div class="day-checkbox-item" onclick="toggleDay(this, 4)">
+                                <input type="checkbox" name="days[]" value="4" id="day_thu">
+                                <label for="day_thu" style="cursor: pointer; margin: 0;">Th</label>
+                            </div>
+                            <div class="day-checkbox-item" onclick="toggleDay(this, 5)">
+                                <input type="checkbox" name="days[]" value="5" id="day_fri">
+                                <label for="day_fri" style="cursor: pointer; margin: 0;">Fr</label>
+                            </div>
+                            <div class="day-checkbox-item" onclick="toggleDay(this, 6)">
+                                <input type="checkbox" name="days[]" value="6" id="day_sat">
+                                <label for="day_sat" style="cursor: pointer; margin: 0;">Sa</label>
+                            </div>
+                            <div class="day-checkbox-item" onclick="toggleDay(this, 0)">
+                                <input type="checkbox" name="days[]" value="0" id="day_sun">
+                                <label for="day_sun" style="cursor: pointer; margin: 0;">Su</label>
+                            </div>
+                        </div>
+                        <small style="color: var(--dark-gray); display: block; margin-top: 0.5rem;">
+                            Only the checked days within the date range will be blocked
+                        </small>
                     </div>
 
                     <div class="form-group">
@@ -312,47 +448,6 @@
     </div>
 </div>
 
-<!-- Modal for Date Click -->
-<div class="modal" id="dateModal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3><i class="fas fa-calendar"></i> Block Date</h3>
-            <button class="modal-close" onclick="closeModal()">&times;</button>
-        </div>
-        <form method="POST" action="/owner/calendar/block">
-            <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
-            <input type="hidden" name="start_date" id="modalStartDate">
-            <input type="hidden" name="end_date" id="modalEndDate">
-
-            <div class="form-group">
-                <label for="modalVehicle">Select Vehicle</label>
-                <select name="vehicle_id" id="modalVehicle" required>
-                    <option value="">-- Select Vehicle --</option>
-                    <?php foreach ($vehicles as $vehicle): ?>
-                        <option value="<?= $vehicle['id'] ?>">
-                            <?= e($vehicle['make'] . ' ' . $vehicle['model']) ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label for="modalReason">Reason (Optional)</label>
-                <input type="text" name="reason" id="modalReason" placeholder="e.g., Maintenance">
-            </div>
-
-            <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-ban"></i> Block Date
-                </button>
-                <button type="button" class="btn" style="background: var(--medium-gray);" onclick="closeModal()">
-                    Cancel
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
-
 <script>
 // Data from PHP
 const vehicles = <?= json_encode($vehicles) ?>;
@@ -360,6 +455,42 @@ const blockedDates = <?= json_encode($blockedDates) ?>;
 const vehicleColors = <?= json_encode($colors) ?>;
 
 let currentDate = new Date();
+let selectedVehicleId = null;
+let selectedVehicleColor = null;
+let calendarFilterVehicleId = 'all';
+
+function selectVehicle(vehicleId, color) {
+    // Uncheck all checkboxes
+    document.querySelectorAll('.vehicle-checkbox').forEach(cb => cb.checked = false);
+    document.querySelectorAll('.vehicle-checkbox-item').forEach(item => item.classList.remove('selected'));
+
+    // Check clicked checkbox
+    const checkbox = document.getElementById('vehicle_' + vehicleId);
+    const item = checkbox.closest('.vehicle-checkbox-item');
+
+    if (selectedVehicleId === vehicleId) {
+        // Deselect if clicking same vehicle
+        selectedVehicleId = null;
+        selectedVehicleColor = null;
+        document.getElementById('selectedVehicleIndicator').textContent = 'No vehicle selected for blocking';
+    } else {
+        // Select new vehicle
+        checkbox.checked = true;
+        item.classList.add('selected');
+        selectedVehicleId = vehicleId;
+        selectedVehicleColor = color;
+
+        const vehicleName = vehicles.find(v => v.id == vehicleId);
+        document.getElementById('selectedVehicleIndicator').innerHTML =
+            '<i class="fas fa-car"></i> Click dates to block: <strong>' +
+            vehicleName.make + ' ' + vehicleName.model + '</strong>';
+    }
+}
+
+function filterCalendar() {
+    calendarFilterVehicleId = document.getElementById('vehicleFilter').value;
+    renderCalendar();
+}
 
 function renderCalendar() {
     const year = currentDate.getFullYear();
@@ -435,10 +566,15 @@ function createDayCell(day, year, month, isOtherMonth) {
     const blocksDiv = document.createElement('div');
     blocksDiv.className = 'calendar-day-blocks';
 
-    // Find blocks for this date
+    // Find blocks for this date (filtered by selected vehicle if applicable)
     blockedDates.forEach((block, index) => {
         const blockStart = new Date(block.start_date);
         const blockEnd = new Date(block.end_date);
+
+        // Check filter
+        if (calendarFilterVehicleId !== 'all' && block.vehicle_id != calendarFilterVehicleId) {
+            return;
+        }
 
         if (date >= blockStart && date <= blockEnd) {
             const vehicleIndex = vehicles.findIndex(v => v.id == block.vehicle_id);
@@ -457,10 +593,98 @@ function createDayCell(day, year, month, isOtherMonth) {
 
     // Click handler (only for current/future dates)
     if (!isOtherMonth && date >= new Date(today.setHours(0,0,0,0))) {
-        dayDiv.onclick = () => openModal(dateStr);
+        dayDiv.onclick = () => handleDayClick(dateStr);
     }
 
     return dayDiv;
+}
+
+function handleDayClick(dateStr) {
+    if (!selectedVehicleId) {
+        alert('Please select a vehicle first by clicking on it above the calendar.');
+        return;
+    }
+
+    // Check if this date is already blocked for selected vehicle
+    const existingBlock = blockedDates.find(block => {
+        const blockStart = new Date(block.start_date);
+        const blockEnd = new Date(block.end_date);
+        const clickedDate = new Date(dateStr);
+        return block.vehicle_id == selectedVehicleId &&
+               clickedDate >= blockStart && clickedDate <= blockEnd;
+    });
+
+    if (existingBlock) {
+        // Unblock
+        if (confirm('This date is already blocked. Do you want to unblock it?')) {
+            unblockDate(existingBlock.id);
+        }
+    } else {
+        // Block the single day
+        blockSingleDay(dateStr);
+    }
+}
+
+function blockSingleDay(dateStr) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/owner/calendar/block';
+
+    const csrf = document.createElement('input');
+    csrf.type = 'hidden';
+    csrf.name = 'csrf_token';
+    csrf.value = '<?= csrfToken() ?>';
+
+    const vehicleInput = document.createElement('input');
+    vehicleInput.type = 'hidden';
+    vehicleInput.name = 'vehicle_id';
+    vehicleInput.value = selectedVehicleId;
+
+    const startInput = document.createElement('input');
+    startInput.type = 'hidden';
+    startInput.name = 'start_date';
+    startInput.value = dateStr;
+
+    const endInput = document.createElement('input');
+    endInput.type = 'hidden';
+    endInput.name = 'end_date';
+    endInput.value = dateStr;
+
+    const freqInput = document.createElement('input');
+    freqInput.type = 'hidden';
+    freqInput.name = 'frequency';
+    freqInput.value = 'daily';
+
+    form.appendChild(csrf);
+    form.appendChild(vehicleInput);
+    form.appendChild(startInput);
+    form.appendChild(endInput);
+    form.appendChild(freqInput);
+
+    document.body.appendChild(form);
+    form.submit();
+}
+
+function unblockDate(blockId) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/owner/calendar/unblock';
+
+    const csrf = document.createElement('input');
+    csrf.type = 'hidden';
+    csrf.name = 'csrf_token';
+    csrf.value = '<?= csrfToken() ?>';
+
+    const blockInput = document.createElement('input');
+    blockInput.type = 'hidden';
+    blockInput.name = 'block_id';
+    blockInput.value = blockId;
+
+    form.appendChild(csrf);
+    form.appendChild(blockInput);
+
+    document.body.appendChild(form);
+    form.submit();
 }
 
 function changeMonth(delta) {
@@ -473,14 +697,26 @@ function goToToday() {
     renderCalendar();
 }
 
-function openModal(date) {
-    document.getElementById('modalStartDate').value = date;
-    document.getElementById('modalEndDate').value = date;
-    document.getElementById('dateModal').classList.add('active');
+function toggleDaySelector() {
+    const frequency = document.getElementById('frequency').value;
+    const daySelectorGroup = document.getElementById('daySelectorGroup');
+
+    if (frequency === 'custom') {
+        daySelectorGroup.style.display = 'block';
+    } else {
+        daySelectorGroup.style.display = 'none';
+    }
 }
 
-function closeModal() {
-    document.getElementById('dateModal').classList.remove('active');
+function toggleDay(element, dayValue) {
+    const checkbox = element.querySelector('input[type="checkbox"]');
+    checkbox.checked = !checkbox.checked;
+
+    if (checkbox.checked) {
+        element.classList.add('checked');
+    } else {
+        element.classList.remove('checked');
+    }
 }
 
 // Initialize calendar on page load
@@ -497,6 +733,11 @@ document.getElementById('start_date')?.addEventListener('change', function() {
             endDateInput.value = this.value;
         }
     }
+});
+
+// Prevent label click from toggling checkbox (we handle it in toggleDay)
+document.querySelectorAll('.day-checkbox-item label').forEach(label => {
+    label.addEventListener('click', (e) => e.preventDefault());
 });
 </script>
 
