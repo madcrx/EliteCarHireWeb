@@ -607,7 +607,7 @@ class AdminController {
             redirect('/admin/contact-submissions');
         }
 
-        db()->execute("UPDATE contact_submissions SET status = ?, updated_at = NOW() WHERE id = ?", [$status, $id]);
+        db()->execute("UPDATE contact_submissions SET status = ? WHERE id = ?", [$status, $id]);
 
         logAudit('update_contact_status', 'contact_submissions', $id, null, ['status' => $status]);
 
