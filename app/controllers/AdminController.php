@@ -144,19 +144,9 @@ class AdminController {
                 redirect('/admin/users/' . $id . '/edit');
             }
 
-            $hashedPassword = password_hash($newPassword, PASSWORD_BCRYPT);
+            $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
             db()->execute("UPDATE users SET password = ? WHERE id = ?", [$hashedPassword, $id]);
             logAudit('change_user_password', 'users', $id);
-        }
-
-        // Role-specific fields
-        if ($role === 'owner') {
-            $companyName = $_POST['company_name'] ?? '';
-            $abn = $_POST['abn'] ?? '';
-            $licenseNumber = $_POST['license_number'] ?? '';
-
-            db()->execute("UPDATE users SET company_name = ?, abn = ?, license_number = ? WHERE id = ?",
-                         [$companyName, $abn, $licenseNumber, $id]);
         }
 
         logAudit('update_user', 'users', $id, [
@@ -166,7 +156,7 @@ class AdminController {
         ]);
 
         flash('success', 'User updated successfully');
-        redirect('/admin/users/' . $id);
+        redirect('/admin/users');
     }
 
     public function changeUserStatus($id) {
