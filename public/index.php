@@ -54,6 +54,7 @@ $router->get('/admin/audit-logs', 'AdminController@auditLogs');
 $router->get('/admin/cms', 'AdminController@cms');
 $router->post('/admin/cms/save', 'AdminController@saveCms');
 $router->get('/admin/settings', 'AdminController@settings');
+$router->post('/admin/settings/save', 'AdminController@saveSettings');
 $router->get('/admin/pending-changes', 'AdminController@pendingChanges');
 $router->post('/admin/pending-changes/{id}/approve', 'AdminController@approvePendingChange');
 $router->get('/admin/contact-submissions', 'AdminController@contactSubmissions');

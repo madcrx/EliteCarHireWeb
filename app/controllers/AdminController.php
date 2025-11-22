@@ -284,7 +284,51 @@ class AdminController {
         $settings = db()->fetchAll("SELECT * FROM settings ORDER BY setting_key");
         view('admin/settings', compact('settings'));
     }
-    
+
+    public function saveSettings() {
+        requireAuth('admin');
+
+        // Verify CSRF token
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token. Please try again.');
+            redirect('/admin/settings');
+        }
+
+        // Get all settings from the form
+        $settingKeys = $_POST['setting_keys'] ?? [];
+        $settingValues = $_POST['setting_values'] ?? [];
+
+        if (empty($settingKeys)) {
+            flash('error', 'No settings to save');
+            redirect('/admin/settings');
+        }
+
+        // Update each setting
+        foreach ($settingKeys as $index => $key) {
+            $value = $settingValues[$index] ?? '';
+
+            // Update or insert the setting
+            $existing = db()->fetch("SELECT id FROM settings WHERE setting_key = ?", [$key]);
+
+            if ($existing) {
+                db()->execute("UPDATE settings SET setting_value = ?, updated_at = NOW() WHERE setting_key = ?",
+                             [$value, $key]);
+            } else {
+                db()->execute("INSERT INTO settings (setting_key, setting_value, created_at, updated_at) VALUES (?, ?, NOW(), NOW())",
+                             [$key, $value]);
+            }
+
+            logAudit('update_setting', 'settings', null, [
+                'setting_key' => $key,
+                'setting_value' => $value
+            ]);
+        }
+
+        flash('success', 'Settings saved successfully');
+        redirect('/admin/settings');
+    }
+
     public function pendingChanges() {
         $changes = db()->fetchAll("SELECT pc.*, u.first_name, u.last_name 
                                     FROM pending_changes pc 
