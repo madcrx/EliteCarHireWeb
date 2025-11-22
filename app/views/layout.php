@@ -61,7 +61,7 @@
                         <li><a href="/vehicles">Our Fleet</a></li>
                         <li><a href="/services">Services</a></li>
                         <li><a href="/about">About Us</a></li>
-                        <li><a href="/support">Support</a></li>
+                        <li><a href="/contact">Support</a></li>
                     </ul>
                 </div>
                 <div>
