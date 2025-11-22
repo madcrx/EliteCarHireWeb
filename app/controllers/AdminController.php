@@ -369,39 +369,93 @@ class AdminController {
     }
     
     public function bookings() {
-        $bookings = db()->fetchAll("SELECT b.*, u.first_name as customer_name, u.last_name as customer_last,
-                                     v.make, v.model, o.first_name as owner_name, o.last_name as owner_last
-                                     FROM bookings b
-                                     JOIN users u ON b.customer_id = u.id
-                                     JOIN vehicles v ON b.vehicle_id = v.id
-                                     JOIN users o ON b.owner_id = o.id
-                                     ORDER BY b.created_at DESC");
-        view('admin/bookings', compact('bookings'));
+        $status = $_GET['status'] ?? 'all';
+        $paymentStatus = $_GET['payment_status'] ?? 'all';
+
+        $sql = "SELECT b.*, u.first_name as customer_name, u.last_name as customer_last,
+                v.make, v.model, o.first_name as owner_name, o.last_name as owner_last
+                FROM bookings b
+                JOIN users u ON b.customer_id = u.id
+                JOIN vehicles v ON b.vehicle_id = v.id
+                JOIN users o ON b.owner_id = o.id
+                WHERE 1=1";
+        $params = [];
+
+        if ($status !== 'all') {
+            $sql .= " AND b.status = ?";
+            $params[] = $status;
+        }
+
+        if ($paymentStatus !== 'all') {
+            $sql .= " AND b.payment_status = ?";
+            $params[] = $paymentStatus;
+        }
+
+        $sql .= " ORDER BY b.created_at DESC";
+
+        $bookings = db()->fetchAll($sql, $params);
+        view('admin/bookings', compact('bookings', 'status', 'paymentStatus'));
     }
     
     public function payments() {
-        $payments = db()->fetchAll("SELECT p.*, b.booking_reference FROM payments p 
-                                     JOIN bookings b ON p.booking_id = b.id 
-                                     ORDER BY p.created_at DESC");
-        view('admin/payments', compact('payments'));
+        $status = $_GET['status'] ?? 'all';
+
+        $sql = "SELECT p.*, b.booking_reference FROM payments p
+                JOIN bookings b ON p.booking_id = b.id
+                WHERE 1=1";
+        $params = [];
+
+        if ($status !== 'all') {
+            $sql .= " AND p.status = ?";
+            $params[] = $status;
+        }
+
+        $sql .= " ORDER BY p.created_at DESC";
+
+        $payments = db()->fetchAll($sql, $params);
+        view('admin/payments', compact('payments', 'status'));
     }
     
     public function payouts() {
-        $payouts = db()->fetchAll("SELECT p.*, u.first_name, u.last_name, b.booking_reference 
-                                    FROM payouts p 
-                                    JOIN users u ON p.owner_id = u.id 
-                                    LEFT JOIN bookings b ON p.booking_id = b.id 
-                                    ORDER BY p.created_at DESC");
-        view('admin/payouts', compact('payouts'));
+        $status = $_GET['status'] ?? 'all';
+
+        $sql = "SELECT p.*, u.first_name, u.last_name, b.booking_reference
+                FROM payouts p
+                JOIN users u ON p.owner_id = u.id
+                LEFT JOIN bookings b ON p.booking_id = b.id
+                WHERE 1=1";
+        $params = [];
+
+        if ($status !== 'all') {
+            $sql .= " AND p.status = ?";
+            $params[] = $status;
+        }
+
+        $sql .= " ORDER BY p.created_at DESC";
+
+        $payouts = db()->fetchAll($sql, $params);
+        view('admin/payouts', compact('payouts', 'status'));
     }
     
     public function disputes() {
-        $disputes = db()->fetchAll("SELECT d.*, b.booking_reference, u.first_name, u.last_name 
-                                     FROM disputes d 
-                                     JOIN bookings b ON d.booking_id = b.id 
-                                     JOIN users u ON d.raised_by = u.id 
-                                     ORDER BY d.created_at DESC");
-        view('admin/disputes', compact('disputes'));
+        $status = $_GET['status'] ?? 'all';
+
+        $sql = "SELECT d.*, b.booking_reference, u.first_name, u.last_name
+                FROM disputes d
+                JOIN bookings b ON d.booking_id = b.id
+                JOIN users u ON d.raised_by = u.id
+                WHERE 1=1";
+        $params = [];
+
+        if ($status !== 'all') {
+            $sql .= " AND d.status = ?";
+            $params[] = $status;
+        }
+
+        $sql .= " ORDER BY d.created_at DESC";
+
+        $disputes = db()->fetchAll($sql, $params);
+        view('admin/disputes', compact('disputes', 'status'));
     }
     
     public function analytics() {
@@ -647,8 +701,20 @@ class AdminController {
     }
     
     public function contactSubmissions() {
-        $submissions = db()->fetchAll("SELECT * FROM contact_submissions ORDER BY created_at DESC LIMIT 100");
-        view('admin/contact-submissions', compact('submissions'));
+        $status = $_GET['status'] ?? 'all';
+
+        $sql = "SELECT * FROM contact_submissions WHERE 1=1";
+        $params = [];
+
+        if ($status !== 'all') {
+            $sql .= " AND status = ?";
+            $params[] = $status;
+        }
+
+        $sql .= " ORDER BY created_at DESC LIMIT 100";
+
+        $submissions = db()->fetchAll($sql, $params);
+        view('admin/contact-submissions', compact('submissions', 'status'));
     }
 
     public function replyToContact($id) {

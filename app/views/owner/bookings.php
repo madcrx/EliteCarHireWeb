@@ -8,6 +8,18 @@
             Manage all bookings for your vehicles.
         </p>
 
+        <div class="card" style="margin-bottom: 1.5rem;">
+            <div style="margin-bottom: 0;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--dark-gray);">Filter by Status:</label>
+                <a href="/owner/bookings?status=all" class="btn <?= $status === 'all' ? 'btn-primary' : 'btn-secondary' ?>">All</a>
+                <a href="/owner/bookings?status=pending" class="btn <?= $status === 'pending' ? 'btn-primary' : 'btn-secondary' ?>">Pending</a>
+                <a href="/owner/bookings?status=confirmed" class="btn <?= $status === 'confirmed' ? 'btn-primary' : 'btn-secondary' ?>">Confirmed</a>
+                <a href="/owner/bookings?status=in_progress" class="btn <?= $status === 'in_progress' ? 'btn-primary' : 'btn-secondary' ?>">In Progress</a>
+                <a href="/owner/bookings?status=completed" class="btn <?= $status === 'completed' ? 'btn-primary' : 'btn-secondary' ?>">Completed</a>
+                <a href="/owner/bookings?status=cancelled" class="btn <?= $status === 'cancelled' ? 'btn-primary' : 'btn-secondary' ?>">Cancelled</a>
+            </div>
+        </div>
+
         <?php if (empty($bookings)): ?>
             <div class="card" style="text-align: center; background: var(--light-gray);">
                 <i class="fas fa-calendar-times" style="font-size: 3rem; color: var(--primary-gold); margin-bottom: 1rem;"></i>

@@ -25,8 +25,20 @@ class OwnerController {
     
     public function listings() {
         $ownerId = $_SESSION['user_id'];
-        $vehicles = db()->fetchAll("SELECT * FROM vehicles WHERE owner_id = ? ORDER BY created_at DESC", [$ownerId]);
-        view('owner/listings', compact('vehicles'));
+        $status = $_GET['status'] ?? 'all';
+
+        $sql = "SELECT * FROM vehicles WHERE owner_id = ?";
+        $params = [$ownerId];
+
+        if ($status !== 'all') {
+            $sql .= " AND status = ?";
+            $params[] = $status;
+        }
+
+        $sql .= " ORDER BY created_at DESC";
+
+        $vehicles = db()->fetchAll($sql, $params);
+        view('owner/listings', compact('vehicles', 'status'));
     }
     
     public function addListing() {
@@ -148,12 +160,24 @@ class OwnerController {
 
     public function bookings() {
         $ownerId = $_SESSION['user_id'];
-        $bookings = db()->fetchAll("SELECT b.*, v.make, v.model, u.first_name, u.last_name 
-                                     FROM bookings b 
-                                     JOIN vehicles v ON b.vehicle_id = v.id 
-                                     JOIN users u ON b.customer_id = u.id 
-                                     WHERE b.owner_id = ? ORDER BY b.booking_date DESC", [$ownerId]);
-        view('owner/bookings', compact('bookings'));
+        $status = $_GET['status'] ?? 'all';
+
+        $sql = "SELECT b.*, v.make, v.model, u.first_name, u.last_name
+                FROM bookings b
+                JOIN vehicles v ON b.vehicle_id = v.id
+                JOIN users u ON b.customer_id = u.id
+                WHERE b.owner_id = ?";
+        $params = [$ownerId];
+
+        if ($status !== 'all') {
+            $sql .= " AND b.status = ?";
+            $params[] = $status;
+        }
+
+        $sql .= " ORDER BY b.booking_date DESC";
+
+        $bookings = db()->fetchAll($sql, $params);
+        view('owner/bookings', compact('bookings', 'status'));
     }
     
     public function calendar() {
@@ -281,26 +305,61 @@ class OwnerController {
     
     public function payouts() {
         $ownerId = $_SESSION['user_id'];
-        $payouts = db()->fetchAll("SELECT * FROM payouts WHERE owner_id = ? ORDER BY created_at DESC", [$ownerId]);
-        view('owner/payouts', compact('payouts'));
+        $status = $_GET['status'] ?? 'all';
+
+        $sql = "SELECT * FROM payouts WHERE owner_id = ?";
+        $params = [$ownerId];
+
+        if ($status !== 'all') {
+            $sql .= " AND status = ?";
+            $params[] = $status;
+        }
+
+        $sql .= " ORDER BY created_at DESC";
+
+        $payouts = db()->fetchAll($sql, $params);
+        view('owner/payouts', compact('payouts', 'status'));
     }
     
     public function reviews() {
         $ownerId = $_SESSION['user_id'];
-        $reviews = db()->fetchAll("SELECT r.*, v.make, v.model, u.first_name, u.last_name 
-                                    FROM reviews r 
-                                    JOIN vehicles v ON r.vehicle_id = v.id 
-                                    JOIN users u ON r.customer_id = u.id 
-                                    WHERE r.owner_id = ? ORDER BY r.created_at DESC", [$ownerId]);
-        view('owner/reviews', compact('reviews'));
+        $rating = $_GET['rating'] ?? 'all';
+
+        $sql = "SELECT r.*, v.make, v.model, u.first_name, u.last_name
+                FROM reviews r
+                JOIN vehicles v ON r.vehicle_id = v.id
+                JOIN users u ON r.customer_id = u.id
+                WHERE r.owner_id = ?";
+        $params = [$ownerId];
+
+        if ($rating !== 'all') {
+            $sql .= " AND r.rating = ?";
+            $params[] = $rating;
+        }
+
+        $sql .= " ORDER BY r.created_at DESC";
+
+        $reviews = db()->fetchAll($sql, $params);
+        view('owner/reviews', compact('reviews', 'rating'));
     }
     
     public function messages() {
         $ownerId = $_SESSION['user_id'];
-        $messages = db()->fetchAll("SELECT m.*, u.first_name, u.last_name FROM messages m 
-                                     JOIN users u ON m.from_user_id = u.id 
-                                     WHERE m.to_user_id = ? ORDER BY m.created_at DESC", [$ownerId]);
-        view('owner/messages', compact('messages'));
+        $status = $_GET['status'] ?? 'all';
+
+        $sql = "SELECT m.*, u.first_name, u.last_name FROM messages m
+                JOIN users u ON m.from_user_id = u.id
+                WHERE m.to_user_id = ?";
+        $params = [$ownerId];
+
+        if ($status !== 'all') {
+            $sql .= " AND m.read_at " . ($status === 'read' ? 'IS NOT NULL' : 'IS NULL');
+        }
+
+        $sql .= " ORDER BY m.created_at DESC";
+
+        $messages = db()->fetchAll($sql, $params);
+        view('owner/messages', compact('messages', 'status'));
     }
     
     public function pendingChanges() {

@@ -8,6 +8,18 @@
             Customer reviews and ratings for your vehicles.
         </p>
 
+        <div class="card" style="margin-bottom: 1.5rem;">
+            <div style="margin-bottom: 0;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--dark-gray);">Filter by Rating:</label>
+                <a href="/owner/reviews?rating=all" class="btn <?= $rating === 'all' ? 'btn-primary' : 'btn-secondary' ?>">All</a>
+                <a href="/owner/reviews?rating=5" class="btn <?= $rating === '5' ? 'btn-primary' : 'btn-secondary' ?>">⭐ 5 Stars</a>
+                <a href="/owner/reviews?rating=4" class="btn <?= $rating === '4' ? 'btn-primary' : 'btn-secondary' ?>">⭐ 4 Stars</a>
+                <a href="/owner/reviews?rating=3" class="btn <?= $rating === '3' ? 'btn-primary' : 'btn-secondary' ?>">⭐ 3 Stars</a>
+                <a href="/owner/reviews?rating=2" class="btn <?= $rating === '2' ? 'btn-primary' : 'btn-secondary' ?>">⭐ 2 Stars</a>
+                <a href="/owner/reviews?rating=1" class="btn <?= $rating === '1' ? 'btn-primary' : 'btn-secondary' ?>">⭐ 1 Star</a>
+            </div>
+        </div>
+
         <?php if (empty($reviews)): ?>
             <div class="card" style="text-align: center; background: var(--light-gray);">
                 <i class="fas fa-comments" style="font-size: 3rem; color: var(--primary-gold); margin-bottom: 1rem;"></i>

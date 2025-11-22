@@ -5,6 +5,17 @@
     <div class="main-content">
         <h1>Contact Submissions</h1>
 
+        <div class="card" style="margin-bottom: 1.5rem;">
+            <div style="margin-bottom: 0;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--dark-gray);">Filter by Status:</label>
+                <a href="/admin/contact-submissions?status=all" class="btn <?= $status === 'all' ? 'btn-primary' : 'btn-secondary' ?>">All</a>
+                <a href="/admin/contact-submissions?status=new" class="btn <?= $status === 'new' ? 'btn-primary' : 'btn-secondary' ?>">New</a>
+                <a href="/admin/contact-submissions?status=read" class="btn <?= $status === 'read' ? 'btn-primary' : 'btn-secondary' ?>">Read</a>
+                <a href="/admin/contact-submissions?status=responded" class="btn <?= $status === 'responded' ? 'btn-primary' : 'btn-secondary' ?>">Responded</a>
+                <a href="/admin/contact-submissions?status=archived" class="btn <?= $status === 'archived' ? 'btn-primary' : 'btn-secondary' ?>">Archived</a>
+            </div>
+        </div>
+
         <?php if (empty($submissions)): ?>
             <div class="card">
                 <p style="text-align: center; color: var(--dark-gray); padding: 2rem;">

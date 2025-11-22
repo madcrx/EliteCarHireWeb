@@ -16,7 +16,18 @@
             <h1>My Vehicle Listings</h1>
             <a href="/owner/listings/add" class="btn btn-primary">Add New Vehicle</a>
         </div>
-        
+
+        <div class="card" style="margin-bottom: 1.5rem;">
+            <div style="margin-bottom: 0;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--dark-gray);">Filter by Status:</label>
+                <a href="/owner/listings?status=all" class="btn <?= $status === 'all' ? 'btn-primary' : 'btn-secondary' ?>">All</a>
+                <a href="/owner/listings?status=pending" class="btn <?= $status === 'pending' ? 'btn-primary' : 'btn-secondary' ?>">Pending</a>
+                <a href="/owner/listings?status=approved" class="btn <?= $status === 'approved' ? 'btn-primary' : 'btn-secondary' ?>">Approved</a>
+                <a href="/owner/listings?status=active" class="btn <?= $status === 'active' ? 'btn-primary' : 'btn-secondary' ?>">Active</a>
+                <a href="/owner/listings?status=inactive" class="btn <?= $status === 'inactive' ? 'btn-primary' : 'btn-secondary' ?>">Inactive</a>
+            </div>
+        </div>
+
         <div class="vehicle-grid">
             <?php foreach ($vehicles as $vehicle): ?>
                 <div class="vehicle-card">

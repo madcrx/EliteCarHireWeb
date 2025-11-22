@@ -8,6 +8,17 @@
             Track your earnings and payment history.
         </p>
 
+        <div class="card" style="margin-bottom: 1.5rem;">
+            <div style="margin-bottom: 0;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--dark-gray);">Filter by Status:</label>
+                <a href="/owner/payouts?status=all" class="btn <?= $status === 'all' ? 'btn-primary' : 'btn-secondary' ?>">All</a>
+                <a href="/owner/payouts?status=pending" class="btn <?= $status === 'pending' ? 'btn-primary' : 'btn-secondary' ?>">Pending</a>
+                <a href="/owner/payouts?status=scheduled" class="btn <?= $status === 'scheduled' ? 'btn-primary' : 'btn-secondary' ?>">Scheduled</a>
+                <a href="/owner/payouts?status=processing" class="btn <?= $status === 'processing' ? 'btn-primary' : 'btn-secondary' ?>">Processing</a>
+                <a href="/owner/payouts?status=completed" class="btn <?= $status === 'completed' ? 'btn-primary' : 'btn-secondary' ?>">Completed</a>
+            </div>
+        </div>
+
         <?php if (empty($payouts)): ?>
             <div class="card" style="text-align: center; background: var(--light-gray);">
                 <i class="fas fa-wallet" style="font-size: 3rem; color: var(--primary-gold); margin-bottom: 1rem;"></i>

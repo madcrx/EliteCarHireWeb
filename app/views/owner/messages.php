@@ -8,6 +8,15 @@
             View and manage messages from customers and administrators.
         </p>
 
+        <div class="card" style="margin-bottom: 1.5rem;">
+            <div style="margin-bottom: 0;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--dark-gray);">Filter by Status:</label>
+                <a href="/owner/messages?status=all" class="btn <?= $status === 'all' ? 'btn-primary' : 'btn-secondary' ?>">All</a>
+                <a href="/owner/messages?status=unread" class="btn <?= $status === 'unread' ? 'btn-primary' : 'btn-secondary' ?>">Unread</a>
+                <a href="/owner/messages?status=read" class="btn <?= $status === 'read' ? 'btn-primary' : 'btn-secondary' ?>">Read</a>
+            </div>
+        </div>
+
         <?php if (empty($messages)): ?>
             <div class="card" style="text-align: center; background: var(--light-gray);">
                 <i class="fas fa-inbox" style="font-size: 3rem; color: var(--primary-gold); margin-bottom: 1rem;"></i>
