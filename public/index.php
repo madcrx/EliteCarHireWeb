@@ -68,6 +68,8 @@ $router->get('/owner/listings/{id}/edit', 'OwnerController@editListing');
 $router->post('/owner/listings/{id}/edit', 'OwnerController@updateListing');
 $router->get('/owner/bookings', 'OwnerController@bookings');
 $router->get('/owner/calendar', 'OwnerController@calendar');
+$router->post('/owner/calendar/block', 'OwnerController@blockDates');
+$router->post('/owner/calendar/unblock', 'OwnerController@unblockDate');
 $router->get('/owner/analytics', 'OwnerController@analytics');
 $router->get('/owner/payouts', 'OwnerController@payouts');
 $router->get('/owner/reviews', 'OwnerController@reviews');

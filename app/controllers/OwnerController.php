@@ -91,7 +91,113 @@ class OwnerController {
     }
     
     public function calendar() {
-        view('owner/calendar');
+        $ownerId = $_SESSION['user_id'];
+        $vehicles = db()->fetchAll("SELECT id, make, model, year, registration_number FROM vehicles WHERE owner_id = ? AND status = 'approved' ORDER BY make, model", [$ownerId]);
+
+        $blockedDates = db()->fetchAll("SELECT vbd.*, v.make, v.model, v.registration_number
+                                        FROM vehicle_blocked_dates vbd
+                                        JOIN vehicles v ON vbd.vehicle_id = v.id
+                                        WHERE vbd.owner_id = ?
+                                        ORDER BY vbd.start_date DESC", [$ownerId]);
+
+        view('owner/calendar', compact('vehicles', 'blockedDates'));
+    }
+
+    public function blockDates() {
+        requireAuth('owner');
+
+        // Verify CSRF token
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token. Please try again.');
+            redirect('/owner/calendar');
+        }
+
+        $ownerId = $_SESSION['user_id'];
+        $vehicleId = $_POST['vehicle_id'] ?? '';
+        $startDate = $_POST['start_date'] ?? '';
+        $endDate = $_POST['end_date'] ?? '';
+        $reason = $_POST['reason'] ?? '';
+
+        // Validate inputs
+        if (empty($vehicleId) || empty($startDate) || empty($endDate)) {
+            flash('error', 'All fields are required');
+            redirect('/owner/calendar');
+        }
+
+        // Verify vehicle belongs to owner
+        $vehicle = db()->fetch("SELECT id FROM vehicles WHERE id = ? AND owner_id = ?", [$vehicleId, $ownerId]);
+        if (!$vehicle) {
+            flash('error', 'Vehicle not found or access denied');
+            redirect('/owner/calendar');
+        }
+
+        // Validate dates
+        if (strtotime($startDate) > strtotime($endDate)) {
+            flash('error', 'End date must be after start date');
+            redirect('/owner/calendar');
+        }
+
+        // Check for overlapping blocked dates
+        $overlap = db()->fetch("SELECT id FROM vehicle_blocked_dates
+                               WHERE vehicle_id = ?
+                               AND ((start_date <= ? AND end_date >= ?)
+                                    OR (start_date <= ? AND end_date >= ?)
+                                    OR (start_date >= ? AND end_date <= ?))",
+                              [$vehicleId, $startDate, $startDate, $endDate, $endDate, $startDate, $endDate]);
+
+        if ($overlap) {
+            flash('error', 'Date range overlaps with existing blocked dates');
+            redirect('/owner/calendar');
+        }
+
+        // Insert blocked dates
+        db()->execute("INSERT INTO vehicle_blocked_dates (vehicle_id, owner_id, start_date, end_date, reason, created_at)
+                      VALUES (?, ?, ?, ?, ?, NOW())",
+                     [$vehicleId, $ownerId, $startDate, $endDate, $reason]);
+
+        logAudit('block_vehicle_dates', 'vehicle_blocked_dates', db()->lastInsertId(), [
+            'vehicle_id' => $vehicleId,
+            'start_date' => $startDate,
+            'end_date' => $endDate
+        ]);
+
+        flash('success', 'Dates blocked successfully');
+        redirect('/owner/calendar');
+    }
+
+    public function unblockDate() {
+        requireAuth('owner');
+
+        // Verify CSRF token
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token. Please try again.');
+            redirect('/owner/calendar');
+        }
+
+        $ownerId = $_SESSION['user_id'];
+        $blockId = $_POST['block_id'] ?? '';
+
+        if (empty($blockId)) {
+            flash('error', 'Block ID is required');
+            redirect('/owner/calendar');
+        }
+
+        // Verify block belongs to owner
+        $block = db()->fetch("SELECT id FROM vehicle_blocked_dates WHERE id = ? AND owner_id = ?", [$blockId, $ownerId]);
+        if (!$block) {
+            flash('error', 'Blocked date not found or access denied');
+            redirect('/owner/calendar');
+        }
+
+        // Delete the block
+        db()->execute("DELETE FROM vehicle_blocked_dates WHERE id = ?", [$blockId]);
+
+        logAudit('unblock_vehicle_dates', 'vehicle_blocked_dates', $blockId);
+
+        flash('success', 'Dates unblocked successfully');
+        redirect('/owner/calendar');
     }
     
     public function analytics() {
