@@ -25,3 +25,8 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.bak
+
+# Deployment packages (build artifacts)
+*.zip
+deployment-packages/
+public/downloads/

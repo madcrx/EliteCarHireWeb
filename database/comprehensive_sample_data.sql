@@ -13,10 +13,10 @@ INSERT INTO users (email, password, first_name, last_name, phone, role, status, 
 ON DUPLICATE KEY UPDATE email=email;
 
 -- Sample Vehicle Owners
-INSERT INTO users (email, password, first_name, last_name, phone, role, status, company_name, abn, license_number, created_at, last_login) VALUES
-('owner1@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'James', 'Smith', '0412 345 678', 'owner', 'active', 'Premium Auto Group', '12345678901', 'LIC-12345', '2025-01-05 09:00:00', NOW()),
-('owner2@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Emma', 'Wilson', '0423 456 789', 'owner', 'active', 'Luxury Fleet Solutions', '23456789012', 'LIC-23456', '2025-01-06 10:30:00', NOW()),
-('owner3@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Michael', 'Brown', '0434 567 890', 'owner', 'pending', 'Classic Car Rentals', '34567890123', 'LIC-34567', '2025-01-10 14:20:00', NULL)
+INSERT INTO users (email, password, first_name, last_name, phone, role, status, created_at, last_login) VALUES
+('owner1@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'James', 'Smith', '0412 345 678', 'owner', 'active', '2025-01-05 09:00:00', NOW()),
+('owner2@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Emma', 'Wilson', '0423 456 789', 'owner', 'active', '2025-01-06 10:30:00', NOW()),
+('owner3@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Michael', 'Brown', '0434 567 890', 'owner', 'pending', '2025-01-10 14:20:00', NULL)
 ON DUPLICATE KEY UPDATE email=email;
 
 -- Sample Customers
@@ -24,7 +24,7 @@ INSERT INTO users (email, password, first_name, last_name, phone, role, status, 
 ('customer1@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Sarah', 'Johnson', '0445 678 901', 'customer', 'active', '2025-01-08 11:00:00', NOW()),
 ('customer2@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'David', 'Lee', '0456 789 012', 'customer', 'active', '2025-01-12 15:45:00', NOW()),
 ('customer3@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Jessica', 'Taylor', '0467 890 123', 'customer', 'active', '2025-01-15 09:30:00', NOW()),
-('customer4@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Robert', 'Anderson', '0478 901 234', 'customer', 'pending', '2025-01-18 16:20:00', NULL()),
+('customer4@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Robert', 'Anderson', '0478 901 234', 'customer', 'pending', '2025-01-18 16:20:00', NULL),
 ('customer5@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Linda', 'Martinez', '0489 012 345', 'customer', 'suspended', '2025-01-20 12:00:00', '2025-01-21 10:00:00')
 ON DUPLICATE KEY UPDATE email=email;
 
@@ -32,20 +32,20 @@ ON DUPLICATE KEY UPDATE email=email;
 -- SAMPLE VEHICLES
 -- ==============================================================================
 
-INSERT INTO vehicles (owner_id, make, model, year, category, daily_rate, weekly_rate, color, state, rego, features, status, created_at) VALUES
+INSERT INTO vehicles (owner_id, make, model, year, category, hourly_rate, color, registration_number, features, status, created_at) VALUES
 -- Owner 1's vehicles (James Smith)
-(2, 'Mercedes-Benz', 'S-Class', 2023, 'Luxury Sedan', 450.00, 2800.00, 'Black', 'VIC', 'ABC123', 'Leather seats, Premium sound system, Navigation, Bluetooth', 'approved', '2025-01-06 10:00:00'),
-(2, 'BMW', '7 Series', 2024, 'Luxury Sedan', 480.00, 3000.00, 'Silver', 'VIC', 'DEF456', 'Heated seats, Sunroof, Advanced safety features', 'approved', '2025-01-06 11:00:00'),
-(2, 'Audi', 'A8', 2023, 'Luxury Sedan', 420.00, 2600.00, 'White', 'VIC', 'GHI789', 'Massage seats, Premium audio, Adaptive cruise control', 'approved', '2025-01-07 09:00:00'),
+(2, 'Mercedes-Benz', 'S-Class', 2023, 'luxury_exotic', 95.00, 'Black', 'ABC123-VIC', '["Leather seats", "Premium sound system", "Navigation", "Bluetooth", "Climate control"]', 'approved', '2025-01-06 10:00:00'),
+(2, 'BMW', '7 Series', 2024, 'luxury_exotic', 105.00, 'Silver', 'DEF456-VIC', '["Heated seats", "Sunroof", "Advanced safety features", "Premium audio"]', 'approved', '2025-01-06 11:00:00'),
+(2, 'Audi', 'A8', 2023, 'premium', 90.00, 'White', 'GHI789-VIC', '["Massage seats", "Premium audio", "Adaptive cruise control", "LED headlights"]', 'approved', '2025-01-07 09:00:00'),
 
 -- Owner 2's vehicles (Emma Wilson)
-(3, 'Porsche', '911 Carrera', 2024, 'Sports Car', 850.00, 5500.00, 'Red', 'NSW', 'JKL012', 'Sport exhaust, Carbon fiber trim, Track mode', 'approved', '2025-01-08 14:00:00'),
-(3, 'Ferrari', 'F8 Tributo', 2023, 'Exotic Sports', 1500.00, 9500.00, 'Yellow', 'NSW', 'MNO345', 'V8 engine, Carbon ceramic brakes, Launch control', 'approved', '2025-01-08 15:00:00'),
-(3, 'Lamborghini', 'Huracán', 2024, 'Exotic Sports', 1800.00, 11500.00, 'Orange', 'NSW', 'PQR678', 'AWD, Carbon fiber bodykit, Race mode', 'approved', '2025-01-09 10:00:00'),
-(3, 'Tesla', 'Model S Plaid', 2024, 'Electric Luxury', 550.00, 3500.00, 'Blue', 'NSW', 'STU901', 'Autopilot, Supercharging included, 0-100 in 2.1s', 'pending', '2025-01-10 12:00:00'),
+(3, 'Porsche', '911 Carrera', 2024, 'luxury_exotic', 180.00, 'Red', 'JKL012-NSW', '["Sport exhaust", "Carbon fiber trim", "Track mode", "Sport seats"]', 'approved', '2025-01-08 14:00:00'),
+(3, 'Ferrari', 'F8 Tributo', 2023, 'luxury_exotic', 320.00, 'Yellow', 'MNO345-NSW', '["V8 engine", "Carbon ceramic brakes", "Launch control", "Premium interior"]', 'approved', '2025-01-08 15:00:00'),
+(3, 'Lamborghini', 'Huracán', 2024, 'luxury_exotic', 380.00, 'Orange', 'PQR678-NSW', '["AWD", "Carbon fiber bodykit", "Race mode", "Performance exhaust"]', 'approved', '2025-01-09 10:00:00'),
+(3, 'Tesla', 'Model S Plaid', 2024, 'premium', 115.00, 'Blue', 'STU901-NSW', '["Autopilot", "Supercharging included", "0-100 in 2.1s", "Premium interior"]', 'pending', '2025-01-10 12:00:00'),
 
 -- Owner 3's vehicles (Michael Brown - pending owner)
-(4, 'Rolls-Royce', 'Ghost', 2023, 'Ultra Luxury', 2000.00, 13000.00, 'Black', 'QLD', 'VWX234', 'Starlight headliner, Champagne cooler, Bespoke audio', 'pending', '2025-01-11 11:00:00')
+(4, 'Rolls-Royce', 'Ghost', 2023, 'luxury_exotic', 425.00, 'Black', 'VWX234-QLD', '["Starlight headliner", "Champagne cooler", "Bespoke audio", "Luxury seats"]', 'pending', '2025-01-11 11:00:00')
 ON DUPLICATE KEY UPDATE make=make;
 
 -- ==============================================================================
