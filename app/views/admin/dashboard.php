@@ -25,14 +25,6 @@
             </div>
         </div>
 
-        <div class="card" style="background: linear-gradient(135deg, var(--primary-gold) 0%, #a88a3d 100%); color: white;">
-            <h2 style="color: white; margin-bottom: 1rem;"><i class="fas fa-images"></i> Image Management</h2>
-            <p style="margin-bottom: 1.5rem;">Manage website images, logos, and banners. Upload new images or revert to defaults.</p>
-            <a href="/admin/images" class="btn" style="background: white; color: var(--primary-gold); padding: 10px 20px; text-decoration: none; display: inline-block; border-radius: var(--border-radius); font-weight: bold;">
-                Manage Images
-            </a>
-        </div>
-
         <div class="card">
             <h2>Recent Bookings</h2>
             <div class="table-container">
