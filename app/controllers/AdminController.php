@@ -169,6 +169,78 @@ class AdminController {
         redirect('/admin/users/' . $id);
     }
 
+    public function changeUserStatus($id) {
+        requireAuth('admin');
+
+        // Verify CSRF token
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token. Please try again.');
+            redirect('/admin/users');
+        }
+
+        $status = $_POST['status'] ?? '';
+        $allowedStatuses = ['active', 'suspended', 'rejected', 'pending'];
+
+        if (!in_array($status, $allowedStatuses)) {
+            flash('error', 'Invalid status');
+            redirect('/admin/users');
+        }
+
+        $user = db()->fetch("SELECT * FROM users WHERE id = ?", [$id]);
+        if (!$user) {
+            flash('error', 'User not found');
+            redirect('/admin/users');
+        }
+
+        db()->execute("UPDATE users SET status = ?, updated_at = NOW() WHERE id = ?", [$status, $id]);
+
+        // Notify user
+        $statusMessages = [
+            'active' => 'Your account has been activated',
+            'suspended' => 'Your account has been suspended',
+            'rejected' => 'Your account has been rejected',
+            'pending' => 'Your account is pending review'
+        ];
+        createNotification($id, 'status_change', 'Account Status Changed', $statusMessages[$status]);
+
+        logAudit('change_user_status', 'users', $id, ['old_status' => $user['status']], ['new_status' => $status]);
+
+        flash('success', 'User status changed to ' . $status);
+        redirect('/admin/users');
+    }
+
+    public function deleteUser($id) {
+        requireAuth('admin');
+
+        // Verify CSRF token
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token. Please try again.');
+            redirect('/admin/users');
+        }
+
+        $user = db()->fetch("SELECT * FROM users WHERE id = ?", [$id]);
+        if (!$user) {
+            flash('error', 'User not found');
+            redirect('/admin/users');
+        }
+
+        // Prevent deleting your own account
+        if ($id == $_SESSION['user_id']) {
+            flash('error', 'You cannot delete your own account');
+            redirect('/admin/users');
+        }
+
+        // Delete user (cascade delete will handle related records)
+        db()->execute("DELETE FROM users WHERE id = ?", [$id]);
+
+        logAudit('delete_user', 'users', $id, $user);
+
+        flash('success', 'User deleted successfully');
+        redirect('/admin/users');
+    }
+
     public function vehicles() {
         $status = $_GET['status'] ?? 'all';
         
@@ -329,6 +401,111 @@ class AdminController {
         redirect('/admin/settings');
     }
 
+    public function uploadLogo() {
+        requireAuth('admin');
+
+        // Verify CSRF token
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token. Please try again.');
+            redirect('/admin/settings');
+        }
+
+        // Check if file was uploaded
+        if (!isset($_FILES['logo_file']) || $_FILES['logo_file']['error'] !== UPLOAD_ERR_OK) {
+            flash('error', 'No file uploaded or upload error occurred');
+            redirect('/admin/settings');
+        }
+
+        // Validate file type
+        $allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml'];
+        $fileType = $_FILES['logo_file']['type'];
+
+        if (!in_array($fileType, $allowedTypes)) {
+            flash('error', 'Invalid file type. Only PNG, JPG, and SVG allowed');
+            redirect('/admin/settings');
+        }
+
+        // Validate file size (2MB max)
+        $maxSize = 2 * 1024 * 1024;
+        if ($_FILES['logo_file']['size'] > $maxSize) {
+            flash('error', 'File too large. Maximum size is 2MB');
+            redirect('/admin/settings');
+        }
+
+        // Create upload directory if it doesn't exist
+        $uploadDir = __DIR__ . '/../../storage/uploads/logo/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+
+        // Generate filename
+        $extension = pathinfo($_FILES['logo_file']['name'], PATHINFO_EXTENSION);
+        $filename = 'company-logo.' . $extension;
+        $uploadPath = $uploadDir . $filename;
+        $webPath = '/storage/uploads/logo/' . $filename;
+
+        // Delete old logo if exists
+        $currentLogo = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'company_logo'");
+        if ($currentLogo && $currentLogo['setting_value']) {
+            $oldPath = __DIR__ . '/../../..' . $currentLogo['setting_value'];
+            if (file_exists($oldPath)) {
+                @unlink($oldPath);
+            }
+        }
+
+        // Move uploaded file
+        if (!move_uploaded_file($_FILES['logo_file']['tmp_name'], $uploadPath)) {
+            flash('error', 'Failed to upload file');
+            redirect('/admin/settings');
+        }
+
+        // Update database
+        $existing = db()->fetch("SELECT id FROM settings WHERE setting_key = 'company_logo'");
+        if ($existing) {
+            db()->execute("UPDATE settings SET setting_value = ?, updated_at = NOW() WHERE setting_key = 'company_logo'", [$webPath]);
+        } else {
+            db()->execute("INSERT INTO settings (setting_key, setting_value, created_at, updated_at) VALUES ('company_logo', ?, NOW(), NOW())", [$webPath]);
+        }
+
+        logAudit('upload_company_logo', 'settings', null, ['logo_path' => $webPath]);
+
+        flash('success', 'Company logo uploaded successfully');
+        redirect('/admin/settings');
+    }
+
+    public function removeLogo() {
+        requireAuth('admin');
+
+        // Verify CSRF token
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token. Please try again.');
+            redirect('/admin/settings');
+        }
+
+        // Get current logo
+        $currentLogo = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'company_logo'");
+        if ($currentLogo && $currentLogo['setting_value']) {
+            // Delete file
+            $oldPath = __DIR__ . '/../../..' . $currentLogo['setting_value'];
+            if (file_exists($oldPath)) {
+                @unlink($oldPath);
+            }
+
+            // Remove from database
+            db()->execute("DELETE FROM settings WHERE setting_key = 'company_logo'");
+
+            logAudit('remove_company_logo', 'settings', null);
+
+            flash('success', 'Company logo removed successfully');
+        } else {
+            flash('error', 'No logo to remove');
+        }
+
+        redirect('/admin/settings');
+    }
+
     public function pendingChanges() {
         $changes = db()->fetchAll("SELECT pc.*, u.first_name, u.last_name 
                                     FROM pending_changes pc 
@@ -372,5 +549,103 @@ class AdminController {
     public function contactSubmissions() {
         $submissions = db()->fetchAll("SELECT * FROM contact_submissions ORDER BY created_at DESC LIMIT 100");
         view('admin/contact-submissions', compact('submissions'));
+    }
+
+    public function replyToContact($id) {
+        requireAuth('admin');
+
+        // Verify CSRF token
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token. Please try again.');
+            redirect('/admin/contact-submissions');
+        }
+
+        $reply = $_POST['reply'] ?? '';
+
+        if (empty($reply)) {
+            flash('error', 'Reply message is required');
+            redirect('/admin/contact-submissions');
+        }
+
+        // Get contact submission
+        $submission = db()->fetch("SELECT * FROM contact_submissions WHERE id = ?", [$id]);
+        if (!$submission) {
+            flash('error', 'Contact submission not found');
+            redirect('/admin/contact-submissions');
+        }
+
+        // Update submission with reply
+        db()->execute("UPDATE contact_submissions SET response_text = ?, responded_at = NOW(), responded_by = ?, status = 'responded' WHERE id = ?",
+                     [$reply, $_SESSION['user_id'], $id]);
+
+        // Send email to user
+        $emailBody = "
+            <h2>Reply to your inquiry</h2>
+            <p>Dear {$submission['name']},</p>
+            <p>Thank you for contacting Elite Car Hire. Here is our response:</p>
+            <div style='background: #f5f5f5; padding: 15px; border-left: 4px solid #C5A253; margin: 20px 0;'>
+                " . nl2br(e($reply)) . "
+            </div>
+            <p>If you have any further questions, please don't hesitate to contact us.</p>
+            <p>Best regards,<br>Elite Car Hire Team<br>Phone: 0406 907 849<br>Email: support@elitecarhire.au</p>
+        ";
+
+        sendEmail($submission['email'], 'Re: ' . ($submission['subject'] ?? 'Your inquiry'), $emailBody);
+
+        logAudit('reply_contact_submission', 'contact_submissions', $id, null, ['reply' => $reply]);
+
+        flash('success', 'Reply sent successfully');
+        redirect('/admin/contact-submissions');
+    }
+
+    public function updateContactStatus($id) {
+        requireAuth('admin');
+
+        // Verify CSRF token
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token. Please try again.');
+            redirect('/admin/contact-submissions');
+        }
+
+        $status = $_POST['status'] ?? '';
+        $allowedStatuses = ['new', 'read', 'responded', 'archived'];
+
+        if (!in_array($status, $allowedStatuses)) {
+            flash('error', 'Invalid status');
+            redirect('/admin/contact-submissions');
+        }
+
+        db()->execute("UPDATE contact_submissions SET status = ?, updated_at = NOW() WHERE id = ?", [$status, $id]);
+
+        logAudit('update_contact_status', 'contact_submissions', $id, null, ['status' => $status]);
+
+        flash('success', 'Status updated successfully');
+        redirect('/admin/contact-submissions');
+    }
+
+    public function deleteContactSubmission($id) {
+        requireAuth('admin');
+
+        // Verify CSRF token
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token. Please try again.');
+            redirect('/admin/contact-submissions');
+        }
+
+        $submission = db()->fetch("SELECT * FROM contact_submissions WHERE id = ?", [$id]);
+        if (!$submission) {
+            flash('error', 'Contact submission not found');
+            redirect('/admin/contact-submissions');
+        }
+
+        db()->execute("DELETE FROM contact_submissions WHERE id = ?", [$id]);
+
+        logAudit('delete_contact_submission', 'contact_submissions', $id, $submission);
+
+        flash('success', 'Contact submission deleted successfully');
+        redirect('/admin/contact-submissions');
     }
 }

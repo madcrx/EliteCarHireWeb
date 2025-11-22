@@ -51,6 +51,59 @@
         </form>
 
         <div class="card" style="margin-top: 2rem;">
+            <h3><i class="fas fa-image"></i> Company Logo</h3>
+            <p style="color: var(--dark-gray); margin-bottom: 1.5rem;">
+                Upload a company logo to replace the "Elite Car Hire" text in the header. Recommended size: 200x60px, PNG with transparent background.
+            </p>
+
+            <?php
+            $currentLogo = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'company_logo'");
+            $logoPath = $currentLogo['setting_value'] ?? null;
+            ?>
+
+            <?php if ($logoPath && file_exists(__DIR__ . '/../../..' . $logoPath)): ?>
+                <div style="margin-bottom: 1.5rem; padding: 1rem; background: var(--light-gray); border-radius: var(--border-radius);">
+                    <p style="margin-bottom: 0.5rem;"><strong>Current Logo:</strong></p>
+                    <img src="<?= e($logoPath) ?>" alt="Company Logo" style="max-height: 60px; background: white; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+            <?php else: ?>
+                <div style="margin-bottom: 1.5rem; padding: 1rem; background: var(--light-gray); border-radius: var(--border-radius);">
+                    <p style="color: var(--dark-gray);"><i class="fas fa-info-circle"></i> No logo uploaded. Using default "Elite Car Hire" text in header.</p>
+                </div>
+            <?php endif; ?>
+
+            <form method="POST" action="/admin/settings/upload-logo" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
+
+                <div class="form-group">
+                    <label for="logo_file">Select Logo Image</label>
+                    <input type="file" name="logo_file" id="logo_file" accept="image/png,image/jpeg,image/jpg,image/svg+xml" required>
+                    <small style="color: var(--dark-gray); display: block; margin-top: 0.5rem;">
+                        Supported formats: PNG, JPG, SVG. Maximum size: 2MB.
+                    </small>
+                </div>
+
+                <div style="display: flex; gap: 1rem;">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-upload"></i> Upload Logo
+                    </button>
+
+                    <?php if ($logoPath): ?>
+                        <button type="button" onclick="if(confirm('Remove logo and return to text header?')) { document.getElementById('removeLogo').submit(); }" class="btn" style="background: var(--dark-gray); color: white;">
+                            <i class="fas fa-trash"></i> Remove Logo
+                        </button>
+                    <?php endif; ?>
+                </div>
+            </form>
+
+            <?php if ($logoPath): ?>
+                <form id="removeLogo" method="POST" action="/admin/settings/remove-logo" style="display: none;">
+                    <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
+                </form>
+            <?php endif; ?>
+        </div>
+
+        <div class="card" style="margin-top: 2rem;">
             <h3><i class="fas fa-info-circle"></i> System Information</h3>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
                 <div>

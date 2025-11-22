@@ -1,3 +1,12 @@
+<?php
+// Get company logo if set
+try {
+    $companyLogo = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'company_logo'");
+    $logoPath = $companyLogo['setting_value'] ?? null;
+} catch (\PDOException $e) {
+    $logoPath = null;
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -11,7 +20,11 @@
     <nav class="navbar">
         <div class="container">
             <div class="nav-brand">
-                <h1>Elite Car Hire</h1>
+                <?php if ($logoPath && file_exists(__DIR__ . '/../..' . $logoPath)): ?>
+                    <a href="/" style="display: inline-block;"><img src="<?= e($logoPath) ?>" alt="Elite Car Hire" style="max-height: 50px; vertical-align: middle;"></a>
+                <?php else: ?>
+                    <h1><a href="/" style="color: inherit; text-decoration: none;">Elite Car Hire</a></h1>
+                <?php endif; ?>
             </div>
             <div class="nav-links">
                 <?php if (auth()): ?>
