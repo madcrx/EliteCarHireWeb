@@ -13,10 +13,10 @@ INSERT INTO users (email, password, first_name, last_name, phone, role, status, 
 ON DUPLICATE KEY UPDATE email=email;
 
 -- Sample Vehicle Owners
-INSERT INTO users (email, password, first_name, last_name, phone, role, status, company_name, abn, license_number, created_at, last_login) VALUES
-('owner1@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'James', 'Smith', '0412 345 678', 'owner', 'active', 'Premium Auto Group', '12345678901', 'LIC-12345', '2025-01-05 09:00:00', NOW()),
-('owner2@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Emma', 'Wilson', '0423 456 789', 'owner', 'active', 'Luxury Fleet Solutions', '23456789012', 'LIC-23456', '2025-01-06 10:30:00', NOW()),
-('owner3@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Michael', 'Brown', '0434 567 890', 'owner', 'pending', 'Classic Car Rentals', '34567890123', 'LIC-34567', '2025-01-10 14:20:00', NULL)
+INSERT INTO users (email, password, first_name, last_name, phone, role, status, created_at, last_login) VALUES
+('owner1@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'James', 'Smith', '0412 345 678', 'owner', 'active', '2025-01-05 09:00:00', NOW()),
+('owner2@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Emma', 'Wilson', '0423 456 789', 'owner', 'active', '2025-01-06 10:30:00', NOW()),
+('owner3@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Michael', 'Brown', '0434 567 890', 'owner', 'pending', '2025-01-10 14:20:00', NULL)
 ON DUPLICATE KEY UPDATE email=email;
 
 -- Sample Customers
