@@ -55,6 +55,9 @@ $router->get('/admin/settings', 'AdminController@settings');
 $router->get('/admin/pending-changes', 'AdminController@pendingChanges');
 $router->post('/admin/pending-changes/{id}/approve', 'AdminController@approvePendingChange');
 $router->get('/admin/contact-submissions', 'AdminController@contactSubmissions');
+$router->get('/admin/images', 'ImageController@index');
+$router->post('/admin/images/upload', 'ImageController@upload');
+$router->post('/admin/images/revert', 'ImageController@revertToDefault');
 
 // Owner routes
 $router->get('/owner/dashboard', 'OwnerController@dashboard');

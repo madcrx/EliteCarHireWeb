@@ -13,6 +13,7 @@
         <li><a href="/admin/security"><i class="fas fa-shield-alt"></i> Security Alerts</a></li>
         <li><a href="/admin/audit-logs"><i class="fas fa-file-alt"></i> Audit Logs</a></li>
         <li><a href="/admin/cms"><i class="fas fa-edit"></i> Content Management</a></li>
+        <li><a href="/admin/images"><i class="fas fa-images"></i> Image Management</a></li>
         <li><a href="/admin/settings"><i class="fas fa-cog"></i> Settings</a></li>
     </ul>
 </div>
