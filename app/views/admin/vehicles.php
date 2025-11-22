@@ -36,9 +36,20 @@
                                 <td><?= formatMoney($vehicle['hourly_rate']) ?></td>
                                 <td><span class="badge badge-<?= $vehicle['status'] === 'approved' ? 'success' : 'warning' ?>"><?= ucfirst($vehicle['status']) ?></span></td>
                                 <td>
+                                    <a href="/admin/vehicles/<?= $vehicle['id'] ?>/edit" class="btn btn-secondary" style="padding: 5px 10px;">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </a>
                                     <?php if ($vehicle['status'] === 'pending'): ?>
-                                        <a href="/admin/vehicles/<?= $vehicle['id'] ?>/approve" class="btn btn-primary" style="padding: 5px 10px;">Approve</a>
+                                        <a href="/admin/vehicles/<?= $vehicle['id'] ?>/approve" class="btn btn-primary" style="padding: 5px 10px;">
+                                            <i class="fas fa-check"></i> Approve
+                                        </a>
                                     <?php endif; ?>
+                                    <form method="POST" action="/admin/vehicles/<?= $vehicle['id'] ?>/delete" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this vehicle? This will also delete all related bookings and data. This action cannot be undone.');">
+                                        <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
+                                        <button type="submit" class="btn" style="padding: 5px 10px; background: var(--danger); color: white;">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                    </form>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

@@ -25,8 +25,20 @@ class OwnerController {
     
     public function listings() {
         $ownerId = $_SESSION['user_id'];
-        $vehicles = db()->fetchAll("SELECT * FROM vehicles WHERE owner_id = ? ORDER BY created_at DESC", [$ownerId]);
-        view('owner/listings', compact('vehicles'));
+        $status = $_GET['status'] ?? 'all';
+
+        $sql = "SELECT * FROM vehicles WHERE owner_id = ?";
+        $params = [$ownerId];
+
+        if ($status !== 'all') {
+            $sql .= " AND status = ?";
+            $params[] = $status;
+        }
+
+        $sql .= " ORDER BY created_at DESC";
+
+        $vehicles = db()->fetchAll($sql, $params);
+        view('owner/listings', compact('vehicles', 'status'));
     }
     
     public function addListing() {
@@ -45,15 +57,15 @@ class OwnerController {
             'hourly_rate' => $_POST['hourly_rate'] ?? 0,
             'max_passengers' => $_POST['max_passengers'] ?? 4,
         ];
-        
-        $sql = "INSERT INTO vehicles (owner_id, make, model, year, color, category, description, hourly_rate, max_passengers, status) 
+
+        $sql = "INSERT INTO vehicles (owner_id, make, model, year, color, category, description, hourly_rate, max_passengers, status)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')";
-        
-        db()->execute($sql, [$ownerId, $data['make'], $data['model'], $data['year'], $data['color'], 
+
+        db()->execute($sql, [$ownerId, $data['make'], $data['model'], $data['year'], $data['color'],
                             $data['category'], $data['description'], $data['hourly_rate'], $data['max_passengers']]);
-        
+
         $vehicleId = db()->lastInsertId();
-        
+
         // Handle image uploads
         if (!empty($_FILES['images']['name'][0])) {
             foreach ($_FILES['images']['name'] as $key => $name) {
@@ -65,29 +77,107 @@ class OwnerController {
                         'error' => $_FILES['images']['error'][$key],
                         'size' => $_FILES['images']['size'][$key],
                     ];
-                    
+
                     $path = uploadFile($file, 'vehicles');
                     if ($path) {
-                        db()->execute("INSERT INTO vehicle_images (vehicle_id, image_path, is_primary, display_order) VALUES (?, ?, ?, ?)", 
+                        db()->execute("INSERT INTO vehicle_images (vehicle_id, image_path, is_primary, display_order) VALUES (?, ?, ?, ?)",
                                      [$vehicleId, $path, $key === 0 ? 1 : 0, $key]);
                     }
                 }
             }
         }
-        
+
         logAudit('create_vehicle', 'vehicles', $vehicleId);
         flash('success', 'Vehicle listing submitted for approval');
         redirect('/owner/listings');
     }
-    
+
+    public function editListing($id) {
+        $ownerId = $_SESSION['user_id'];
+
+        // Get vehicle and verify ownership
+        $vehicle = db()->fetch("SELECT * FROM vehicles WHERE id = ? AND owner_id = ?", [$id, $ownerId]);
+
+        if (!$vehicle) {
+            flash('error', 'Vehicle not found or access denied');
+            redirect('/owner/listings');
+        }
+
+        view('owner/edit-listing', compact('vehicle'));
+    }
+
+    public function updateListing($id) {
+        requireAuth('owner');
+
+        // Verify CSRF token
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token. Please try again.');
+            redirect('/owner/listings/' . $id . '/edit');
+        }
+
+        $ownerId = $_SESSION['user_id'];
+
+        // Verify ownership
+        $vehicle = db()->fetch("SELECT id FROM vehicles WHERE id = ? AND owner_id = ?", [$id, $ownerId]);
+        if (!$vehicle) {
+            flash('error', 'Vehicle not found or access denied');
+            redirect('/owner/listings');
+        }
+
+        // Get form data
+        $make = $_POST['make'] ?? '';
+        $model = $_POST['model'] ?? '';
+        $year = $_POST['year'] ?? '';
+        $color = $_POST['color'] ?? '';
+        $category = $_POST['category'] ?? '';
+        $description = $_POST['description'] ?? '';
+        $hourlyRate = $_POST['hourly_rate'] ?? 0;
+        $maxPassengers = $_POST['max_passengers'] ?? 4;
+        $registrationNumber = $_POST['registration_number'] ?? '';
+
+        // Validate required fields
+        if (empty($make) || empty($model) || empty($year) || empty($hourlyRate)) {
+            flash('error', 'Make, model, year, and hourly rate are required');
+            redirect('/owner/listings/' . $id . '/edit');
+        }
+
+        // Update vehicle
+        db()->execute("UPDATE vehicles SET make = ?, model = ?, year = ?, color = ?, category = ?,
+                      description = ?, hourly_rate = ?, max_passengers = ?, registration_number = ?, updated_at = NOW()
+                      WHERE id = ? AND owner_id = ?",
+                     [$make, $model, $year, $color, $category, $description, $hourlyRate, $maxPassengers, $registrationNumber, $id, $ownerId]);
+
+        logAudit('update_vehicle', 'vehicles', $id, [
+            'make' => $make,
+            'model' => $model,
+            'hourly_rate' => $hourlyRate
+        ]);
+
+        flash('success', 'Vehicle updated successfully');
+        redirect('/owner/listings');
+    }
+
     public function bookings() {
         $ownerId = $_SESSION['user_id'];
-        $bookings = db()->fetchAll("SELECT b.*, v.make, v.model, u.first_name, u.last_name 
-                                     FROM bookings b 
-                                     JOIN vehicles v ON b.vehicle_id = v.id 
-                                     JOIN users u ON b.customer_id = u.id 
-                                     WHERE b.owner_id = ? ORDER BY b.booking_date DESC", [$ownerId]);
-        view('owner/bookings', compact('bookings'));
+        $status = $_GET['status'] ?? 'all';
+
+        $sql = "SELECT b.*, v.make, v.model, u.first_name, u.last_name
+                FROM bookings b
+                JOIN vehicles v ON b.vehicle_id = v.id
+                JOIN users u ON b.customer_id = u.id
+                WHERE b.owner_id = ?";
+        $params = [$ownerId];
+
+        if ($status !== 'all') {
+            $sql .= " AND b.status = ?";
+            $params[] = $status;
+        }
+
+        $sql .= " ORDER BY b.booking_date DESC";
+
+        $bookings = db()->fetchAll($sql, $params);
+        view('owner/bookings', compact('bookings', 'status'));
     }
     
     public function calendar() {
@@ -118,6 +208,8 @@ class OwnerController {
         $startDate = $_POST['start_date'] ?? '';
         $endDate = $_POST['end_date'] ?? '';
         $reason = $_POST['reason'] ?? '';
+        $frequency = $_POST['frequency'] ?? 'daily';
+        $customDays = $_POST['days'] ?? [];
 
         // Validate inputs
         if (empty($vehicleId) || empty($startDate) || empty($endDate)) {
@@ -138,32 +230,87 @@ class OwnerController {
             redirect('/owner/calendar');
         }
 
-        // Check for overlapping blocked dates
-        $overlap = db()->fetch("SELECT id FROM vehicle_blocked_dates
-                               WHERE vehicle_id = ?
-                               AND ((start_date <= ? AND end_date >= ?)
-                                    OR (start_date <= ? AND end_date >= ?)
-                                    OR (start_date >= ? AND end_date <= ?))",
-                              [$vehicleId, $startDate, $startDate, $endDate, $endDate, $startDate, $endDate]);
+        // Generate dates based on frequency
+        $datesToBlock = $this->generateBlockDates($startDate, $endDate, $frequency, $customDays);
 
-        if ($overlap) {
-            flash('error', 'Date range overlaps with existing blocked dates');
+        if (empty($datesToBlock)) {
+            flash('error', 'No valid dates to block based on your selection');
             redirect('/owner/calendar');
         }
 
-        // Insert blocked dates
-        db()->execute("INSERT INTO vehicle_blocked_dates (vehicle_id, owner_id, start_date, end_date, reason, created_at)
-                      VALUES (?, ?, ?, ?, ?, NOW())",
-                     [$vehicleId, $ownerId, $startDate, $endDate, $reason]);
+        // Block each date individually
+        $blockedCount = 0;
+        foreach ($datesToBlock as $dateToBlock) {
+            // Check for overlapping blocked dates for this specific date
+            $overlap = db()->fetch("SELECT id FROM vehicle_blocked_dates
+                                   WHERE vehicle_id = ?
+                                   AND ? BETWEEN start_date AND end_date",
+                                  [$vehicleId, $dateToBlock]);
 
-        logAudit('block_vehicle_dates', 'vehicle_blocked_dates', db()->lastInsertId(), [
-            'vehicle_id' => $vehicleId,
-            'start_date' => $startDate,
-            'end_date' => $endDate
-        ]);
+            if (!$overlap) {
+                // Insert blocked date (single day blocks)
+                db()->execute("INSERT INTO vehicle_blocked_dates (vehicle_id, owner_id, start_date, end_date, reason, created_at)
+                              VALUES (?, ?, ?, ?, ?, NOW())",
+                             [$vehicleId, $ownerId, $dateToBlock, $dateToBlock, $reason]);
+                $blockedCount++;
+            }
+        }
 
-        flash('success', 'Dates blocked successfully');
+        if ($blockedCount > 0) {
+            logAudit('block_vehicle_dates', 'vehicle_blocked_dates', null, [
+                'vehicle_id' => $vehicleId,
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'frequency' => $frequency,
+                'blocked_count' => $blockedCount
+            ]);
+
+            flash('success', $blockedCount . ' date(s) blocked successfully');
+        } else {
+            flash('warning', 'No new dates were blocked (all dates already blocked or no matching days)');
+        }
+
         redirect('/owner/calendar');
+    }
+
+    private function generateBlockDates($startDate, $endDate, $frequency, $customDays) {
+        $dates = [];
+        $current = new DateTime($startDate);
+        $end = new DateTime($endDate);
+
+        while ($current <= $end) {
+            $dayOfWeek = (int)$current->format('w'); // 0 = Sunday, 6 = Saturday
+            $shouldBlock = false;
+
+            switch ($frequency) {
+                case 'daily':
+                    $shouldBlock = true;
+                    break;
+
+                case 'weekdays':
+                    // Monday = 1, Friday = 5
+                    $shouldBlock = ($dayOfWeek >= 1 && $dayOfWeek <= 5);
+                    break;
+
+                case 'weekends':
+                    // Saturday = 6, Sunday = 0
+                    $shouldBlock = ($dayOfWeek == 0 || $dayOfWeek == 6);
+                    break;
+
+                case 'custom':
+                    // Check if current day of week is in custom days array
+                    $shouldBlock = in_array((string)$dayOfWeek, $customDays);
+                    break;
+            }
+
+            if ($shouldBlock) {
+                $dates[] = $current->format('Y-m-d');
+            }
+
+            $current->modify('+1 day');
+        }
+
+        return $dates;
     }
 
     public function unblockDate() {
@@ -215,26 +362,61 @@ class OwnerController {
     
     public function payouts() {
         $ownerId = $_SESSION['user_id'];
-        $payouts = db()->fetchAll("SELECT * FROM payouts WHERE owner_id = ? ORDER BY created_at DESC", [$ownerId]);
-        view('owner/payouts', compact('payouts'));
+        $status = $_GET['status'] ?? 'all';
+
+        $sql = "SELECT * FROM payouts WHERE owner_id = ?";
+        $params = [$ownerId];
+
+        if ($status !== 'all') {
+            $sql .= " AND status = ?";
+            $params[] = $status;
+        }
+
+        $sql .= " ORDER BY created_at DESC";
+
+        $payouts = db()->fetchAll($sql, $params);
+        view('owner/payouts', compact('payouts', 'status'));
     }
     
     public function reviews() {
         $ownerId = $_SESSION['user_id'];
-        $reviews = db()->fetchAll("SELECT r.*, v.make, v.model, u.first_name, u.last_name 
-                                    FROM reviews r 
-                                    JOIN vehicles v ON r.vehicle_id = v.id 
-                                    JOIN users u ON r.customer_id = u.id 
-                                    WHERE r.owner_id = ? ORDER BY r.created_at DESC", [$ownerId]);
-        view('owner/reviews', compact('reviews'));
+        $rating = $_GET['rating'] ?? 'all';
+
+        $sql = "SELECT r.*, v.make, v.model, u.first_name, u.last_name
+                FROM reviews r
+                JOIN vehicles v ON r.vehicle_id = v.id
+                JOIN users u ON r.customer_id = u.id
+                WHERE r.owner_id = ?";
+        $params = [$ownerId];
+
+        if ($rating !== 'all') {
+            $sql .= " AND r.rating = ?";
+            $params[] = $rating;
+        }
+
+        $sql .= " ORDER BY r.created_at DESC";
+
+        $reviews = db()->fetchAll($sql, $params);
+        view('owner/reviews', compact('reviews', 'rating'));
     }
     
     public function messages() {
         $ownerId = $_SESSION['user_id'];
-        $messages = db()->fetchAll("SELECT m.*, u.first_name, u.last_name FROM messages m 
-                                     JOIN users u ON m.from_user_id = u.id 
-                                     WHERE m.to_user_id = ? ORDER BY m.created_at DESC", [$ownerId]);
-        view('owner/messages', compact('messages'));
+        $status = $_GET['status'] ?? 'all';
+
+        $sql = "SELECT m.*, u.first_name, u.last_name FROM messages m
+                JOIN users u ON m.from_user_id = u.id
+                WHERE m.to_user_id = ?";
+        $params = [$ownerId];
+
+        if ($status !== 'all') {
+            $sql .= " AND m.read_at " . ($status === 'read' ? 'IS NOT NULL' : 'IS NULL');
+        }
+
+        $sql .= " ORDER BY m.created_at DESC";
+
+        $messages = db()->fetchAll($sql, $params);
+        view('owner/messages', compact('messages', 'status'));
     }
     
     public function pendingChanges() {

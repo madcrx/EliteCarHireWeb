@@ -1,7 +1,19 @@
 <?php ob_start(); ?>
 <div class="container dashboard">
     <h1>My Bookings</h1>
-    
+
+    <div class="card" style="margin-bottom: 1.5rem;">
+        <div style="margin-bottom: 0;">
+            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--dark-gray);">Filter by Status:</label>
+            <a href="/customer/bookings?status=all" class="btn <?= $status === 'all' ? 'btn-primary' : 'btn-secondary' ?>">All</a>
+            <a href="/customer/bookings?status=pending" class="btn <?= $status === 'pending' ? 'btn-primary' : 'btn-secondary' ?>">Pending</a>
+            <a href="/customer/bookings?status=confirmed" class="btn <?= $status === 'confirmed' ? 'btn-primary' : 'btn-secondary' ?>">Confirmed</a>
+            <a href="/customer/bookings?status=in_progress" class="btn <?= $status === 'in_progress' ? 'btn-primary' : 'btn-secondary' ?>">In Progress</a>
+            <a href="/customer/bookings?status=completed" class="btn <?= $status === 'completed' ? 'btn-primary' : 'btn-secondary' ?>">Completed</a>
+            <a href="/customer/bookings?status=cancelled" class="btn <?= $status === 'cancelled' ? 'btn-primary' : 'btn-secondary' ?>">Cancelled</a>
+        </div>
+    </div>
+
     <div class="card">
         <div class="table-container">
             <table>

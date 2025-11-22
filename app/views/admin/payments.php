@@ -5,6 +5,16 @@
     <div class="main-content">
         <h1>Payments</h1>
 
+        <div class="card" style="margin-bottom: 1.5rem;">
+            <div style="margin-bottom: 0;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--dark-gray);">Filter by Status:</label>
+                <a href="/admin/payments?status=all" class="btn <?= $status === 'all' ? 'btn-primary' : 'btn-secondary' ?>">All</a>
+                <a href="/admin/payments?status=completed" class="btn <?= $status === 'completed' ? 'btn-primary' : 'btn-secondary' ?>">Completed</a>
+                <a href="/admin/payments?status=pending" class="btn <?= $status === 'pending' ? 'btn-primary' : 'btn-secondary' ?>">Pending</a>
+                <a href="/admin/payments?status=failed" class="btn <?= $status === 'failed' ? 'btn-primary' : 'btn-secondary' ?>">Failed</a>
+            </div>
+        </div>
+
         <?php if (empty($payments)): ?>
             <div class="card">
                 <p>No payment records found.</p>

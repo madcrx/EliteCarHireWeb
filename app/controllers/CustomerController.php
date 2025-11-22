@@ -28,10 +28,22 @@ class CustomerController {
     
     public function bookings() {
         $customerId = $_SESSION['user_id'];
-        $bookings = db()->fetchAll("SELECT b.*, v.make, v.model, v.year FROM bookings b 
-                                     JOIN vehicles v ON b.vehicle_id = v.id 
-                                     WHERE b.customer_id = ? ORDER BY b.created_at DESC", [$customerId]);
-        view('customer/bookings', compact('bookings'));
+        $status = $_GET['status'] ?? 'all';
+
+        $sql = "SELECT b.*, v.make, v.model, v.year FROM bookings b
+                JOIN vehicles v ON b.vehicle_id = v.id
+                WHERE b.customer_id = ?";
+        $params = [$customerId];
+
+        if ($status !== 'all') {
+            $sql .= " AND b.status = ?";
+            $params[] = $status;
+        }
+
+        $sql .= " ORDER BY b.created_at DESC";
+
+        $bookings = db()->fetchAll($sql, $params);
+        view('customer/bookings', compact('bookings', 'status'));
     }
     
     public function profile() {

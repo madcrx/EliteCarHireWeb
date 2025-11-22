@@ -5,6 +5,16 @@
     <div class="main-content">
         <h1>Disputes</h1>
 
+        <div class="card" style="margin-bottom: 1.5rem;">
+            <div style="margin-bottom: 0;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--dark-gray);">Filter by Status:</label>
+                <a href="/admin/disputes?status=all" class="btn <?= $status === 'all' ? 'btn-primary' : 'btn-secondary' ?>">All</a>
+                <a href="/admin/disputes?status=pending" class="btn <?= $status === 'pending' ? 'btn-primary' : 'btn-secondary' ?>">Pending</a>
+                <a href="/admin/disputes?status=in_review" class="btn <?= $status === 'in_review' ? 'btn-primary' : 'btn-secondary' ?>">In Review</a>
+                <a href="/admin/disputes?status=resolved" class="btn <?= $status === 'resolved' ? 'btn-primary' : 'btn-secondary' ?>">Resolved</a>
+            </div>
+        </div>
+
         <?php if (empty($disputes)): ?>
             <div class="card">
                 <p>No disputes to review.</p>

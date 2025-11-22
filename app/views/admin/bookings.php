@@ -5,7 +5,27 @@
         <div class="dashboard-header">
             <h1>All Bookings</h1>
         </div>
-        
+
+        <div class="card">
+            <div style="margin-bottom: 1.5rem; display: flex; gap: 1rem; flex-wrap: wrap;">
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--dark-gray);">Booking Status:</label>
+                    <a href="/admin/bookings?status=all&payment_status=<?= $paymentStatus ?>" class="btn <?= $status === 'all' ? 'btn-primary' : 'btn-secondary' ?>">All</a>
+                    <a href="/admin/bookings?status=pending&payment_status=<?= $paymentStatus ?>" class="btn <?= $status === 'pending' ? 'btn-primary' : 'btn-secondary' ?>">Pending</a>
+                    <a href="/admin/bookings?status=confirmed&payment_status=<?= $paymentStatus ?>" class="btn <?= $status === 'confirmed' ? 'btn-primary' : 'btn-secondary' ?>">Confirmed</a>
+                    <a href="/admin/bookings?status=completed&payment_status=<?= $paymentStatus ?>" class="btn <?= $status === 'completed' ? 'btn-primary' : 'btn-secondary' ?>">Completed</a>
+                    <a href="/admin/bookings?status=cancelled&payment_status=<?= $paymentStatus ?>" class="btn <?= $status === 'cancelled' ? 'btn-primary' : 'btn-secondary' ?>">Cancelled</a>
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--dark-gray);">Payment Status:</label>
+                    <a href="/admin/bookings?status=<?= $status ?>&payment_status=all" class="btn <?= $paymentStatus === 'all' ? 'btn-primary' : 'btn-secondary' ?>">All</a>
+                    <a href="/admin/bookings?status=<?= $status ?>&payment_status=pending" class="btn <?= $paymentStatus === 'pending' ? 'btn-primary' : 'btn-secondary' ?>">Pending</a>
+                    <a href="/admin/bookings?status=<?= $status ?>&payment_status=paid" class="btn <?= $paymentStatus === 'paid' ? 'btn-primary' : 'btn-secondary' ?>">Paid</a>
+                    <a href="/admin/bookings?status=<?= $status ?>&payment_status=refunded" class="btn <?= $paymentStatus === 'refunded' ? 'btn-primary' : 'btn-secondary' ?>">Refunded</a>
+                </div>
+            </div>
+        </div>
+
         <div class="card">
             <div class="table-container">
                 <table>
