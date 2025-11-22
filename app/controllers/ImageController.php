@@ -6,7 +6,14 @@ class ImageController {
     public function index() {
         requireAuth('admin');
 
-        $images = db()->fetchAll("SELECT * FROM site_images ORDER BY image_type, title");
+        try {
+            $images = db()->fetchAll("SELECT * FROM site_images ORDER BY image_type, title");
+        } catch (\PDOException $e) {
+            error_log("Image index error: " . $e->getMessage());
+            flash('error', 'Database error: Unable to load images. Please ensure Phase 2 database updates have been run.');
+            $images = [];
+        }
+
         view('admin/images', compact('images'));
     }
 
@@ -68,14 +75,22 @@ class ImageController {
         }
 
         // Update database
-        $currentImage = db()->fetch("SELECT image_path FROM site_images WHERE image_key = ?", [$imageKey]);
+        try {
+            $currentImage = db()->fetch("SELECT image_path FROM site_images WHERE image_key = ?", [$imageKey]);
 
-        db()->execute("UPDATE site_images SET image_path = ?, updated_at = NOW(), uploaded_by = ? WHERE image_key = ?",
-                     [$webPath, $_SESSION['user_id'], $imageKey]);
+            db()->execute("UPDATE site_images SET image_path = ?, updated_at = NOW(), uploaded_by = ? WHERE image_key = ?",
+                         [$webPath, $_SESSION['user_id'], $imageKey]);
 
-        logAudit('update_site_image', 'site_images', null, ['image_key' => $imageKey, 'new_path' => $webPath]);
+            logAudit('update_site_image', 'site_images', null, ['image_key' => $imageKey, 'new_path' => $webPath]);
 
-        flash('success', 'Image uploaded successfully');
+            flash('success', 'Image uploaded successfully');
+        } catch (\PDOException $e) {
+            error_log("Image upload database error: " . $e->getMessage());
+            // Delete the uploaded file since database update failed
+            @unlink($uploadPath);
+            flash('error', 'Database error: Unable to save image. Please ensure Phase 2 database updates have been run.');
+        }
+
         redirect('/admin/images');
     }
 
@@ -96,21 +111,27 @@ class ImageController {
             redirect('/admin/images');
         }
 
-        // Get default path
-        $image = db()->fetch("SELECT default_image_path FROM site_images WHERE image_key = ?", [$imageKey]);
+        try {
+            // Get default path
+            $image = db()->fetch("SELECT default_image_path FROM site_images WHERE image_key = ?", [$imageKey]);
 
-        if (!$image) {
-            flash('error', 'Image not found');
-            redirect('/admin/images');
+            if (!$image) {
+                flash('error', 'Image not found');
+                redirect('/admin/images');
+            }
+
+            // Revert to default
+            db()->execute("UPDATE site_images SET image_path = default_image_path, updated_at = NOW() WHERE image_key = ?",
+                         [$imageKey]);
+
+            logAudit('revert_site_image', 'site_images', null, ['image_key' => $imageKey]);
+
+            flash('success', 'Image reverted to default');
+        } catch (\PDOException $e) {
+            error_log("Image revert error: " . $e->getMessage());
+            flash('error', 'Database error: Unable to revert image. Please ensure Phase 2 database updates have been run.');
         }
 
-        // Revert to default
-        db()->execute("UPDATE site_images SET image_path = default_image_path, updated_at = NOW() WHERE image_key = ?",
-                     [$imageKey]);
-
-        logAudit('revert_site_image', 'site_images', null, ['image_key' => $imageKey]);
-
-        flash('success', 'Image reverted to default');
         redirect('/admin/images');
     }
 }
