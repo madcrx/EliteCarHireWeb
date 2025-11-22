@@ -118,28 +118,38 @@ function sendEmail($to, $subject, $body) {
 }
 
 function logAudit($action, $entityType = null, $entityId = null, $oldValues = null, $newValues = null) {
-    $userId = $_SESSION['user_id'] ?? null;
-    $ipAddress = $_SERVER['REMOTE_ADDR'] ?? '';
-    $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
-    
-    $sql = "INSERT INTO audit_logs (user_id, action, entity_type, entity_id, ip_address, user_agent, old_values, new_values) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-    
-    db()->execute($sql, [
-        $userId,
-        $action,
-        $entityType,
-        $entityId,
-        $ipAddress,
-        $userAgent,
-        $oldValues ? json_encode($oldValues) : null,
-        $newValues ? json_encode($newValues) : null
-    ]);
+    try {
+        $userId = $_SESSION['user_id'] ?? null;
+        $ipAddress = $_SERVER['REMOTE_ADDR'] ?? '';
+        $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
+
+        $sql = "INSERT INTO audit_logs (user_id, action, entity_type, entity_id, ip_address, user_agent, old_values, new_values)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+
+        db()->execute($sql, [
+            $userId,
+            $action,
+            $entityType,
+            $entityId,
+            $ipAddress,
+            $userAgent,
+            $oldValues ? json_encode($oldValues) : null,
+            $newValues ? json_encode($newValues) : null
+        ]);
+    } catch (\PDOException $e) {
+        // Log audit errors silently - don't break the application
+        error_log("Audit log error: " . $e->getMessage());
+    }
 }
 
 function createNotification($userId, $type, $title, $message, $link = null) {
-    $sql = "INSERT INTO notifications (user_id, type, title, message, link) VALUES (?, ?, ?, ?, ?)";
-    db()->execute($sql, [$userId, $type, $title, $message, $link]);
+    try {
+        $sql = "INSERT INTO notifications (user_id, type, title, message, link) VALUES (?, ?, ?, ?, ?)";
+        db()->execute($sql, [$userId, $type, $title, $message, $link]);
+    } catch (\PDOException $e) {
+        // Log notification errors silently - don't break the application
+        error_log("Create notification error: " . $e->getMessage());
+    }
 }
 
 function asset($path) {

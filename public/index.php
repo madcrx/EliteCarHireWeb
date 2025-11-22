@@ -38,6 +38,8 @@ $router->get('/logout', 'AuthController@logout');
 $router->get('/admin/dashboard', 'AdminController@dashboard');
 $router->get('/admin/users', 'AdminController@users');
 $router->get('/admin/users/{id}', 'AdminController@viewUser');
+$router->get('/admin/users/{id}/edit', 'AdminController@editUser');
+$router->post('/admin/users/{id}/update', 'AdminController@updateUser');
 $router->post('/admin/users/{id}/approve', 'AdminController@approveUser');
 $router->post('/admin/users/{id}/reject', 'AdminController@rejectUser');
 $router->get('/admin/vehicles', 'AdminController@vehicles');
@@ -52,9 +54,13 @@ $router->get('/admin/audit-logs', 'AdminController@auditLogs');
 $router->get('/admin/cms', 'AdminController@cms');
 $router->post('/admin/cms/save', 'AdminController@saveCms');
 $router->get('/admin/settings', 'AdminController@settings');
+$router->post('/admin/settings/save', 'AdminController@saveSettings');
 $router->get('/admin/pending-changes', 'AdminController@pendingChanges');
 $router->post('/admin/pending-changes/{id}/approve', 'AdminController@approvePendingChange');
 $router->get('/admin/contact-submissions', 'AdminController@contactSubmissions');
+$router->get('/admin/images', 'ImageController@index');
+$router->post('/admin/images/upload', 'ImageController@upload');
+$router->post('/admin/images/revert', 'ImageController@revertToDefault');
 
 // Owner routes
 $router->get('/owner/dashboard', 'OwnerController@dashboard');
@@ -65,6 +71,8 @@ $router->get('/owner/listings/{id}/edit', 'OwnerController@editListing');
 $router->post('/owner/listings/{id}/edit', 'OwnerController@updateListing');
 $router->get('/owner/bookings', 'OwnerController@bookings');
 $router->get('/owner/calendar', 'OwnerController@calendar');
+$router->post('/owner/calendar/block', 'OwnerController@blockDates');
+$router->post('/owner/calendar/unblock', 'OwnerController@unblockDate');
 $router->get('/owner/analytics', 'OwnerController@analytics');
 $router->get('/owner/payouts', 'OwnerController@payouts');
 $router->get('/owner/reviews', 'OwnerController@reviews');
@@ -87,6 +95,9 @@ $router->get('/privacy', 'PublicController@privacy');
 $router->get('/faq', 'PublicController@faq');
 $router->get('/contact', 'PublicController@contact');
 $router->post('/contact/submit', 'PublicController@submitContact');
+$router->get('/about', 'PublicController@about');
+$router->get('/services', 'PublicController@services');
+$router->get('/support', 'PublicController@support');
 
 // API routes for AJAX
 $router->post('/api/payment/process', 'PaymentController@process');

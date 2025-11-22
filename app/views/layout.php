@@ -20,7 +20,9 @@
                     <span class="user-name"><?= e($_SESSION['name']) ?></span>
                 <?php else: ?>
                     <a href="/">Home</a>
-                    <a href="/vehicles">Vehicles</a>
+                    <a href="/vehicles">Fleet</a>
+                    <a href="/services">Services</a>
+                    <a href="/about">About</a>
                     <a href="/contact">Contact</a>
                     <a href="/login" class="btn btn-primary">Login</a>
                 <?php endif; ?>
@@ -50,16 +52,16 @@
                 <div>
                     <h3>Elite Car Hire</h3>
                     <p>Melbourne's premier luxury vehicle hire service</p>
-                    <p><i class="fas fa-phone"></i> 1300 ECHIRE (1300 324 473)</p>
-                    <p><i class="fas fa-envelope"></i> info@elitecarhire.au</p>
+                    <p><i class="fas fa-phone"></i> 0406 907 849</p>
+                    <p><i class="fas fa-envelope"></i> support@elitecarhire.au</p>
                 </div>
                 <div>
                     <h3>Quick Links</h3>
                     <ul>
                         <li><a href="/vehicles">Our Fleet</a></li>
-                        <li><a href="/faq">FAQ</a></li>
-                        <li><a href="/contact">Contact Us</a></li>
-                        <li><a href="/support">Support</a></li>
+                        <li><a href="/services">Services</a></li>
+                        <li><a href="/about">About Us</a></li>
+                        <li><a href="/contact">Support</a></li>
                     </ul>
                 </div>
                 <div>
@@ -76,6 +78,6 @@
         </div>
     </footer>
 
-    <script src="/assets/js/app.js"></script>
+    <script src="/assets/js/app.min.js"></script>
 </body>
 </html>

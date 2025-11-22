@@ -12,9 +12,16 @@ class AuthController {
     }
     
     public function login() {
+        // Verify CSRF token
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token. Please try again.');
+            redirect('/login');
+        }
+
         $email = $_POST['email'] ?? '';
         $password = $_POST['password'] ?? '';
-        
+
         if (empty($email) || empty($password)) {
             flash('error', 'Email and password are required');
             redirect('/login');
@@ -55,6 +62,13 @@ class AuthController {
     }
     
     public function register() {
+        // Verify CSRF token
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token. Please try again.');
+            redirect('/register');
+        }
+
         $email = $_POST['email'] ?? '';
         $password = $_POST['password'] ?? '';
         $passwordConfirm = $_POST['password_confirm'] ?? '';
@@ -62,7 +76,7 @@ class AuthController {
         $lastName = $_POST['last_name'] ?? '';
         $phone = $_POST['phone'] ?? '';
         $role = $_POST['role'] ?? 'customer';
-        
+
         // Validation
         $errors = [];
         

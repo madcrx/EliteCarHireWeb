@@ -4,16 +4,18 @@
         <h2 style="text-align: center; color: var(--primary-gold); margin-bottom: 2rem;">Login to Elite Car Hire</h2>
         
         <form method="POST" action="/login">
+            <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
+
             <div class="form-group">
                 <label>Email</label>
                 <input type="email" name="email" required>
             </div>
-            
+
             <div class="form-group">
                 <label>Password</label>
                 <input type="password" name="password" required>
             </div>
-            
+
             <button type="submit" class="btn btn-primary" style="width: 100%;">Login</button>
         </form>
         
