@@ -42,6 +42,8 @@ $router->get('/admin/users/{id}/edit', 'AdminController@editUser');
 $router->post('/admin/users/{id}/update', 'AdminController@updateUser');
 $router->post('/admin/users/{id}/approve', 'AdminController@approveUser');
 $router->post('/admin/users/{id}/reject', 'AdminController@rejectUser');
+$router->post('/admin/users/{id}/change-status', 'AdminController@changeUserStatus');
+$router->post('/admin/users/{id}/delete', 'AdminController@deleteUser');
 $router->get('/admin/vehicles', 'AdminController@vehicles');
 $router->get('/admin/vehicles/{id}/approve', 'AdminController@approveVehicle');
 $router->get('/admin/bookings', 'AdminController@bookings');

@@ -169,6 +169,78 @@ class AdminController {
         redirect('/admin/users/' . $id);
     }
 
+    public function changeUserStatus($id) {
+        requireAuth('admin');
+
+        // Verify CSRF token
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token. Please try again.');
+            redirect('/admin/users');
+        }
+
+        $status = $_POST['status'] ?? '';
+        $allowedStatuses = ['active', 'suspended', 'rejected', 'pending'];
+
+        if (!in_array($status, $allowedStatuses)) {
+            flash('error', 'Invalid status');
+            redirect('/admin/users');
+        }
+
+        $user = db()->fetch("SELECT * FROM users WHERE id = ?", [$id]);
+        if (!$user) {
+            flash('error', 'User not found');
+            redirect('/admin/users');
+        }
+
+        db()->execute("UPDATE users SET status = ?, updated_at = NOW() WHERE id = ?", [$status, $id]);
+
+        // Notify user
+        $statusMessages = [
+            'active' => 'Your account has been activated',
+            'suspended' => 'Your account has been suspended',
+            'rejected' => 'Your account has been rejected',
+            'pending' => 'Your account is pending review'
+        ];
+        createNotification($id, 'status_change', 'Account Status Changed', $statusMessages[$status]);
+
+        logAudit('change_user_status', 'users', $id, ['old_status' => $user['status']], ['new_status' => $status]);
+
+        flash('success', 'User status changed to ' . $status);
+        redirect('/admin/users');
+    }
+
+    public function deleteUser($id) {
+        requireAuth('admin');
+
+        // Verify CSRF token
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token. Please try again.');
+            redirect('/admin/users');
+        }
+
+        $user = db()->fetch("SELECT * FROM users WHERE id = ?", [$id]);
+        if (!$user) {
+            flash('error', 'User not found');
+            redirect('/admin/users');
+        }
+
+        // Prevent deleting your own account
+        if ($id == $_SESSION['user_id']) {
+            flash('error', 'You cannot delete your own account');
+            redirect('/admin/users');
+        }
+
+        // Delete user (cascade delete will handle related records)
+        db()->execute("DELETE FROM users WHERE id = ?", [$id]);
+
+        logAudit('delete_user', 'users', $id, $user);
+
+        flash('success', 'User deleted successfully');
+        redirect('/admin/users');
+    }
+
     public function vehicles() {
         $status = $_GET['status'] ?? 'all';
         
