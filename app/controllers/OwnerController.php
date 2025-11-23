@@ -3,7 +3,23 @@ namespace controllers;
 
 class OwnerController {
     public function __construct() {
-        requireAuth('owner');
+        try {
+            error_log("OwnerController::__construct() - Start");
+            error_log("OwnerController::__construct() - Session role: " . ($_SESSION['role'] ?? 'NOT SET'));
+            error_log("OwnerController::__construct() - Session user_id: " . ($_SESSION['user_id'] ?? 'NOT SET'));
+
+            requireAuth('owner');
+
+            error_log("OwnerController::__construct() - Auth check passed");
+        } catch (Exception $e) {
+            error_log("OwnerController::__construct() - Exception: " . $e->getMessage());
+            error_log("OwnerController::__construct() - Stack trace: " . $e->getTraceAsString());
+            throw $e;
+        } catch (Error $e) {
+            error_log("OwnerController::__construct() - Fatal Error: " . $e->getMessage());
+            error_log("OwnerController::__construct() - Stack trace: " . $e->getTraceAsString());
+            throw $e;
+        }
     }
     
     public function dashboard() {
