@@ -241,8 +241,8 @@
             ?>
             <div class="card" style="padding: 0;">
                 <div style="padding: 1rem 1.5rem; border-bottom: 1px solid var(--medium-gray); background: var(--light-gray);">
-                    <strong style="display: block; margin-bottom: 0.5rem;"><i class="fas fa-car"></i> Select Vehicle to Block Dates:</strong>
-                    <p style="margin: 0; font-size: 0.9rem; color: var(--dark-gray);">Click a vehicle to select it, then click dates on the calendar to block/unblock.</p>
+                    <strong style="display: block; margin-bottom: 0.5rem;"><i class="fas fa-car"></i> Select Vehicles to Block Dates:</strong>
+                    <p style="margin: 0; font-size: 0.9rem; color: var(--dark-gray);">Click one or more vehicles to select them, then click dates on the calendar to block/unblock. Click selected vehicles again to deselect.</p>
                 </div>
                 <div class="vehicle-selector">
                     <?php
@@ -279,7 +279,7 @@
                             </select>
                         </div>
                         <div id="selectedVehicleIndicator" style="color: var(--dark-gray); font-style: italic;">
-                            No vehicle selected for blocking
+                            No vehicles selected for blocking
                         </div>
                     </div>
 
@@ -458,35 +458,57 @@ const blockedDates = <?= json_encode($blockedDates) ?>;
 const vehicleColors = <?= json_encode($colors) ?>;
 
 let currentDate = new Date();
-let selectedVehicleId = null;
-let selectedVehicleColor = null;
+let selectedVehicleIds = []; // Changed to array for multiple selection
 let calendarFilterVehicleId = 'all';
 
-function selectVehicle(vehicleId, color) {
-    // Uncheck all checkboxes
-    document.querySelectorAll('.vehicle-checkbox').forEach(cb => cb.checked = false);
-    document.querySelectorAll('.vehicle-checkbox-item').forEach(item => item.classList.remove('selected'));
+// Helper function to format date without timezone issues
+function formatDateLocal(year, month, day) {
+    const y = year.toString().padStart(4, '0');
+    const m = (month + 1).toString().padStart(2, '0');
+    const d = day.toString().padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
 
-    // Check clicked checkbox
+// Helper function to parse date string to local date
+function parseLocalDate(dateStr) {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return new Date(year, month - 1, day);
+}
+
+function selectVehicle(vehicleId, color) {
     const checkbox = document.getElementById('vehicle_' + vehicleId);
     const item = checkbox.closest('.vehicle-checkbox-item');
 
-    if (selectedVehicleId === vehicleId) {
-        // Deselect if clicking same vehicle
-        selectedVehicleId = null;
-        selectedVehicleColor = null;
-        document.getElementById('selectedVehicleIndicator').textContent = 'No vehicle selected for blocking';
+    const index = selectedVehicleIds.indexOf(vehicleId);
+
+    if (index > -1) {
+        // Deselect vehicle
+        selectedVehicleIds.splice(index, 1);
+        checkbox.checked = false;
+        item.classList.remove('selected');
     } else {
-        // Select new vehicle
+        // Select vehicle
+        selectedVehicleIds.push(vehicleId);
         checkbox.checked = true;
         item.classList.add('selected');
-        selectedVehicleId = vehicleId;
-        selectedVehicleColor = color;
+    }
 
-        const vehicleName = vehicles.find(v => v.id == vehicleId);
-        document.getElementById('selectedVehicleIndicator').innerHTML =
-            '<i class="fas fa-car"></i> Click dates to block: <strong>' +
+    // Update indicator
+    updateSelectedVehicleIndicator();
+}
+
+function updateSelectedVehicleIndicator() {
+    const indicator = document.getElementById('selectedVehicleIndicator');
+
+    if (selectedVehicleIds.length === 0) {
+        indicator.textContent = 'No vehicles selected for blocking';
+    } else if (selectedVehicleIds.length === 1) {
+        const vehicleName = vehicles.find(v => v.id == selectedVehicleIds[0]);
+        indicator.innerHTML = '<i class="fas fa-car"></i> Click dates to block: <strong>' +
             vehicleName.make + ' ' + vehicleName.model + '</strong>';
+    } else {
+        indicator.innerHTML = '<i class="fas fa-car"></i> Click dates to block: <strong>' +
+            selectedVehicleIds.length + ' vehicles selected</strong>';
     }
 }
 
@@ -551,11 +573,15 @@ function createDayCell(day, year, month, isOtherMonth) {
     if (isOtherMonth) dayDiv.classList.add('other-month');
 
     const date = new Date(year, month, day);
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = formatDateLocal(year, month, day); // Fixed: use local date formatting
 
     // Check if today
     const today = new Date();
-    if (date.toDateString() === today.toDateString()) {
+    today.setHours(0, 0, 0, 0);
+    const compareDate = new Date(year, month, day);
+    compareDate.setHours(0, 0, 0, 0);
+
+    if (compareDate.getTime() === today.getTime()) {
         dayDiv.classList.add('today');
     }
 
@@ -571,15 +597,15 @@ function createDayCell(day, year, month, isOtherMonth) {
 
     // Find blocks for this date (filtered by selected vehicle if applicable)
     blockedDates.forEach((block, index) => {
-        const blockStart = new Date(block.start_date);
-        const blockEnd = new Date(block.end_date);
+        const blockStart = parseLocalDate(block.start_date);
+        const blockEnd = parseLocalDate(block.end_date);
 
         // Check filter
         if (calendarFilterVehicleId !== 'all' && block.vehicle_id != calendarFilterVehicleId) {
             return;
         }
 
-        if (date >= blockStart && date <= blockEnd) {
+        if (compareDate >= blockStart && compareDate <= blockEnd) {
             const vehicleIndex = vehicles.findIndex(v => v.id == block.vehicle_id);
             const color = vehicleColors[vehicleIndex % vehicleColors.length];
 
@@ -595,7 +621,7 @@ function createDayCell(day, year, month, isOtherMonth) {
     dayDiv.appendChild(blocksDiv);
 
     // Click handler (only for current/future dates)
-    if (!isOtherMonth && date >= new Date(today.setHours(0,0,0,0))) {
+    if (!isOtherMonth && compareDate >= today) {
         dayDiv.onclick = () => handleDayClick(dateStr);
     }
 
@@ -603,91 +629,86 @@ function createDayCell(day, year, month, isOtherMonth) {
 }
 
 function handleDayClick(dateStr) {
-    if (!selectedVehicleId) {
-        alert('Please select a vehicle first by clicking on it above the calendar.');
+    if (selectedVehicleIds.length === 0) {
+        alert('Please select at least one vehicle first by clicking on it above the calendar.');
         return;
     }
 
-    // Check if this date is already blocked for selected vehicle
-    const existingBlock = blockedDates.find(block => {
-        const blockStart = new Date(block.start_date);
-        const blockEnd = new Date(block.end_date);
-        const clickedDate = new Date(dateStr);
-        return block.vehicle_id == selectedVehicleId &&
-               clickedDate >= blockStart && clickedDate <= blockEnd;
-    });
+    const clickedDate = parseLocalDate(dateStr);
 
-    if (existingBlock) {
-        // Unblock
-        if (confirm('This date is already blocked. Do you want to unblock it?')) {
-            unblockDate(existingBlock.id);
+    // Process each selected vehicle
+    selectedVehicleIds.forEach(vehicleId => {
+        // Check if this date is already blocked for this vehicle
+        const existingBlock = blockedDates.find(block => {
+            const blockStart = parseLocalDate(block.start_date);
+            const blockEnd = parseLocalDate(block.end_date);
+            return block.vehicle_id == vehicleId &&
+                   clickedDate >= blockStart && clickedDate <= blockEnd;
+        });
+
+        if (existingBlock) {
+            // Unblock
+            if (confirm(`This date is already blocked for ${existingBlock.make} ${existingBlock.model}. Do you want to unblock it?`)) {
+                unblockDate(existingBlock.id);
+            }
+        } else {
+            // Block the single day
+            blockSingleDay(dateStr, vehicleId);
         }
-    } else {
-        // Block the single day
-        blockSingleDay(dateStr);
+    });
+}
+
+async function blockSingleDay(dateStr, vehicleId) {
+    try {
+        const formData = new FormData();
+        formData.append('csrf_token', '<?= csrfToken() ?>');
+        formData.append('vehicle_id', vehicleId);
+        formData.append('start_date', dateStr);
+        formData.append('end_date', dateStr);
+        formData.append('frequency', 'daily');
+
+        const response = await fetch('/owner/calendar/block', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (response.ok) {
+            // Save scroll position before reload
+            sessionStorage.setItem('calendarScrollPos', window.scrollY);
+            // Reload the page to refresh data
+            window.location.reload();
+        } else {
+            alert('Error blocking date. Please try again.');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error blocking date. Please try again.');
     }
 }
 
-function blockSingleDay(dateStr) {
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = '/owner/calendar/block';
+async function unblockDate(blockId) {
+    try {
+        const formData = new FormData();
+        formData.append('csrf_token', '<?= csrfToken() ?>');
+        formData.append('block_id', blockId);
 
-    const csrf = document.createElement('input');
-    csrf.type = 'hidden';
-    csrf.name = 'csrf_token';
-    csrf.value = '<?= csrfToken() ?>';
+        const response = await fetch('/owner/calendar/unblock', {
+            method: 'POST',
+            body: formData
+        });
 
-    const vehicleInput = document.createElement('input');
-    vehicleInput.type = 'hidden';
-    vehicleInput.name = 'vehicle_id';
-    vehicleInput.value = selectedVehicleId;
-
-    const startInput = document.createElement('input');
-    startInput.type = 'hidden';
-    startInput.name = 'start_date';
-    startInput.value = dateStr;
-
-    const endInput = document.createElement('input');
-    endInput.type = 'hidden';
-    endInput.name = 'end_date';
-    endInput.value = dateStr;
-
-    const freqInput = document.createElement('input');
-    freqInput.type = 'hidden';
-    freqInput.name = 'frequency';
-    freqInput.value = 'daily';
-
-    form.appendChild(csrf);
-    form.appendChild(vehicleInput);
-    form.appendChild(startInput);
-    form.appendChild(endInput);
-    form.appendChild(freqInput);
-
-    document.body.appendChild(form);
-    form.submit();
-}
-
-function unblockDate(blockId) {
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = '/owner/calendar/unblock';
-
-    const csrf = document.createElement('input');
-    csrf.type = 'hidden';
-    csrf.name = 'csrf_token';
-    csrf.value = '<?= csrfToken() ?>';
-
-    const blockInput = document.createElement('input');
-    blockInput.type = 'hidden';
-    blockInput.name = 'block_id';
-    blockInput.value = blockId;
-
-    form.appendChild(csrf);
-    form.appendChild(blockInput);
-
-    document.body.appendChild(form);
-    form.submit();
+        if (response.ok) {
+            // Save scroll position before reload
+            sessionStorage.setItem('calendarScrollPos', window.scrollY);
+            // Reload the page to refresh data
+            window.location.reload();
+        } else {
+            alert('Error unblocking date. Please try again.');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error unblocking date. Please try again.');
+    }
 }
 
 function changeMonth(delta) {
@@ -725,6 +746,13 @@ function toggleDay(element, dayValue) {
 // Initialize calendar on page load
 document.addEventListener('DOMContentLoaded', () => {
     renderCalendar();
+
+    // Restore scroll position if returning from a block/unblock action
+    const savedScrollPos = sessionStorage.getItem('calendarScrollPos');
+    if (savedScrollPos) {
+        window.scrollTo(0, parseInt(savedScrollPos));
+        sessionStorage.removeItem('calendarScrollPos');
+    }
 });
 
 // Auto-update end date minimum
