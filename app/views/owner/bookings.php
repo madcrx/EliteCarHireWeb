@@ -47,6 +47,7 @@
                                 <th>Amount</th>
                                 <th>Status</th>
                                 <th>Payment</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -71,7 +72,7 @@
                                                 default => 'secondary'
                                             };
                                         ?>
-                                        <span class="badge badge-<?= $statusClass ?>"><?= ucfirst($booking['status']) ?></span>
+                                        <span class="badge badge-<?= $statusClass ?>"><?= ucfirst(str_replace('_', ' ', $booking['status'])) ?></span>
                                     </td>
                                     <td>
                                         <?php
@@ -84,6 +85,25 @@
                                             };
                                         ?>
                                         <span class="badge badge-<?= $paymentClass ?>"><?= ucfirst($booking['payment_status']) ?></span>
+                                    </td>
+                                    <td>
+                                        <?php if ($booking['status'] === 'pending'): ?>
+                                            <form method="POST" action="/owner/bookings/confirm" style="display: inline;">
+                                                <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
+                                                <input type="hidden" name="booking_id" value="<?= $booking['id'] ?>">
+                                                <button type="submit" class="btn btn-success" style="padding: 5px 15px;"
+                                                        onclick="return confirm('Confirm this booking?')">
+                                                    <i class="fas fa-check"></i> Confirm
+                                                </button>
+                                            </form>
+                                        <?php endif; ?>
+
+                                        <?php if (in_array($booking['status'], ['pending', 'confirmed', 'in_progress'])): ?>
+                                            <button class="btn btn-danger" style="padding: 5px 15px;"
+                                                    onclick="showCancelModal(<?= $booking['id'] ?>, '<?= e($booking['booking_reference']) ?>')">
+                                                <i class="fas fa-times"></i> Cancel
+                                            </button>
+                                        <?php endif; ?>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -105,5 +125,55 @@
         <?php endif; ?>
     </div>
 </div>
+
+<!-- Cancel Booking Modal -->
+<div id="cancelModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: white; padding: 2rem; border-radius: var(--border-radius); max-width: 500px; width: 90%;">
+        <h2 style="margin-top: 0;">Cancel Booking</h2>
+        <p style="color: var(--dark-gray); margin-bottom: 1.5rem;">
+            This will request admin approval to cancel booking <strong id="cancelBookingRef"></strong>.
+        </p>
+
+        <form method="POST" action="/owner/bookings/cancel" id="cancelForm">
+            <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
+            <input type="hidden" name="booking_id" id="cancelBookingId">
+
+            <div class="form-group">
+                <label for="cancellation_reason">Cancellation Reason *</label>
+                <textarea name="cancellation_reason" id="cancellation_reason" rows="4" required
+                          placeholder="Please provide a reason for cancelling this booking..."></textarea>
+            </div>
+
+            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary" onclick="closeCancelModal()">
+                    Cancel
+                </button>
+                <button type="submit" class="btn btn-danger">
+                    <i class="fas fa-times"></i> Submit Cancellation Request
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function showCancelModal(bookingId, bookingRef) {
+    document.getElementById('cancelBookingId').value = bookingId;
+    document.getElementById('cancelBookingRef').textContent = bookingRef;
+    document.getElementById('cancelModal').style.display = 'flex';
+}
+
+function closeCancelModal() {
+    document.getElementById('cancelModal').style.display = 'none';
+    document.getElementById('cancellation_reason').value = '';
+}
+
+// Close modal on outside click
+document.getElementById('cancelModal')?.addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeCancelModal();
+    }
+});
+</script>
 
 <?php $content = ob_get_clean(); include __DIR__ . '/../layout.php'; ?>

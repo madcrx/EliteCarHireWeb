@@ -8,19 +8,29 @@ class OwnerController {
     
     public function dashboard() {
         $ownerId = $_SESSION['user_id'];
+
+        // Auto-update booking statuses
+        require_once __DIR__ . '/../helpers/booking_automation.php';
+        autoUpdateBookingStatuses();
+
+        // Load notifications
+        require_once __DIR__ . '/../helpers/notifications.php';
+        $notifications = getUnreadNotifications($ownerId, 5);
+        $notificationCount = getUnreadNotificationCount($ownerId);
+
         $stats = [
             'total_vehicles' => db()->fetch("SELECT COUNT(*) as count FROM vehicles WHERE owner_id = ?", [$ownerId])['count'],
             'active_bookings' => db()->fetch("SELECT COUNT(*) as count FROM bookings WHERE owner_id = ? AND status IN ('confirmed', 'in_progress')", [$ownerId])['count'],
             'monthly_earnings' => db()->fetch("SELECT COALESCE(SUM(total_amount - commission_amount), 0) as earnings FROM bookings WHERE owner_id = ? AND status='completed' AND MONTH(created_at) = MONTH(NOW())", [$ownerId])['earnings'],
             'pending_payouts' => db()->fetch("SELECT COALESCE(SUM(amount), 0) as amount FROM payouts WHERE owner_id = ? AND status='pending'", [$ownerId])['amount'],
         ];
-        
-        $recentBookings = db()->fetchAll("SELECT b.*, v.make, v.model, u.first_name, u.last_name FROM bookings b 
-                                          JOIN vehicles v ON b.vehicle_id = v.id 
-                                          JOIN users u ON b.customer_id = u.id 
+
+        $recentBookings = db()->fetchAll("SELECT b.*, v.make, v.model, u.first_name, u.last_name FROM bookings b
+                                          JOIN vehicles v ON b.vehicle_id = v.id
+                                          JOIN users u ON b.customer_id = u.id
                                           WHERE b.owner_id = ? ORDER BY b.created_at DESC LIMIT 10", [$ownerId]);
-        
-        view('owner/dashboard', compact('stats', 'recentBookings'));
+
+        view('owner/dashboard', compact('stats', 'recentBookings', 'notifications', 'notificationCount'));
     }
     
     public function listings() {
@@ -162,6 +172,10 @@ class OwnerController {
         $ownerId = $_SESSION['user_id'];
         $status = $_GET['status'] ?? 'all';
 
+        // Auto-update booking statuses
+        require_once __DIR__ . '/../helpers/booking_automation.php';
+        autoUpdateBookingStatuses();
+
         $sql = "SELECT b.*, v.make, v.model, u.first_name, u.last_name
                 FROM bookings b
                 JOIN vehicles v ON b.vehicle_id = v.id
@@ -178,6 +192,150 @@ class OwnerController {
 
         $bookings = db()->fetchAll($sql, $params);
         view('owner/bookings', compact('bookings', 'status'));
+    }
+
+    public function confirmBooking() {
+        requireAuth('owner');
+
+        // Verify CSRF token
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token. Please try again.');
+            redirect('/owner/bookings');
+        }
+
+        $bookingId = $_POST['booking_id'] ?? '';
+        $ownerId = $_SESSION['user_id'];
+
+        // Verify booking belongs to owner
+        $booking = db()->fetch(
+            "SELECT b.*, v.make, v.model, u.first_name, u.last_name
+             FROM bookings b
+             JOIN vehicles v ON b.vehicle_id = v.id
+             JOIN users u ON b.customer_id = u.id
+             WHERE b.id = ? AND b.owner_id = ?",
+            [$bookingId, $ownerId]
+        );
+
+        if (!$booking) {
+            flash('error', 'Booking not found or access denied');
+            redirect('/owner/bookings');
+        }
+
+        if ($booking['status'] !== 'pending') {
+            flash('error', 'Only pending bookings can be confirmed');
+            redirect('/owner/bookings');
+        }
+
+        // Update booking status
+        db()->execute(
+            "UPDATE bookings SET status = 'confirmed', updated_at = NOW()
+             WHERE id = ?",
+            [$bookingId]
+        );
+
+        // Create notification for customer
+        require_once __DIR__ . '/../helpers/notifications.php';
+        $vehicleName = $booking['make'] . ' ' . $booking['model'];
+        notifyBookingConfirmed(
+            $booking['customer_id'],
+            $booking['booking_reference'],
+            $vehicleName
+        );
+
+        // If payment is already made and booking time has started, transition to in_progress
+        if ($booking['payment_status'] === 'paid') {
+            require_once __DIR__ . '/../helpers/booking_automation.php';
+            if (canTransitionToInProgress($bookingId)) {
+                transitionBookingToInProgress($bookingId);
+                flash('success', 'Booking confirmed and started!');
+            } else {
+                flash('success', 'Booking confirmed successfully! It will automatically start when the booking time begins.');
+            }
+        } else {
+            flash('success', 'Booking confirmed successfully! Waiting for customer payment.');
+        }
+
+        logAudit('confirm_booking', 'bookings', $bookingId, [
+            'booking_reference' => $booking['booking_reference']
+        ]);
+
+        redirect('/owner/bookings');
+    }
+
+    public function cancelBooking() {
+        requireAuth('owner');
+
+        // Verify CSRF token
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token. Please try again.');
+            redirect('/owner/bookings');
+        }
+
+        $bookingId = $_POST['booking_id'] ?? '';
+        $reason = $_POST['cancellation_reason'] ?? '';
+        $ownerId = $_SESSION['user_id'];
+
+        // Validate reason
+        if (empty($reason)) {
+            flash('error', 'Cancellation reason is required');
+            redirect('/owner/bookings');
+        }
+
+        // Verify booking belongs to owner
+        $booking = db()->fetch(
+            "SELECT b.*, v.make, v.model
+             FROM bookings b
+             JOIN vehicles v ON b.vehicle_id = v.id
+             WHERE b.id = ? AND b.owner_id = ?",
+            [$bookingId, $ownerId]
+        );
+
+        if (!$booking) {
+            flash('error', 'Booking not found or access denied');
+            redirect('/owner/bookings');
+        }
+
+        if ($booking['status'] === 'cancelled' || $booking['status'] === 'completed') {
+            flash('error', 'This booking cannot be cancelled');
+            redirect('/owner/bookings');
+        }
+
+        // Create pending change request for admin approval
+        db()->execute(
+            "INSERT INTO pending_changes (owner_id, entity_type, entity_id, change_type, old_data, new_data, reason, status, created_at)
+             VALUES (?, 'booking', ?, 'cancellation', ?, ?, ?, 'pending', NOW())",
+            [
+                $ownerId,
+                $bookingId,
+                json_encode(['status' => $booking['status']]),
+                json_encode(['status' => 'cancelled', 'cancellation_reason' => $reason]),
+                $reason
+            ]
+        );
+
+        // Notify all admins
+        require_once __DIR__ . '/../helpers/notifications.php';
+        $admins = db()->fetchAll("SELECT id FROM users WHERE role = 'admin'");
+        $vehicleName = $booking['make'] . ' ' . $booking['model'];
+
+        foreach ($admins as $admin) {
+            notifyBookingCancellationPending(
+                $admin['id'],
+                $booking['booking_reference'],
+                $vehicleName,
+                $reason
+            );
+        }
+
+        logAudit('request_booking_cancellation', 'bookings', $bookingId, [
+            'booking_reference' => $booking['booking_reference'],
+            'reason' => $reason
+        ]);
+
+        flash('success', 'Cancellation request submitted. Waiting for admin approval.');
+        redirect('/owner/bookings');
     }
     
     public function calendar() {

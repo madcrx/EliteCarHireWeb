@@ -190,10 +190,40 @@ function uploadFile($file, $directory = 'uploads') {
     
     $filename = uniqid() . '_' . time() . '.' . $extension;
     $destination = __DIR__ . "/../storage/$directory/" . $filename;
-    
+
     if (move_uploaded_file($file['tmp_name'], $destination)) {
         return "storage/$directory/$filename";
     }
-    
+
     return false;
+}
+
+/**
+ * Convert timestamp to human-readable "time ago" format
+ */
+function timeAgo($timestamp) {
+    $time = strtotime($timestamp);
+    $diff = time() - $time;
+
+    if ($diff < 60) {
+        return 'just now';
+    }
+
+    $intervals = [
+        31536000 => 'year',
+        2592000 => 'month',
+        604800 => 'week',
+        86400 => 'day',
+        3600 => 'hour',
+        60 => 'minute'
+    ];
+
+    foreach ($intervals as $seconds => $label) {
+        $count = floor($diff / $seconds);
+        if ($count > 0) {
+            return $count . ' ' . $label . ($count > 1 ? 's' : '') . ' ago';
+        }
+    }
+
+    return 'just now';
 }
