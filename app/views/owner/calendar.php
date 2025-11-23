@@ -400,10 +400,30 @@
         <?php if (!empty($blockedDates)): ?>
             <div class="card">
                 <h2><i class="fas fa-calendar-times"></i> Blocked Dates</h2>
+
+                <!-- Filter and Actions Bar -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; gap: 1rem; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 250px;">
+                        <input type="text" id="blockedDatesFilter" placeholder="Search by vehicle, date, or reason..."
+                               style="width: 100%; padding: 0.5rem; border: 1px solid var(--medium-gray); border-radius: var(--border-radius);"
+                               onkeyup="filterBlockedDates()">
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <span id="selectedBlocksCount" style="color: var(--dark-gray); font-size: 0.9rem;"></span>
+                        <button id="bulkUnblockBtn" class="btn btn-warning" style="display: none;" onclick="bulkUnblockDates()">
+                            <i class="fas fa-unlock"></i> Unblock Selected
+                        </button>
+                    </div>
+                </div>
+
                 <div class="table-container">
-                    <table>
+                    <table id="blockedDatesTable">
                         <thead>
                             <tr>
+                                <th style="width: 40px;">
+                                    <input type="checkbox" id="selectAllBlocks" onchange="toggleSelectAllBlocks()"
+                                           title="Select all visible blocks">
+                                </th>
                                 <th>Vehicle</th>
                                 <th>Start Date</th>
                                 <th>End Date</th>
@@ -421,7 +441,20 @@
                                     $days = $interval->days + 1;
                                     $isPast = strtotime($block['end_date']) < strtotime('today');
                                 ?>
-                                <tr style="<?= $isPast ? 'opacity: 0.6;' : '' ?>">
+                                <tr class="blocked-date-row"
+                                    data-vehicle="<?= e($block['make'] . ' ' . $block['model']) ?>"
+                                    data-start="<?= date('M d, Y', strtotime($block['start_date'])) ?>"
+                                    data-end="<?= date('M d, Y', strtotime($block['end_date'])) ?>"
+                                    data-reason="<?= e($block['reason'] ?? '') ?>"
+                                    data-block-id="<?= $block['id'] ?>"
+                                    data-is-past="<?= $isPast ? 'true' : 'false' ?>"
+                                    style="<?= $isPast ? 'opacity: 0.6;' : '' ?>">
+                                    <td>
+                                        <?php if (!$isPast): ?>
+                                            <input type="checkbox" class="block-checkbox" value="<?= $block['id'] ?>"
+                                                   onchange="updateBulkUnblockButton()">
+                                        <?php endif; ?>
+                                    </td>
                                     <td><strong><?= e($block['make'] . ' ' . $block['model']) ?></strong></td>
                                     <td><?= date('M d, Y', strtotime($block['start_date'])) ?></td>
                                     <td><?= date('M d, Y', strtotime($block['end_date'])) ?></td>
@@ -830,6 +863,116 @@ document.getElementById('start_date')?.addEventListener('change', function() {
 document.querySelectorAll('.day-checkbox-item label').forEach(label => {
     label.addEventListener('click', (e) => e.preventDefault());
 });
+
+// ===== Blocked Dates Table Functions =====
+
+// Filter blocked dates table
+function filterBlockedDates() {
+    const filterValue = document.getElementById('blockedDatesFilter')?.value.toLowerCase() || '';
+    const rows = document.querySelectorAll('.blocked-date-row');
+
+    rows.forEach(row => {
+        const vehicle = row.dataset.vehicle.toLowerCase();
+        const start = row.dataset.start.toLowerCase();
+        const end = row.dataset.end.toLowerCase();
+        const reason = row.dataset.reason.toLowerCase();
+
+        const matches = vehicle.includes(filterValue) ||
+                       start.includes(filterValue) ||
+                       end.includes(filterValue) ||
+                       reason.includes(filterValue);
+
+        row.style.display = matches ? '' : 'none';
+    });
+
+    // Update select all checkbox state
+    updateSelectAllCheckbox();
+    // Update bulk unblock button
+    updateBulkUnblockButton();
+}
+
+// Toggle select all visible checkboxes
+function toggleSelectAllBlocks() {
+    const selectAllCheckbox = document.getElementById('selectAllBlocks');
+    const visibleCheckboxes = Array.from(document.querySelectorAll('.block-checkbox'))
+        .filter(cb => cb.closest('tr').style.display !== 'none');
+
+    visibleCheckboxes.forEach(checkbox => {
+        checkbox.checked = selectAllCheckbox.checked;
+    });
+
+    updateBulkUnblockButton();
+}
+
+// Update the select all checkbox state based on current selection
+function updateSelectAllCheckbox() {
+    const selectAllCheckbox = document.getElementById('selectAllBlocks');
+    const visibleCheckboxes = Array.from(document.querySelectorAll('.block-checkbox'))
+        .filter(cb => cb.closest('tr').style.display !== 'none');
+
+    if (visibleCheckboxes.length === 0) {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = false;
+        return;
+    }
+
+    const checkedCount = visibleCheckboxes.filter(cb => cb.checked).length;
+
+    if (checkedCount === 0) {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = false;
+    } else if (checkedCount === visibleCheckboxes.length) {
+        selectAllCheckbox.checked = true;
+        selectAllCheckbox.indeterminate = false;
+    } else {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = true;
+    }
+}
+
+// Update bulk unblock button visibility and count
+function updateBulkUnblockButton() {
+    const checkedBoxes = document.querySelectorAll('.block-checkbox:checked');
+    const count = checkedBoxes.length;
+    const button = document.getElementById('bulkUnblockBtn');
+    const countSpan = document.getElementById('selectedBlocksCount');
+
+    if (count > 0) {
+        button.style.display = 'block';
+        countSpan.textContent = `${count} selected`;
+    } else {
+        button.style.display = 'none';
+        countSpan.textContent = '';
+    }
+
+    updateSelectAllCheckbox();
+}
+
+// Bulk unblock selected dates
+async function bulkUnblockDates() {
+    const checkedBoxes = document.querySelectorAll('.block-checkbox:checked');
+    const blockIds = Array.from(checkedBoxes).map(cb => cb.value);
+
+    if (blockIds.length === 0) {
+        alert('No dates selected for unblocking.');
+        return;
+    }
+
+    const message = `Are you sure you want to unblock ${blockIds.length} blocked date${blockIds.length > 1 ? 's' : ''}?`;
+
+    if (!confirm(message)) {
+        return;
+    }
+
+    try {
+        // Unblock all selected dates
+        await Promise.all(blockIds.map(id => unblockDateAsync(id)));
+        saveStateAndReload();
+    } catch (error) {
+        console.error('Error unblocking dates:', error);
+        alert('Error unblocking some dates. Please try again.');
+    }
+}
 </script>
 
 <?php $content = ob_get_clean(); include __DIR__ . '/../layout.php'; ?>
