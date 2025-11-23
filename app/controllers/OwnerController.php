@@ -484,9 +484,18 @@ class OwnerController {
     public function blockDates() {
         requireAuth('owner');
 
+        // Detect if this is an AJAX request
+        $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
+                  strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
+
         // Verify CSRF token
         $token = $_POST['csrf_token'] ?? '';
         if (!verifyCsrf($token)) {
+            if ($isAjax) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => 'Invalid security token. Please try again.']);
+                exit;
+            }
             flash('error', 'Invalid security token. Please try again.');
             redirect('/owner/calendar');
         }
@@ -501,6 +510,11 @@ class OwnerController {
 
         // Validate inputs
         if (empty($vehicleId) || empty($startDate) || empty($endDate)) {
+            if ($isAjax) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => 'All fields are required']);
+                exit;
+            }
             flash('error', 'All fields are required');
             redirect('/owner/calendar');
         }
@@ -508,12 +522,22 @@ class OwnerController {
         // Verify vehicle belongs to owner
         $vehicle = db()->fetch("SELECT id FROM vehicles WHERE id = ? AND owner_id = ?", [$vehicleId, $ownerId]);
         if (!$vehicle) {
+            if ($isAjax) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => 'Vehicle not found or access denied']);
+                exit;
+            }
             flash('error', 'Vehicle not found or access denied');
             redirect('/owner/calendar');
         }
 
         // Validate dates
         if (strtotime($startDate) > strtotime($endDate)) {
+            if ($isAjax) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => 'End date must be after start date']);
+                exit;
+            }
             flash('error', 'End date must be after start date');
             redirect('/owner/calendar');
         }
@@ -522,6 +546,11 @@ class OwnerController {
         $datesToBlock = $this->generateBlockDates($startDate, $endDate, $frequency, $customDays);
 
         if (empty($datesToBlock)) {
+            if ($isAjax) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => 'No valid dates to block based on your selection']);
+                exit;
+            }
             flash('error', 'No valid dates to block based on your selection');
             redirect('/owner/calendar');
         }
@@ -552,13 +581,25 @@ class OwnerController {
                 'frequency' => $frequency,
                 'blocked_count' => $blockedCount
             ]);
-
-            flash('success', $blockedCount . ' date(s) blocked successfully');
-        } else {
-            flash('warning', 'No new dates were blocked (all dates already blocked or no matching days)');
         }
 
-        redirect('/owner/calendar');
+        // Return response based on request type
+        if ($isAjax) {
+            header('Content-Type: application/json');
+            if ($blockedCount > 0) {
+                echo json_encode(['success' => true, 'message' => $blockedCount . ' date(s) blocked successfully']);
+            } else {
+                echo json_encode(['success' => true, 'message' => 'No new dates were blocked (all dates already blocked or no matching days)', 'warning' => true]);
+            }
+            exit;
+        } else {
+            if ($blockedCount > 0) {
+                flash('success', $blockedCount . ' date(s) blocked successfully');
+            } else {
+                flash('warning', 'No new dates were blocked (all dates already blocked or no matching days)');
+            }
+            redirect('/owner/calendar');
+        }
     }
 
     private function generateBlockDates($startDate, $endDate, $frequency, $customDays) {
@@ -604,9 +645,18 @@ class OwnerController {
     public function unblockDate() {
         requireAuth('owner');
 
+        // Detect if this is an AJAX request
+        $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
+                  strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
+
         // Verify CSRF token
         $token = $_POST['csrf_token'] ?? '';
         if (!verifyCsrf($token)) {
+            if ($isAjax) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => 'Invalid security token. Please try again.']);
+                exit;
+            }
             flash('error', 'Invalid security token. Please try again.');
             redirect('/owner/calendar');
         }
@@ -615,6 +665,11 @@ class OwnerController {
         $blockId = $_POST['block_id'] ?? '';
 
         if (empty($blockId)) {
+            if ($isAjax) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => 'Block ID is required']);
+                exit;
+            }
             flash('error', 'Block ID is required');
             redirect('/owner/calendar');
         }
@@ -622,6 +677,11 @@ class OwnerController {
         // Verify block belongs to owner
         $block = db()->fetch("SELECT id FROM vehicle_blocked_dates WHERE id = ? AND owner_id = ?", [$blockId, $ownerId]);
         if (!$block) {
+            if ($isAjax) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => 'Blocked date not found or access denied']);
+                exit;
+            }
             flash('error', 'Blocked date not found or access denied');
             redirect('/owner/calendar');
         }
@@ -631,8 +691,15 @@ class OwnerController {
 
         logAudit('unblock_vehicle_dates', 'vehicle_blocked_dates', $blockId);
 
-        flash('success', 'Dates unblocked successfully');
-        redirect('/owner/calendar');
+        // Return response based on request type
+        if ($isAjax) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => true, 'message' => 'Dates unblocked successfully']);
+            exit;
+        } else {
+            flash('success', 'Dates unblocked successfully');
+            redirect('/owner/calendar');
+        }
     }
     
     public function analytics() {
