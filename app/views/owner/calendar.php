@@ -411,7 +411,7 @@
                     <div style="display: flex; gap: 0.5rem; align-items: center;">
                         <span id="selectedBlocksCount" style="color: var(--dark-gray); font-size: 0.9rem;"></span>
                         <button id="bulkUnblockBtn" class="btn"
-                                style="display: none; background: #dc3545; color: white; border: none; font-weight: 600;"
+                                style="display: none; background: #dc3545 !important; color: white !important; border: none !important; font-weight: 600 !important;"
                                 onmouseover="this.style.background='#c82333'"
                                 onmouseout="this.style.background='#dc3545'"
                                 onclick="bulkUnblockDates()">
@@ -943,6 +943,10 @@ function updateBulkUnblockButton() {
 
     if (count > 0) {
         button.style.display = 'block';
+        button.style.background = '#dc3545';
+        button.style.color = 'white';
+        button.style.border = 'none';
+        button.style.fontWeight = '600';
         countSpan.textContent = `${count} selected`;
     } else {
         button.style.display = 'none';
