@@ -7,53 +7,81 @@ class OwnerController {
     }
     
     public function dashboard() {
-        $ownerId = $_SESSION['user_id'];
+        try {
+            error_log("OwnerController::dashboard() - Start");
 
-        // Initialize notifications as empty (graceful fallback)
-        $notifications = [];
-        $notificationCount = 0;
+            $ownerId = $_SESSION['user_id'] ?? null;
+            error_log("OwnerController::dashboard() - Owner ID: " . $ownerId);
 
-        // Only try to load features if helper files exist
-        if (file_exists(__DIR__ . '/../helpers/booking_automation.php')) {
-            try {
-                require_once __DIR__ . '/../helpers/booking_automation.php';
-                if (function_exists('autoUpdateBookingStatuses')) {
-                    autoUpdateBookingStatuses();
-                }
-            } catch (Exception $e) {
-                error_log("Booking automation error: " . $e->getMessage());
-            } catch (Error $e) {
-                error_log("Booking automation fatal error: " . $e->getMessage());
+            if (!$ownerId) {
+                error_log("OwnerController::dashboard() - No owner ID in session");
+                redirect('/login');
+                return;
             }
-        }
 
-        if (file_exists(__DIR__ . '/../helpers/notifications.php')) {
-            try {
-                require_once __DIR__ . '/../helpers/notifications.php';
-                if (function_exists('getUnreadNotifications') && function_exists('getUnreadNotificationCount')) {
-                    $notifications = getUnreadNotifications($ownerId, 5);
-                    $notificationCount = getUnreadNotificationCount($ownerId);
+            // Initialize notifications as empty (graceful fallback)
+            $notifications = [];
+            $notificationCount = 0;
+
+            // Only try to load features if helper files exist
+            error_log("OwnerController::dashboard() - Checking booking automation");
+            if (file_exists(__DIR__ . '/../helpers/booking_automation.php')) {
+                try {
+                    require_once __DIR__ . '/../helpers/booking_automation.php';
+                    if (function_exists('autoUpdateBookingStatuses')) {
+                        autoUpdateBookingStatuses();
+                    }
+                } catch (Exception $e) {
+                    error_log("Booking automation error: " . $e->getMessage());
+                } catch (Error $e) {
+                    error_log("Booking automation fatal error: " . $e->getMessage());
                 }
-            } catch (Exception $e) {
-                error_log("Notifications error: " . $e->getMessage());
-            } catch (Error $e) {
-                error_log("Notifications fatal error: " . $e->getMessage());
             }
+
+            error_log("OwnerController::dashboard() - Checking notifications");
+            if (file_exists(__DIR__ . '/../helpers/notifications.php')) {
+                try {
+                    require_once __DIR__ . '/../helpers/notifications.php';
+                    if (function_exists('getUnreadNotifications') && function_exists('getUnreadNotificationCount')) {
+                        $notifications = getUnreadNotifications($ownerId, 5);
+                        $notificationCount = getUnreadNotificationCount($ownerId);
+                    }
+                } catch (Exception $e) {
+                    error_log("Notifications error: " . $e->getMessage());
+                } catch (Error $e) {
+                    error_log("Notifications fatal error: " . $e->getMessage());
+                }
+            }
+
+            error_log("OwnerController::dashboard() - Fetching stats");
+            $stats = [
+                'total_vehicles' => db()->fetch("SELECT COUNT(*) as count FROM vehicles WHERE owner_id = ?", [$ownerId])['count'] ?? 0,
+                'active_bookings' => db()->fetch("SELECT COUNT(*) as count FROM bookings WHERE owner_id = ? AND status IN ('confirmed', 'in_progress')", [$ownerId])['count'] ?? 0,
+                'monthly_earnings' => db()->fetch("SELECT COALESCE(SUM(total_amount - commission_amount), 0) as earnings FROM bookings WHERE owner_id = ? AND status='completed' AND MONTH(created_at) = MONTH(NOW())", [$ownerId])['earnings'] ?? 0,
+                'pending_payouts' => db()->fetch("SELECT COALESCE(SUM(amount), 0) as amount FROM payouts WHERE owner_id = ? AND status='pending'", [$ownerId])['amount'] ?? 0,
+            ];
+
+            error_log("OwnerController::dashboard() - Fetching recent bookings");
+            $recentBookings = db()->fetchAll("SELECT b.*, v.make, v.model, u.first_name, u.last_name FROM bookings b
+                                              JOIN vehicles v ON b.vehicle_id = v.id
+                                              JOIN users u ON b.customer_id = u.id
+                                              WHERE b.owner_id = ? ORDER BY b.created_at DESC LIMIT 10", [$ownerId]);
+
+            error_log("OwnerController::dashboard() - Rendering view");
+            view('owner/dashboard', compact('stats', 'recentBookings', 'notifications', 'notificationCount'));
+            error_log("OwnerController::dashboard() - Complete");
+
+        } catch (Exception $e) {
+            error_log("OwnerController::dashboard() - Exception: " . $e->getMessage());
+            error_log("OwnerController::dashboard() - Stack trace: " . $e->getTraceAsString());
+            echo "An error occurred loading the dashboard. Please check the error logs.";
+            exit;
+        } catch (Error $e) {
+            error_log("OwnerController::dashboard() - Fatal Error: " . $e->getMessage());
+            error_log("OwnerController::dashboard() - Stack trace: " . $e->getTraceAsString());
+            echo "A fatal error occurred loading the dashboard. Please check the error logs.";
+            exit;
         }
-
-        $stats = [
-            'total_vehicles' => db()->fetch("SELECT COUNT(*) as count FROM vehicles WHERE owner_id = ?", [$ownerId])['count'],
-            'active_bookings' => db()->fetch("SELECT COUNT(*) as count FROM bookings WHERE owner_id = ? AND status IN ('confirmed', 'in_progress')", [$ownerId])['count'],
-            'monthly_earnings' => db()->fetch("SELECT COALESCE(SUM(total_amount - commission_amount), 0) as earnings FROM bookings WHERE owner_id = ? AND status='completed' AND MONTH(created_at) = MONTH(NOW())", [$ownerId])['earnings'],
-            'pending_payouts' => db()->fetch("SELECT COALESCE(SUM(amount), 0) as amount FROM payouts WHERE owner_id = ? AND status='pending'", [$ownerId])['amount'],
-        ];
-
-        $recentBookings = db()->fetchAll("SELECT b.*, v.make, v.model, u.first_name, u.last_name FROM bookings b
-                                          JOIN vehicles v ON b.vehicle_id = v.id
-                                          JOIN users u ON b.customer_id = u.id
-                                          WHERE b.owner_id = ? ORDER BY b.created_at DESC LIMIT 10", [$ownerId]);
-
-        view('owner/dashboard', compact('stats', 'recentBookings', 'notifications', 'notificationCount'));
     }
     
     public function listings() {
