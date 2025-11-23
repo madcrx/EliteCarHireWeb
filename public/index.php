@@ -19,6 +19,9 @@ spl_autoload_register(function ($class) {
     }
 });
 
+// Load Database class (required by helpers)
+require __DIR__ . '/../app/Database.php';
+
 // Load helpers
 require __DIR__ . '/../app/helpers.php';
 
