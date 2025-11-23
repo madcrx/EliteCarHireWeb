@@ -410,7 +410,11 @@
                     </div>
                     <div style="display: flex; gap: 0.5rem; align-items: center;">
                         <span id="selectedBlocksCount" style="color: var(--dark-gray); font-size: 0.9rem;"></span>
-                        <button id="bulkUnblockBtn" class="btn btn-warning" style="display: none;" onclick="bulkUnblockDates()">
+                        <button id="bulkUnblockBtn" class="btn"
+                                style="display: none; background: #dc3545; color: white; border: none; font-weight: 600;"
+                                onmouseover="this.style.background='#c82333'"
+                                onmouseout="this.style.background='#dc3545'"
+                                onclick="bulkUnblockDates()">
                             <i class="fas fa-unlock"></i> Unblock Selected
                         </button>
                     </div>
