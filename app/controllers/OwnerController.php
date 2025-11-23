@@ -501,6 +501,7 @@ class OwnerController {
         $token = $_POST['csrf_token'] ?? '';
         if (!verifyCsrf($token)) {
             if ($isAjax) {
+                ob_get_clean();
                 header('Content-Type: application/json');
                 echo json_encode(['success' => false, 'message' => 'Invalid security token. Please try again.']);
                 exit;
@@ -520,6 +521,7 @@ class OwnerController {
         // Validate inputs
         if (empty($vehicleId) || empty($startDate) || empty($endDate)) {
             if ($isAjax) {
+                ob_get_clean();
                 header('Content-Type: application/json');
                 echo json_encode(['success' => false, 'message' => 'All fields are required']);
                 exit;
@@ -532,6 +534,7 @@ class OwnerController {
         $vehicle = db()->fetch("SELECT id FROM vehicles WHERE id = ? AND owner_id = ?", [$vehicleId, $ownerId]);
         if (!$vehicle) {
             if ($isAjax) {
+                ob_get_clean();
                 header('Content-Type: application/json');
                 echo json_encode(['success' => false, 'message' => 'Vehicle not found or access denied']);
                 exit;
@@ -543,6 +546,7 @@ class OwnerController {
         // Validate dates
         if (strtotime($startDate) > strtotime($endDate)) {
             if ($isAjax) {
+                ob_get_clean();
                 header('Content-Type: application/json');
                 echo json_encode(['success' => false, 'message' => 'End date must be after start date']);
                 exit;
@@ -556,6 +560,7 @@ class OwnerController {
 
         if (empty($datesToBlock)) {
             if ($isAjax) {
+                ob_get_clean();
                 header('Content-Type: application/json');
                 echo json_encode(['success' => false, 'message' => 'No valid dates to block based on your selection']);
                 exit;
@@ -585,6 +590,7 @@ class OwnerController {
         } catch (Exception $e) {
             error_log("Error blocking dates: " . $e->getMessage());
             if ($isAjax) {
+                ob_get_clean();
                 header('Content-Type: application/json');
                 echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
                 exit;
@@ -683,6 +689,7 @@ class OwnerController {
         $token = $_POST['csrf_token'] ?? '';
         if (!verifyCsrf($token)) {
             if ($isAjax) {
+                ob_get_clean();
                 header('Content-Type: application/json');
                 echo json_encode(['success' => false, 'message' => 'Invalid security token. Please try again.']);
                 exit;
@@ -696,6 +703,7 @@ class OwnerController {
 
         if (empty($blockId)) {
             if ($isAjax) {
+                ob_get_clean();
                 header('Content-Type: application/json');
                 echo json_encode(['success' => false, 'message' => 'Block ID is required']);
                 exit;
@@ -708,6 +716,7 @@ class OwnerController {
         $block = db()->fetch("SELECT id FROM vehicle_blocked_dates WHERE id = ? AND owner_id = ?", [$blockId, $ownerId]);
         if (!$block) {
             if ($isAjax) {
+                ob_get_clean();
                 header('Content-Type: application/json');
                 echo json_encode(['success' => false, 'message' => 'Blocked date not found or access denied']);
                 exit;
@@ -723,6 +732,7 @@ class OwnerController {
         } catch (Exception $e) {
             error_log("Error unblocking date: " . $e->getMessage());
             if ($isAjax) {
+                ob_get_clean();
                 header('Content-Type: application/json');
                 echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
                 exit;
