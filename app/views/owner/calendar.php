@@ -429,14 +429,10 @@
                                     <td><?= !empty($block['reason']) ? e($block['reason']) : '<em style="color: var(--medium-gray);">No reason</em>' ?></td>
                                     <td>
                                         <?php if (!$isPast): ?>
-                                            <form method="POST" action="/owner/calendar/unblock" style="display: inline;">
-                                                <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
-                                                <input type="hidden" name="block_id" value="<?= $block['id'] ?>">
-                                                <button type="submit" class="btn btn-warning" style="padding: 5px 15px;"
-                                                        onclick="return confirm('Unblock these dates?')">
-                                                    <i class="fas fa-unlock"></i> Unblock
-                                                </button>
-                                            </form>
+                                            <button class="btn btn-warning" style="padding: 5px 15px;"
+                                                    onclick="if(confirm('Unblock these dates?')) { unblockDate(<?= $block['id'] ?>); }">
+                                                <i class="fas fa-unlock"></i> Unblock
+                                            </button>
                                         <?php else: ?>
                                             <span class="badge badge-secondary">Expired</span>
                                         <?php endif; ?>
@@ -673,8 +669,10 @@ async function blockSingleDay(dateStr, vehicleId) {
         });
 
         if (response.ok) {
-            // Save scroll position before reload
+            // Save current state before reload
             sessionStorage.setItem('calendarScrollPos', window.scrollY);
+            sessionStorage.setItem('calendarYear', currentDate.getFullYear());
+            sessionStorage.setItem('calendarMonth', currentDate.getMonth());
             // Reload the page to refresh data
             window.location.reload();
         } else {
@@ -698,8 +696,10 @@ async function unblockDate(blockId) {
         });
 
         if (response.ok) {
-            // Save scroll position before reload
+            // Save current state before reload
             sessionStorage.setItem('calendarScrollPos', window.scrollY);
+            sessionStorage.setItem('calendarYear', currentDate.getFullYear());
+            sessionStorage.setItem('calendarMonth', currentDate.getMonth());
             // Reload the page to refresh data
             window.location.reload();
         } else {
@@ -745,13 +745,30 @@ function toggleDay(element, dayValue) {
 
 // Initialize calendar on page load
 document.addEventListener('DOMContentLoaded', () => {
+    // Restore calendar month if returning from a block/unblock action
+    const savedYear = sessionStorage.getItem('calendarYear');
+    const savedMonth = sessionStorage.getItem('calendarMonth');
+
+    if (savedYear && savedMonth) {
+        currentDate = new Date(parseInt(savedYear), parseInt(savedMonth), 1);
+        sessionStorage.removeItem('calendarYear');
+        sessionStorage.removeItem('calendarMonth');
+    }
+
+    // Render the calendar
     renderCalendar();
 
-    // Restore scroll position if returning from a block/unblock action
+    // Restore scroll position after calendar is rendered
     const savedScrollPos = sessionStorage.getItem('calendarScrollPos');
     if (savedScrollPos) {
-        window.scrollTo(0, parseInt(savedScrollPos));
-        sessionStorage.removeItem('calendarScrollPos');
+        // Use setTimeout to ensure DOM is fully rendered
+        setTimeout(() => {
+            window.scrollTo({
+                top: parseInt(savedScrollPos),
+                behavior: 'instant'
+            });
+            sessionStorage.removeItem('calendarScrollPos');
+        }, 100);
     }
 });
 
