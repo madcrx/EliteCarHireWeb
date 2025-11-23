@@ -676,6 +676,7 @@ function saveStateAndReload() {
     sessionStorage.setItem('calendarScrollPos', window.scrollY.toString());
     sessionStorage.setItem('calendarYear', currentDate.getFullYear().toString());
     sessionStorage.setItem('calendarMonth', currentDate.getMonth().toString());
+    sessionStorage.setItem('selectedVehicleIds', JSON.stringify(selectedVehicleIds));
     window.location.reload();
 }
 
@@ -770,6 +771,31 @@ document.addEventListener('DOMContentLoaded', () => {
         currentDate = new Date(parseInt(savedYear), parseInt(savedMonth), 1);
         sessionStorage.removeItem('calendarYear');
         sessionStorage.removeItem('calendarMonth');
+    }
+
+    // Restore selected vehicles
+    const savedVehicleIds = sessionStorage.getItem('selectedVehicleIds');
+    if (savedVehicleIds !== null) {
+        try {
+            selectedVehicleIds = JSON.parse(savedVehicleIds);
+            sessionStorage.removeItem('selectedVehicleIds');
+
+            // Update UI to show selected vehicles
+            selectedVehicleIds.forEach(vehicleId => {
+                const checkbox = document.getElementById('vehicle_' + vehicleId);
+                const item = checkbox?.closest('.vehicle-checkbox-item');
+                if (checkbox && item) {
+                    checkbox.checked = true;
+                    item.classList.add('selected');
+                }
+            });
+
+            // Update indicator
+            updateSelectedVehicleIndicator();
+        } catch (e) {
+            console.error('Error restoring selected vehicles:', e);
+            selectedVehicleIds = [];
+        }
     }
 
     // Render the calendar
