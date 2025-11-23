@@ -490,7 +490,11 @@ class OwnerController {
 
         // If AJAX, ensure clean JSON output
         if ($isAjax) {
-            ob_clean(); // Clear any output buffers
+            // Clear all output buffers to prevent JSON parsing errors
+            while (ob_get_level()) {
+                ob_end_clean();
+            }
+            ob_start();
         }
 
         // Verify CSRF token
@@ -601,6 +605,7 @@ class OwnerController {
 
         // Return response based on request type
         if ($isAjax) {
+            $output = ob_get_clean();
             header('Content-Type: application/json');
             if ($blockedCount > 0) {
                 echo json_encode(['success' => true, 'message' => $blockedCount . ' date(s) blocked successfully']);
@@ -667,7 +672,11 @@ class OwnerController {
 
         // If AJAX, ensure clean JSON output
         if ($isAjax) {
-            ob_clean(); // Clear any output buffers
+            // Clear all output buffers to prevent JSON parsing errors
+            while (ob_get_level()) {
+                ob_end_clean();
+            }
+            ob_start();
         }
 
         // Verify CSRF token
@@ -724,6 +733,7 @@ class OwnerController {
 
         // Return response based on request type
         if ($isAjax) {
+            $output = ob_get_clean();
             header('Content-Type: application/json');
             echo json_encode(['success' => true, 'message' => 'Dates unblocked successfully']);
             exit;
