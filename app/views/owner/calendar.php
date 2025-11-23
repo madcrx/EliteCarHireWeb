@@ -235,6 +235,10 @@
             </div>
         <?php else: ?>
             <!-- Vehicle Selection -->
+            <?php
+                // Define colors array at template scope so it's accessible to JavaScript
+                $colors = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#34495e', '#e67e22'];
+            ?>
             <div class="card" style="padding: 0;">
                 <div style="padding: 1rem 1.5rem; border-bottom: 1px solid var(--medium-gray); background: var(--light-gray);">
                     <strong style="display: block; margin-bottom: 0.5rem;"><i class="fas fa-car"></i> Select Vehicle to Block Dates:</strong>
@@ -242,7 +246,6 @@
                 </div>
                 <div class="vehicle-selector">
                     <?php
-                        $colors = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#34495e', '#e67e22'];
                         foreach ($vehicles as $index => $vehicle):
                             $vehicleColor = $colors[$index % count($colors)];
                     ?>
