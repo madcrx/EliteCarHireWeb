@@ -80,6 +80,8 @@ $router->post('/owner/listings/add', 'OwnerController@saveListing');
 $router->get('/owner/listings/{id}/edit', 'OwnerController@editListing');
 $router->post('/owner/listings/{id}/edit', 'OwnerController@updateListing');
 $router->get('/owner/bookings', 'OwnerController@bookings');
+$router->post('/owner/bookings/confirm', 'OwnerController@confirmBooking');
+$router->post('/owner/bookings/cancel', 'OwnerController@cancelBooking');
 $router->get('/owner/calendar', 'OwnerController@calendar');
 $router->post('/owner/calendar/block', 'OwnerController@blockDates');
 $router->post('/owner/calendar/unblock', 'OwnerController@unblockDate');

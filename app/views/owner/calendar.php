@@ -235,14 +235,17 @@
             </div>
         <?php else: ?>
             <!-- Vehicle Selection -->
+            <?php
+                // Define colors array at template scope so it's accessible to JavaScript
+                $colors = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#34495e', '#e67e22'];
+            ?>
             <div class="card" style="padding: 0;">
                 <div style="padding: 1rem 1.5rem; border-bottom: 1px solid var(--medium-gray); background: var(--light-gray);">
-                    <strong style="display: block; margin-bottom: 0.5rem;"><i class="fas fa-car"></i> Select Vehicle to Block Dates:</strong>
-                    <p style="margin: 0; font-size: 0.9rem; color: var(--dark-gray);">Click a vehicle to select it, then click dates on the calendar to block/unblock.</p>
+                    <strong style="display: block; margin-bottom: 0.5rem;"><i class="fas fa-car"></i> Select Vehicles to Block Dates:</strong>
+                    <p style="margin: 0; font-size: 0.9rem; color: var(--dark-gray);">Click one or more vehicles to select them, then click dates on the calendar to block/unblock. Click selected vehicles again to deselect.</p>
                 </div>
                 <div class="vehicle-selector">
                     <?php
-                        $colors = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#34495e', '#e67e22'];
                         foreach ($vehicles as $index => $vehicle):
                             $vehicleColor = $colors[$index % count($colors)];
                     ?>
@@ -276,7 +279,7 @@
                             </select>
                         </div>
                         <div id="selectedVehicleIndicator" style="color: var(--dark-gray); font-style: italic;">
-                            No vehicle selected for blocking
+                            No vehicles selected for blocking
                         </div>
                     </div>
 
@@ -397,10 +400,34 @@
         <?php if (!empty($blockedDates)): ?>
             <div class="card">
                 <h2><i class="fas fa-calendar-times"></i> Blocked Dates</h2>
+
+                <!-- Filter and Actions Bar -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; gap: 1rem; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 250px;">
+                        <input type="text" id="blockedDatesFilter" placeholder="Search by vehicle, date, or reason..."
+                               style="width: 100%; padding: 0.5rem; border: 1px solid var(--medium-gray); border-radius: var(--border-radius);"
+                               onkeyup="filterBlockedDates()">
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <span id="selectedBlocksCount" style="color: var(--dark-gray); font-size: 0.9rem;"></span>
+                        <button id="bulkUnblockBtn" class="btn"
+                                style="display: none; background: #dc3545 !important; color: white !important; border: none !important; font-weight: 600 !important;"
+                                onmouseover="this.style.background='#c82333'"
+                                onmouseout="this.style.background='#dc3545'"
+                                onclick="bulkUnblockDates()">
+                            <i class="fas fa-unlock"></i> Unblock Selected
+                        </button>
+                    </div>
+                </div>
+
                 <div class="table-container">
-                    <table>
+                    <table id="blockedDatesTable">
                         <thead>
                             <tr>
+                                <th style="width: 40px;">
+                                    <input type="checkbox" id="selectAllBlocks" onchange="toggleSelectAllBlocks()"
+                                           title="Select all visible blocks">
+                                </th>
                                 <th>Vehicle</th>
                                 <th>Start Date</th>
                                 <th>End Date</th>
@@ -418,7 +445,20 @@
                                     $days = $interval->days + 1;
                                     $isPast = strtotime($block['end_date']) < strtotime('today');
                                 ?>
-                                <tr style="<?= $isPast ? 'opacity: 0.6;' : '' ?>">
+                                <tr class="blocked-date-row"
+                                    data-vehicle="<?= e($block['make'] . ' ' . $block['model']) ?>"
+                                    data-start="<?= date('M d, Y', strtotime($block['start_date'])) ?>"
+                                    data-end="<?= date('M d, Y', strtotime($block['end_date'])) ?>"
+                                    data-reason="<?= e($block['reason'] ?? '') ?>"
+                                    data-block-id="<?= $block['id'] ?>"
+                                    data-is-past="<?= $isPast ? 'true' : 'false' ?>"
+                                    style="<?= $isPast ? 'opacity: 0.6;' : '' ?>">
+                                    <td>
+                                        <?php if (!$isPast): ?>
+                                            <input type="checkbox" class="block-checkbox" value="<?= $block['id'] ?>"
+                                                   onchange="updateBulkUnblockButton()">
+                                        <?php endif; ?>
+                                    </td>
                                     <td><strong><?= e($block['make'] . ' ' . $block['model']) ?></strong></td>
                                     <td><?= date('M d, Y', strtotime($block['start_date'])) ?></td>
                                     <td><?= date('M d, Y', strtotime($block['end_date'])) ?></td>
@@ -426,14 +466,10 @@
                                     <td><?= !empty($block['reason']) ? e($block['reason']) : '<em style="color: var(--medium-gray);">No reason</em>' ?></td>
                                     <td>
                                         <?php if (!$isPast): ?>
-                                            <form method="POST" action="/owner/calendar/unblock" style="display: inline;">
-                                                <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
-                                                <input type="hidden" name="block_id" value="<?= $block['id'] ?>">
-                                                <button type="submit" class="btn btn-warning" style="padding: 5px 15px;"
-                                                        onclick="return confirm('Unblock these dates?')">
-                                                    <i class="fas fa-unlock"></i> Unblock
-                                                </button>
-                                            </form>
+                                            <button class="btn btn-warning" style="padding: 5px 15px;"
+                                                    onclick="if(confirm('Unblock these dates?')) { unblockDate(<?= $block['id'] ?>); }">
+                                                <i class="fas fa-unlock"></i> Unblock
+                                            </button>
                                         <?php else: ?>
                                             <span class="badge badge-secondary">Expired</span>
                                         <?php endif; ?>
@@ -455,35 +491,57 @@ const blockedDates = <?= json_encode($blockedDates) ?>;
 const vehicleColors = <?= json_encode($colors) ?>;
 
 let currentDate = new Date();
-let selectedVehicleId = null;
-let selectedVehicleColor = null;
+let selectedVehicleIds = []; // Changed to array for multiple selection
 let calendarFilterVehicleId = 'all';
 
-function selectVehicle(vehicleId, color) {
-    // Uncheck all checkboxes
-    document.querySelectorAll('.vehicle-checkbox').forEach(cb => cb.checked = false);
-    document.querySelectorAll('.vehicle-checkbox-item').forEach(item => item.classList.remove('selected'));
+// Helper function to format date without timezone issues
+function formatDateLocal(year, month, day) {
+    const y = year.toString().padStart(4, '0');
+    const m = (month + 1).toString().padStart(2, '0');
+    const d = day.toString().padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
 
-    // Check clicked checkbox
+// Helper function to parse date string to local date
+function parseLocalDate(dateStr) {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return new Date(year, month - 1, day);
+}
+
+function selectVehicle(vehicleId, color) {
     const checkbox = document.getElementById('vehicle_' + vehicleId);
     const item = checkbox.closest('.vehicle-checkbox-item');
 
-    if (selectedVehicleId === vehicleId) {
-        // Deselect if clicking same vehicle
-        selectedVehicleId = null;
-        selectedVehicleColor = null;
-        document.getElementById('selectedVehicleIndicator').textContent = 'No vehicle selected for blocking';
+    const index = selectedVehicleIds.indexOf(vehicleId);
+
+    if (index > -1) {
+        // Deselect vehicle
+        selectedVehicleIds.splice(index, 1);
+        checkbox.checked = false;
+        item.classList.remove('selected');
     } else {
-        // Select new vehicle
+        // Select vehicle
+        selectedVehicleIds.push(vehicleId);
         checkbox.checked = true;
         item.classList.add('selected');
-        selectedVehicleId = vehicleId;
-        selectedVehicleColor = color;
+    }
 
-        const vehicleName = vehicles.find(v => v.id == vehicleId);
-        document.getElementById('selectedVehicleIndicator').innerHTML =
-            '<i class="fas fa-car"></i> Click dates to block: <strong>' +
+    // Update indicator
+    updateSelectedVehicleIndicator();
+}
+
+function updateSelectedVehicleIndicator() {
+    const indicator = document.getElementById('selectedVehicleIndicator');
+
+    if (selectedVehicleIds.length === 0) {
+        indicator.textContent = 'No vehicles selected for blocking';
+    } else if (selectedVehicleIds.length === 1) {
+        const vehicleName = vehicles.find(v => v.id == selectedVehicleIds[0]);
+        indicator.innerHTML = '<i class="fas fa-car"></i> Click dates to block: <strong>' +
             vehicleName.make + ' ' + vehicleName.model + '</strong>';
+    } else {
+        indicator.innerHTML = '<i class="fas fa-car"></i> Click dates to block: <strong>' +
+            selectedVehicleIds.length + ' vehicles selected</strong>';
     }
 }
 
@@ -548,11 +606,15 @@ function createDayCell(day, year, month, isOtherMonth) {
     if (isOtherMonth) dayDiv.classList.add('other-month');
 
     const date = new Date(year, month, day);
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = formatDateLocal(year, month, day); // Fixed: use local date formatting
 
     // Check if today
     const today = new Date();
-    if (date.toDateString() === today.toDateString()) {
+    today.setHours(0, 0, 0, 0);
+    const compareDate = new Date(year, month, day);
+    compareDate.setHours(0, 0, 0, 0);
+
+    if (compareDate.getTime() === today.getTime()) {
         dayDiv.classList.add('today');
     }
 
@@ -568,15 +630,15 @@ function createDayCell(day, year, month, isOtherMonth) {
 
     // Find blocks for this date (filtered by selected vehicle if applicable)
     blockedDates.forEach((block, index) => {
-        const blockStart = new Date(block.start_date);
-        const blockEnd = new Date(block.end_date);
+        const blockStart = parseLocalDate(block.start_date);
+        const blockEnd = parseLocalDate(block.end_date);
 
         // Check filter
         if (calendarFilterVehicleId !== 'all' && block.vehicle_id != calendarFilterVehicleId) {
             return;
         }
 
-        if (date >= blockStart && date <= blockEnd) {
+        if (compareDate >= blockStart && compareDate <= blockEnd) {
             const vehicleIndex = vehicles.findIndex(v => v.id == block.vehicle_id);
             const color = vehicleColors[vehicleIndex % vehicleColors.length];
 
@@ -592,7 +654,7 @@ function createDayCell(day, year, month, isOtherMonth) {
     dayDiv.appendChild(blocksDiv);
 
     // Click handler (only for current/future dates)
-    if (!isOtherMonth && date >= new Date(today.setHours(0,0,0,0))) {
+    if (!isOtherMonth && compareDate >= today) {
         dayDiv.onclick = () => handleDayClick(dateStr);
     }
 
@@ -600,91 +662,107 @@ function createDayCell(day, year, month, isOtherMonth) {
 }
 
 function handleDayClick(dateStr) {
-    if (!selectedVehicleId) {
-        alert('Please select a vehicle first by clicking on it above the calendar.');
+    if (selectedVehicleIds.length === 0) {
+        alert('Please select at least one vehicle first by clicking on it above the calendar.');
         return;
     }
 
-    // Check if this date is already blocked for selected vehicle
-    const existingBlock = blockedDates.find(block => {
-        const blockStart = new Date(block.start_date);
-        const blockEnd = new Date(block.end_date);
-        const clickedDate = new Date(dateStr);
-        return block.vehicle_id == selectedVehicleId &&
-               clickedDate >= blockStart && clickedDate <= blockEnd;
+    const clickedDate = parseLocalDate(dateStr);
+    const blocksToAdd = [];
+    const blocksToRemove = [];
+
+    // Process each selected vehicle
+    selectedVehicleIds.forEach(vehicleId => {
+        // Check if this date is already blocked for this vehicle
+        const existingBlock = blockedDates.find(block => {
+            const blockStart = parseLocalDate(block.start_date);
+            const blockEnd = parseLocalDate(block.end_date);
+            return block.vehicle_id == vehicleId &&
+                   clickedDate >= blockStart && clickedDate <= blockEnd;
+        });
+
+        if (existingBlock) {
+            blocksToRemove.push(existingBlock);
+        } else {
+            blocksToAdd.push({ vehicleId, dateStr });
+        }
     });
 
-    if (existingBlock) {
-        // Unblock
-        if (confirm('This date is already blocked. Do you want to unblock it?')) {
-            unblockDate(existingBlock.id);
+    // Handle unblocking
+    if (blocksToRemove.length > 0) {
+        const vehicleNames = blocksToRemove.map(b => `${b.make} ${b.model}`).join(', ');
+        if (confirm(`This date is already blocked for: ${vehicleNames}. Do you want to unblock?`)) {
+            Promise.all(blocksToRemove.map(block => unblockDateAsync(block.id)))
+                .then(() => {
+                    saveStateAndReload();
+                });
         }
-    } else {
-        // Block the single day
-        blockSingleDay(dateStr);
+    }
+
+    // Handle blocking
+    if (blocksToAdd.length > 0) {
+        Promise.all(blocksToAdd.map(item => blockSingleDayAsync(item.dateStr, item.vehicleId)))
+            .then(() => {
+                saveStateAndReload();
+            });
     }
 }
 
-function blockSingleDay(dateStr) {
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = '/owner/calendar/block';
-
-    const csrf = document.createElement('input');
-    csrf.type = 'hidden';
-    csrf.name = 'csrf_token';
-    csrf.value = '<?= csrfToken() ?>';
-
-    const vehicleInput = document.createElement('input');
-    vehicleInput.type = 'hidden';
-    vehicleInput.name = 'vehicle_id';
-    vehicleInput.value = selectedVehicleId;
-
-    const startInput = document.createElement('input');
-    startInput.type = 'hidden';
-    startInput.name = 'start_date';
-    startInput.value = dateStr;
-
-    const endInput = document.createElement('input');
-    endInput.type = 'hidden';
-    endInput.name = 'end_date';
-    endInput.value = dateStr;
-
-    const freqInput = document.createElement('input');
-    freqInput.type = 'hidden';
-    freqInput.name = 'frequency';
-    freqInput.value = 'daily';
-
-    form.appendChild(csrf);
-    form.appendChild(vehicleInput);
-    form.appendChild(startInput);
-    form.appendChild(endInput);
-    form.appendChild(freqInput);
-
-    document.body.appendChild(form);
-    form.submit();
+// Helper function to save state and reload
+function saveStateAndReload() {
+    sessionStorage.setItem('calendarScrollPos', window.scrollY.toString());
+    sessionStorage.setItem('calendarYear', currentDate.getFullYear().toString());
+    sessionStorage.setItem('calendarMonth', currentDate.getMonth().toString());
+    sessionStorage.setItem('selectedVehicleIds', JSON.stringify(selectedVehicleIds));
+    window.location.reload();
 }
 
-function unblockDate(blockId) {
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = '/owner/calendar/unblock';
+// Async version that doesn't reload automatically
+async function blockSingleDayAsync(dateStr, vehicleId) {
+    const formData = new FormData();
+    formData.append('csrf_token', '<?= csrfToken() ?>');
+    formData.append('vehicle_id', vehicleId);
+    formData.append('start_date', dateStr);
+    formData.append('end_date', dateStr);
+    formData.append('frequency', 'daily');
 
-    const csrf = document.createElement('input');
-    csrf.type = 'hidden';
-    csrf.name = 'csrf_token';
-    csrf.value = '<?= csrfToken() ?>';
+    const response = await fetch('/owner/calendar/block', {
+        method: 'POST',
+        body: formData
+    });
 
-    const blockInput = document.createElement('input');
-    blockInput.type = 'hidden';
-    blockInput.name = 'block_id';
-    blockInput.value = blockId;
+    if (!response.ok) {
+        throw new Error('Failed to block date');
+    }
+    return response;
+}
 
-    form.appendChild(csrf);
-    form.appendChild(blockInput);
+// Async version that doesn't reload automatically
+async function unblockDateAsync(blockId) {
+    const formData = new FormData();
+    formData.append('csrf_token', '<?= csrfToken() ?>');
+    formData.append('block_id', blockId);
 
-    document.body.appendChild(form);
-    form.submit();
+    const response = await fetch('/owner/calendar/unblock', {
+        method: 'POST',
+        body: formData
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to unblock date');
+    }
+    return response;
+}
+
+// Keep these for the Blocked Dates table unblock buttons
+async function unblockDate(blockId) {
+    try {
+        await unblockDateAsync(blockId);
+        saveStateAndReload();
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error unblocking date. Please try again.');
+    }
 }
 
 function changeMonth(delta) {
@@ -721,7 +799,57 @@ function toggleDay(element, dayValue) {
 
 // Initialize calendar on page load
 document.addEventListener('DOMContentLoaded', () => {
+    // Restore calendar month if returning from a block/unblock action
+    const savedYear = sessionStorage.getItem('calendarYear');
+    const savedMonth = sessionStorage.getItem('calendarMonth');
+
+    // Check for !== null instead of truthy check (month 0 = January is falsy!)
+    if (savedYear !== null && savedMonth !== null) {
+        currentDate = new Date(parseInt(savedYear), parseInt(savedMonth), 1);
+        sessionStorage.removeItem('calendarYear');
+        sessionStorage.removeItem('calendarMonth');
+    }
+
+    // Restore selected vehicles
+    const savedVehicleIds = sessionStorage.getItem('selectedVehicleIds');
+    if (savedVehicleIds !== null) {
+        try {
+            selectedVehicleIds = JSON.parse(savedVehicleIds);
+            sessionStorage.removeItem('selectedVehicleIds');
+
+            // Update UI to show selected vehicles
+            selectedVehicleIds.forEach(vehicleId => {
+                const checkbox = document.getElementById('vehicle_' + vehicleId);
+                const item = checkbox?.closest('.vehicle-checkbox-item');
+                if (checkbox && item) {
+                    checkbox.checked = true;
+                    item.classList.add('selected');
+                }
+            });
+
+            // Update indicator
+            updateSelectedVehicleIndicator();
+        } catch (e) {
+            console.error('Error restoring selected vehicles:', e);
+            selectedVehicleIds = [];
+        }
+    }
+
+    // Render the calendar
     renderCalendar();
+
+    // Restore scroll position after calendar is rendered
+    const savedScrollPos = sessionStorage.getItem('calendarScrollPos');
+    if (savedScrollPos !== null) {
+        // Use setTimeout to ensure DOM is fully rendered
+        setTimeout(() => {
+            window.scrollTo({
+                top: parseInt(savedScrollPos),
+                behavior: 'instant'
+            });
+            sessionStorage.removeItem('calendarScrollPos');
+        }, 100);
+    }
 });
 
 // Auto-update end date minimum
@@ -739,6 +867,120 @@ document.getElementById('start_date')?.addEventListener('change', function() {
 document.querySelectorAll('.day-checkbox-item label').forEach(label => {
     label.addEventListener('click', (e) => e.preventDefault());
 });
+
+// ===== Blocked Dates Table Functions =====
+
+// Filter blocked dates table
+function filterBlockedDates() {
+    const filterValue = document.getElementById('blockedDatesFilter')?.value.toLowerCase() || '';
+    const rows = document.querySelectorAll('.blocked-date-row');
+
+    rows.forEach(row => {
+        const vehicle = row.dataset.vehicle.toLowerCase();
+        const start = row.dataset.start.toLowerCase();
+        const end = row.dataset.end.toLowerCase();
+        const reason = row.dataset.reason.toLowerCase();
+
+        const matches = vehicle.includes(filterValue) ||
+                       start.includes(filterValue) ||
+                       end.includes(filterValue) ||
+                       reason.includes(filterValue);
+
+        row.style.display = matches ? '' : 'none';
+    });
+
+    // Update select all checkbox state
+    updateSelectAllCheckbox();
+    // Update bulk unblock button
+    updateBulkUnblockButton();
+}
+
+// Toggle select all visible checkboxes
+function toggleSelectAllBlocks() {
+    const selectAllCheckbox = document.getElementById('selectAllBlocks');
+    const visibleCheckboxes = Array.from(document.querySelectorAll('.block-checkbox'))
+        .filter(cb => cb.closest('tr').style.display !== 'none');
+
+    visibleCheckboxes.forEach(checkbox => {
+        checkbox.checked = selectAllCheckbox.checked;
+    });
+
+    updateBulkUnblockButton();
+}
+
+// Update the select all checkbox state based on current selection
+function updateSelectAllCheckbox() {
+    const selectAllCheckbox = document.getElementById('selectAllBlocks');
+    const visibleCheckboxes = Array.from(document.querySelectorAll('.block-checkbox'))
+        .filter(cb => cb.closest('tr').style.display !== 'none');
+
+    if (visibleCheckboxes.length === 0) {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = false;
+        return;
+    }
+
+    const checkedCount = visibleCheckboxes.filter(cb => cb.checked).length;
+
+    if (checkedCount === 0) {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = false;
+    } else if (checkedCount === visibleCheckboxes.length) {
+        selectAllCheckbox.checked = true;
+        selectAllCheckbox.indeterminate = false;
+    } else {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = true;
+    }
+}
+
+// Update bulk unblock button visibility and count
+function updateBulkUnblockButton() {
+    const checkedBoxes = document.querySelectorAll('.block-checkbox:checked');
+    const count = checkedBoxes.length;
+    const button = document.getElementById('bulkUnblockBtn');
+    const countSpan = document.getElementById('selectedBlocksCount');
+
+    if (count > 0) {
+        button.style.display = 'block';
+        button.style.background = '#dc3545';
+        button.style.color = 'white';
+        button.style.border = 'none';
+        button.style.fontWeight = '600';
+        countSpan.textContent = `${count} selected`;
+    } else {
+        button.style.display = 'none';
+        countSpan.textContent = '';
+    }
+
+    updateSelectAllCheckbox();
+}
+
+// Bulk unblock selected dates
+async function bulkUnblockDates() {
+    const checkedBoxes = document.querySelectorAll('.block-checkbox:checked');
+    const blockIds = Array.from(checkedBoxes).map(cb => cb.value);
+
+    if (blockIds.length === 0) {
+        alert('No dates selected for unblocking.');
+        return;
+    }
+
+    const message = `Are you sure you want to unblock ${blockIds.length} blocked date${blockIds.length > 1 ? 's' : ''}?`;
+
+    if (!confirm(message)) {
+        return;
+    }
+
+    try {
+        // Unblock all selected dates
+        await Promise.all(blockIds.map(id => unblockDateAsync(id)));
+        saveStateAndReload();
+    } catch (error) {
+        console.error('Error unblocking dates:', error);
+        alert('Error unblocking some dates. Please try again.');
+    }
+}
 </script>
 
 <?php $content = ob_get_clean(); include __DIR__ . '/../layout.php'; ?>

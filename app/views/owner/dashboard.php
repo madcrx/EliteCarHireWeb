@@ -15,7 +15,46 @@
     </div>
     <div class="main-content">
         <h1>Owner Dashboard</h1>
-        
+
+        <!-- Notifications -->
+        <?php if (!empty($notifications)): ?>
+            <div class="card" style="background: #e3f2fd; border-left: 4px solid #2196f3; margin-bottom: 1.5rem;">
+                <h3 style="margin-top: 0; color: #1976d2;">
+                    <i class="fas fa-bell"></i> Notifications
+                    <?php if ($notificationCount > 0): ?>
+                        <span class="badge badge-primary" style="font-size: 0.8rem;"><?= $notificationCount ?></span>
+                    <?php endif; ?>
+                </h3>
+                <div style="max-height: 300px; overflow-y: auto;">
+                    <?php foreach ($notifications as $notification): ?>
+                        <div style="padding: 0.75rem; margin-bottom: 0.5rem; background: white; border-radius: var(--border-radius); border-left: 3px solid #2196f3;">
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+                                <strong style="color: #1976d2;"><?= e($notification['title']) ?></strong>
+                                <span style="font-size: 0.8rem; color: var(--dark-gray);">
+                                    <?= timeAgo($notification['created_at']) ?>
+                                </span>
+                            </div>
+                            <p style="margin: 0; color: var(--dark-gray); font-size: 0.9rem;">
+                                <?= e($notification['message']) ?>
+                            </p>
+                            <?php if (!empty($notification['link'])): ?>
+                                <a href="<?= e($notification['link']) ?>" style="font-size: 0.85rem; color: #2196f3; text-decoration: none;">
+                                    View Details <i class="fas fa-arrow-right"></i>
+                                </a>
+                            <?php endif; ?>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+                <?php if ($notificationCount > 5): ?>
+                    <p style="margin: 1rem 0 0 0; text-align: center;">
+                        <a href="/owner/notifications" class="btn btn-primary btn-sm">
+                            View All Notifications (<?= $notificationCount ?>)
+                        </a>
+                    </p>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
+
         <div class="stats-grid">
             <div class="stat-card">
                 <h3><?= $stats['total_vehicles'] ?></h3>
