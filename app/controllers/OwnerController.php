@@ -39,22 +39,8 @@ class OwnerController {
             $notifications = [];
             $notificationCount = 0;
 
-            // Only try to load features if helper files exist
-            error_log("OwnerController::dashboard() - Checking booking automation");
-            if (file_exists(__DIR__ . '/../helpers/booking_automation.php')) {
-                try {
-                    require_once __DIR__ . '/../helpers/booking_automation.php';
-                    if (function_exists('autoUpdateBookingStatuses')) {
-                        autoUpdateBookingStatuses();
-                    }
-                } catch (Exception $e) {
-                    error_log("Booking automation error: " . $e->getMessage());
-                } catch (Error $e) {
-                    error_log("Booking automation fatal error: " . $e->getMessage());
-                }
-            }
-
-            error_log("OwnerController::dashboard() - Checking notifications");
+            // Load helper files in correct order (notifications first, then booking automation)
+            error_log("OwnerController::dashboard() - Loading notifications helper");
             if (file_exists(__DIR__ . '/../helpers/notifications.php')) {
                 try {
                     require_once __DIR__ . '/../helpers/notifications.php';
@@ -66,6 +52,20 @@ class OwnerController {
                     error_log("Notifications error: " . $e->getMessage());
                 } catch (Error $e) {
                     error_log("Notifications fatal error: " . $e->getMessage());
+                }
+            }
+
+            error_log("OwnerController::dashboard() - Loading booking automation");
+            if (file_exists(__DIR__ . '/../helpers/booking_automation.php')) {
+                try {
+                    require_once __DIR__ . '/../helpers/booking_automation.php';
+                    if (function_exists('autoUpdateBookingStatuses')) {
+                        autoUpdateBookingStatuses();
+                    }
+                } catch (Exception $e) {
+                    error_log("Booking automation error: " . $e->getMessage());
+                } catch (Error $e) {
+                    error_log("Booking automation fatal error: " . $e->getMessage());
                 }
             }
 
