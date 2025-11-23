@@ -4,7 +4,8 @@
  * Automatically updates booking statuses based on dates/times and payment status
  */
 
-require_once __DIR__ . '/notifications.php';
+// Note: notifications.php should be loaded by the controller before this file
+// to avoid potential circular dependency or redefinition issues
 
 /**
  * Auto-update booking statuses based on current date/time

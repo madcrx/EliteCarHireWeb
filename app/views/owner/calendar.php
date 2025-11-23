@@ -693,8 +693,14 @@ function handleDayClick(dateStr) {
         const vehicleNames = blocksToRemove.map(b => `${b.make} ${b.model}`).join(', ');
         if (confirm(`This date is already blocked for: ${vehicleNames}. Do you want to unblock?`)) {
             Promise.all(blocksToRemove.map(block => unblockDateAsync(block.id)))
-                .then(() => {
+                .then((results) => {
+                    // Show success message
+                    console.log('Successfully unblocked dates');
                     saveStateAndReload();
+                })
+                .catch((error) => {
+                    console.error('Error unblocking dates:', error);
+                    alert('Error unblocking dates: ' + error.message);
                 });
         }
     }
@@ -702,8 +708,14 @@ function handleDayClick(dateStr) {
     // Handle blocking
     if (blocksToAdd.length > 0) {
         Promise.all(blocksToAdd.map(item => blockSingleDayAsync(item.dateStr, item.vehicleId)))
-            .then(() => {
+            .then((results) => {
+                // Show success message
+                console.log('Successfully blocked dates');
                 saveStateAndReload();
+            })
+            .catch((error) => {
+                console.error('Error blocking dates:', error);
+                alert('Error blocking dates: ' + error.message);
             });
     }
 }
@@ -728,13 +740,27 @@ async function blockSingleDayAsync(dateStr, vehicleId) {
 
     const response = await fetch('/owner/calendar/block', {
         method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
         body: formData
     });
 
-    if (!response.ok) {
-        throw new Error('Failed to block date');
+    // Check if response is JSON
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('Non-JSON response received:', text);
+        throw new Error('Server returned non-JSON response. Please check server logs.');
     }
-    return response;
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Failed to block date');
+    }
+
+    return data;
 }
 
 // Async version that doesn't reload automatically
@@ -745,13 +771,27 @@ async function unblockDateAsync(blockId) {
 
     const response = await fetch('/owner/calendar/unblock', {
         method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
         body: formData
     });
 
-    if (!response.ok) {
-        throw new Error('Failed to unblock date');
+    // Check if response is JSON
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('Non-JSON response received:', text);
+        throw new Error('Server returned non-JSON response. Please check server logs.');
     }
-    return response;
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Failed to unblock date');
+    }
+
+    return data;
 }
 
 // Keep these for the Blocked Dates table unblock buttons
@@ -975,10 +1015,11 @@ async function bulkUnblockDates() {
     try {
         // Unblock all selected dates
         await Promise.all(blockIds.map(id => unblockDateAsync(id)));
+        console.log('Successfully unblocked multiple dates');
         saveStateAndReload();
     } catch (error) {
         console.error('Error unblocking dates:', error);
-        alert('Error unblocking some dates. Please try again.');
+        alert('Error unblocking dates: ' + error.message);
     }
 }
 </script>
