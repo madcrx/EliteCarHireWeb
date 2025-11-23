@@ -71,17 +71,17 @@ class OwnerController {
 
             error_log("OwnerController::dashboard() - Fetching stats");
 
-            // PHP 8.2 compatible: fetch results first, then access array keys
+            // PHP 8.2 compatible: fetch results first, validate type, then access array keys safely
             $vehicleCount = db()->fetch("SELECT COUNT(*) as count FROM vehicles WHERE owner_id = ?", [$ownerId]);
             $bookingCount = db()->fetch("SELECT COUNT(*) as count FROM bookings WHERE owner_id = ? AND status IN ('confirmed', 'in_progress')", [$ownerId]);
             $earnings = db()->fetch("SELECT COALESCE(SUM(total_amount - commission_amount), 0) as earnings FROM bookings WHERE owner_id = ? AND status='completed' AND MONTH(created_at) = MONTH(NOW())", [$ownerId]);
             $payouts = db()->fetch("SELECT COALESCE(SUM(amount), 0) as amount FROM payouts WHERE owner_id = ? AND status='pending'", [$ownerId]);
 
             $stats = [
-                'total_vehicles' => $vehicleCount['count'] ?? 0,
-                'active_bookings' => $bookingCount['count'] ?? 0,
-                'monthly_earnings' => $earnings['earnings'] ?? 0,
-                'pending_payouts' => $payouts['amount'] ?? 0,
+                'total_vehicles' => (is_array($vehicleCount) && isset($vehicleCount['count'])) ? $vehicleCount['count'] : 0,
+                'active_bookings' => (is_array($bookingCount) && isset($bookingCount['count'])) ? $bookingCount['count'] : 0,
+                'monthly_earnings' => (is_array($earnings) && isset($earnings['earnings'])) ? $earnings['earnings'] : 0,
+                'pending_payouts' => (is_array($payouts) && isset($payouts['amount'])) ? $payouts['amount'] : 0,
             ];
 
             error_log("OwnerController::dashboard() - Fetching recent bookings");
@@ -89,6 +89,12 @@ class OwnerController {
                                               JOIN vehicles v ON b.vehicle_id = v.id
                                               JOIN users u ON b.customer_id = u.id
                                               WHERE b.owner_id = ? ORDER BY b.created_at DESC LIMIT 10", [$ownerId]);
+
+            // Ensure recentBookings is an array
+            if (!is_array($recentBookings)) {
+                error_log("OwnerController::dashboard() - fetchAll returned non-array: " . gettype($recentBookings));
+                $recentBookings = [];
+            }
 
             error_log("OwnerController::dashboard() - Rendering view");
             view('owner/dashboard', compact('stats', 'recentBookings', 'notifications', 'notificationCount'));
