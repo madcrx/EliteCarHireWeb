@@ -488,6 +488,11 @@ class OwnerController {
         $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
                   strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
 
+        // If AJAX, ensure clean JSON output
+        if ($isAjax) {
+            ob_clean(); // Clear any output buffers
+        }
+
         // Verify CSRF token
         $token = $_POST['csrf_token'] ?? '';
         if (!verifyCsrf($token)) {
@@ -557,20 +562,31 @@ class OwnerController {
 
         // Block each date individually
         $blockedCount = 0;
-        foreach ($datesToBlock as $dateToBlock) {
-            // Check for overlapping blocked dates for this specific date
-            $overlap = db()->fetch("SELECT id FROM vehicle_blocked_dates
-                                   WHERE vehicle_id = ?
-                                   AND ? BETWEEN start_date AND end_date",
-                                  [$vehicleId, $dateToBlock]);
+        try {
+            foreach ($datesToBlock as $dateToBlock) {
+                // Check for overlapping blocked dates for this specific date
+                $overlap = db()->fetch("SELECT id FROM vehicle_blocked_dates
+                                       WHERE vehicle_id = ?
+                                       AND ? BETWEEN start_date AND end_date",
+                                      [$vehicleId, $dateToBlock]);
 
-            if (!$overlap) {
-                // Insert blocked date (single day blocks)
-                db()->execute("INSERT INTO vehicle_blocked_dates (vehicle_id, owner_id, start_date, end_date, reason, created_at)
-                              VALUES (?, ?, ?, ?, ?, NOW())",
-                             [$vehicleId, $ownerId, $dateToBlock, $dateToBlock, $reason]);
-                $blockedCount++;
+                if (!$overlap) {
+                    // Insert blocked date (single day blocks)
+                    db()->execute("INSERT INTO vehicle_blocked_dates (vehicle_id, owner_id, start_date, end_date, reason, created_at)
+                                  VALUES (?, ?, ?, ?, ?, NOW())",
+                                 [$vehicleId, $ownerId, $dateToBlock, $dateToBlock, $reason]);
+                    $blockedCount++;
+                }
             }
+        } catch (Exception $e) {
+            error_log("Error blocking dates: " . $e->getMessage());
+            if ($isAjax) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+                exit;
+            }
+            flash('error', 'Error blocking dates. Please try again.');
+            redirect('/owner/calendar');
         }
 
         if ($blockedCount > 0) {
@@ -649,6 +665,11 @@ class OwnerController {
         $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
                   strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
 
+        // If AJAX, ensure clean JSON output
+        if ($isAjax) {
+            ob_clean(); // Clear any output buffers
+        }
+
         // Verify CSRF token
         $token = $_POST['csrf_token'] ?? '';
         if (!verifyCsrf($token)) {
@@ -687,9 +708,19 @@ class OwnerController {
         }
 
         // Delete the block
-        db()->execute("DELETE FROM vehicle_blocked_dates WHERE id = ?", [$blockId]);
-
-        logAudit('unblock_vehicle_dates', 'vehicle_blocked_dates', $blockId);
+        try {
+            db()->execute("DELETE FROM vehicle_blocked_dates WHERE id = ?", [$blockId]);
+            logAudit('unblock_vehicle_dates', 'vehicle_blocked_dates', $blockId);
+        } catch (Exception $e) {
+            error_log("Error unblocking date: " . $e->getMessage());
+            if ($isAjax) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+                exit;
+            }
+            flash('error', 'Error unblocking date. Please try again.');
+            redirect('/owner/calendar');
+        }
 
         // Return response based on request type
         if ($isAjax) {
