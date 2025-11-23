@@ -631,6 +631,8 @@ function handleDayClick(dateStr) {
     }
 
     const clickedDate = parseLocalDate(dateStr);
+    const blocksToAdd = [];
+    const blocksToRemove = [];
 
     // Process each selected vehicle
     selectedVehicleIds.forEach(vehicleId => {
@@ -643,68 +645,82 @@ function handleDayClick(dateStr) {
         });
 
         if (existingBlock) {
-            // Unblock
-            if (confirm(`This date is already blocked for ${existingBlock.make} ${existingBlock.model}. Do you want to unblock it?`)) {
-                unblockDate(existingBlock.id);
-            }
+            blocksToRemove.push(existingBlock);
         } else {
-            // Block the single day
-            blockSingleDay(dateStr, vehicleId);
+            blocksToAdd.push({ vehicleId, dateStr });
         }
     });
-}
 
-async function blockSingleDay(dateStr, vehicleId) {
-    try {
-        const formData = new FormData();
-        formData.append('csrf_token', '<?= csrfToken() ?>');
-        formData.append('vehicle_id', vehicleId);
-        formData.append('start_date', dateStr);
-        formData.append('end_date', dateStr);
-        formData.append('frequency', 'daily');
-
-        const response = await fetch('/owner/calendar/block', {
-            method: 'POST',
-            body: formData
-        });
-
-        if (response.ok) {
-            // Save current state before reload
-            sessionStorage.setItem('calendarScrollPos', window.scrollY);
-            sessionStorage.setItem('calendarYear', currentDate.getFullYear());
-            sessionStorage.setItem('calendarMonth', currentDate.getMonth());
-            // Reload the page to refresh data
-            window.location.reload();
-        } else {
-            alert('Error blocking date. Please try again.');
+    // Handle unblocking
+    if (blocksToRemove.length > 0) {
+        const vehicleNames = blocksToRemove.map(b => `${b.make} ${b.model}`).join(', ');
+        if (confirm(`This date is already blocked for: ${vehicleNames}. Do you want to unblock?`)) {
+            Promise.all(blocksToRemove.map(block => unblockDateAsync(block.id)))
+                .then(() => {
+                    saveStateAndReload();
+                });
         }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Error blocking date. Please try again.');
+    }
+
+    // Handle blocking
+    if (blocksToAdd.length > 0) {
+        Promise.all(blocksToAdd.map(item => blockSingleDayAsync(item.dateStr, item.vehicleId)))
+            .then(() => {
+                saveStateAndReload();
+            });
     }
 }
 
+// Helper function to save state and reload
+function saveStateAndReload() {
+    sessionStorage.setItem('calendarScrollPos', window.scrollY.toString());
+    sessionStorage.setItem('calendarYear', currentDate.getFullYear().toString());
+    sessionStorage.setItem('calendarMonth', currentDate.getMonth().toString());
+    window.location.reload();
+}
+
+// Async version that doesn't reload automatically
+async function blockSingleDayAsync(dateStr, vehicleId) {
+    const formData = new FormData();
+    formData.append('csrf_token', '<?= csrfToken() ?>');
+    formData.append('vehicle_id', vehicleId);
+    formData.append('start_date', dateStr);
+    formData.append('end_date', dateStr);
+    formData.append('frequency', 'daily');
+
+    const response = await fetch('/owner/calendar/block', {
+        method: 'POST',
+        body: formData
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to block date');
+    }
+    return response;
+}
+
+// Async version that doesn't reload automatically
+async function unblockDateAsync(blockId) {
+    const formData = new FormData();
+    formData.append('csrf_token', '<?= csrfToken() ?>');
+    formData.append('block_id', blockId);
+
+    const response = await fetch('/owner/calendar/unblock', {
+        method: 'POST',
+        body: formData
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to unblock date');
+    }
+    return response;
+}
+
+// Keep these for the Blocked Dates table unblock buttons
 async function unblockDate(blockId) {
     try {
-        const formData = new FormData();
-        formData.append('csrf_token', '<?= csrfToken() ?>');
-        formData.append('block_id', blockId);
-
-        const response = await fetch('/owner/calendar/unblock', {
-            method: 'POST',
-            body: formData
-        });
-
-        if (response.ok) {
-            // Save current state before reload
-            sessionStorage.setItem('calendarScrollPos', window.scrollY);
-            sessionStorage.setItem('calendarYear', currentDate.getFullYear());
-            sessionStorage.setItem('calendarMonth', currentDate.getMonth());
-            // Reload the page to refresh data
-            window.location.reload();
-        } else {
-            alert('Error unblocking date. Please try again.');
-        }
+        await unblockDateAsync(blockId);
+        saveStateAndReload();
     } catch (error) {
         console.error('Error:', error);
         alert('Error unblocking date. Please try again.');
@@ -749,7 +765,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const savedYear = sessionStorage.getItem('calendarYear');
     const savedMonth = sessionStorage.getItem('calendarMonth');
 
-    if (savedYear && savedMonth) {
+    // Check for !== null instead of truthy check (month 0 = January is falsy!)
+    if (savedYear !== null && savedMonth !== null) {
         currentDate = new Date(parseInt(savedYear), parseInt(savedMonth), 1);
         sessionStorage.removeItem('calendarYear');
         sessionStorage.removeItem('calendarMonth');
@@ -760,7 +777,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Restore scroll position after calendar is rendered
     const savedScrollPos = sessionStorage.getItem('calendarScrollPos');
-    if (savedScrollPos) {
+    if (savedScrollPos !== null) {
         // Use setTimeout to ensure DOM is fully rendered
         setTimeout(() => {
             window.scrollTo({
