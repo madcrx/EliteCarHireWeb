@@ -251,6 +251,7 @@ class OwnerController {
     public function bookings() {
         $ownerId = $_SESSION['user_id'];
         $status = $_GET['status'] ?? 'all';
+        $view = $_GET['view'] ?? 'table';
 
         // Auto-update booking statuses (with error handling)
         if (file_exists(__DIR__ . '/../helpers/booking_automation.php')) {
@@ -281,7 +282,14 @@ class OwnerController {
         $sql .= " ORDER BY b.booking_date DESC";
 
         $bookings = db()->fetchAll($sql, $params);
-        view('owner/bookings', compact('bookings', 'status'));
+
+        // Ensure bookings is an array (type safety)
+        if (!is_array($bookings)) {
+            error_log("OwnerController::bookings() - fetchAll returned non-array: " . gettype($bookings));
+            $bookings = [];
+        }
+
+        view('owner/bookings', compact('bookings', 'status', 'view'));
     }
 
     public function confirmBooking() {
