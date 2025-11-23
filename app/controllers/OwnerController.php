@@ -9,24 +9,36 @@ class OwnerController {
     public function dashboard() {
         $ownerId = $_SESSION['user_id'];
 
-        // Auto-update booking statuses (with error handling)
-        try {
-            require_once __DIR__ . '/../helpers/booking_automation.php';
-            autoUpdateBookingStatuses();
-        } catch (Exception $e) {
-            error_log("Booking automation error: " . $e->getMessage());
-        }
-
-        // Load notifications (with error handling)
+        // Initialize notifications as empty (graceful fallback)
         $notifications = [];
         $notificationCount = 0;
-        try {
-            require_once __DIR__ . '/../helpers/notifications.php';
-            $notifications = getUnreadNotifications($ownerId, 5);
-            $notificationCount = getUnreadNotificationCount($ownerId);
-        } catch (Exception $e) {
-            error_log("Notifications error: " . $e->getMessage());
-            // Continue without notifications if there's an error
+
+        // Only try to load features if helper files exist
+        if (file_exists(__DIR__ . '/../helpers/booking_automation.php')) {
+            try {
+                require_once __DIR__ . '/../helpers/booking_automation.php';
+                if (function_exists('autoUpdateBookingStatuses')) {
+                    autoUpdateBookingStatuses();
+                }
+            } catch (Exception $e) {
+                error_log("Booking automation error: " . $e->getMessage());
+            } catch (Error $e) {
+                error_log("Booking automation fatal error: " . $e->getMessage());
+            }
+        }
+
+        if (file_exists(__DIR__ . '/../helpers/notifications.php')) {
+            try {
+                require_once __DIR__ . '/../helpers/notifications.php';
+                if (function_exists('getUnreadNotifications') && function_exists('getUnreadNotificationCount')) {
+                    $notifications = getUnreadNotifications($ownerId, 5);
+                    $notificationCount = getUnreadNotificationCount($ownerId);
+                }
+            } catch (Exception $e) {
+                error_log("Notifications error: " . $e->getMessage());
+            } catch (Error $e) {
+                error_log("Notifications fatal error: " . $e->getMessage());
+            }
         }
 
         $stats = [
@@ -184,11 +196,17 @@ class OwnerController {
         $status = $_GET['status'] ?? 'all';
 
         // Auto-update booking statuses (with error handling)
-        try {
-            require_once __DIR__ . '/../helpers/booking_automation.php';
-            autoUpdateBookingStatuses();
-        } catch (Exception $e) {
-            error_log("Booking automation error: " . $e->getMessage());
+        if (file_exists(__DIR__ . '/../helpers/booking_automation.php')) {
+            try {
+                require_once __DIR__ . '/../helpers/booking_automation.php';
+                if (function_exists('autoUpdateBookingStatuses')) {
+                    autoUpdateBookingStatuses();
+                }
+            } catch (Exception $e) {
+                error_log("Booking automation error: " . $e->getMessage());
+            } catch (Error $e) {
+                error_log("Booking automation fatal error: " . $e->getMessage());
+            }
         }
 
         $sql = "SELECT b.*, v.make, v.model, u.first_name, u.last_name
@@ -250,20 +268,42 @@ class OwnerController {
         );
 
         // Create notification for customer
-        require_once __DIR__ . '/../helpers/notifications.php';
-        $vehicleName = $booking['make'] . ' ' . $booking['model'];
-        notifyBookingConfirmed(
-            $booking['customer_id'],
-            $booking['booking_reference'],
-            $vehicleName
-        );
+        if (file_exists(__DIR__ . '/../helpers/notifications.php')) {
+            try {
+                require_once __DIR__ . '/../helpers/notifications.php';
+                if (function_exists('notifyBookingConfirmed')) {
+                    $vehicleName = $booking['make'] . ' ' . $booking['model'];
+                    notifyBookingConfirmed(
+                        $booking['customer_id'],
+                        $booking['booking_reference'],
+                        $vehicleName
+                    );
+                }
+            } catch (Exception $e) {
+                error_log("Notification error in confirmBooking: " . $e->getMessage());
+            } catch (Error $e) {
+                error_log("Notification fatal error in confirmBooking: " . $e->getMessage());
+            }
+        }
 
         // If payment is already made and booking time has started, transition to in_progress
         if ($booking['payment_status'] === 'paid') {
-            require_once __DIR__ . '/../helpers/booking_automation.php';
-            if (canTransitionToInProgress($bookingId)) {
-                transitionBookingToInProgress($bookingId);
-                flash('success', 'Booking confirmed and started!');
+            if (file_exists(__DIR__ . '/../helpers/booking_automation.php')) {
+                try {
+                    require_once __DIR__ . '/../helpers/booking_automation.php';
+                    if (function_exists('canTransitionToInProgress') && canTransitionToInProgress($bookingId)) {
+                        transitionBookingToInProgress($bookingId);
+                        flash('success', 'Booking confirmed and started!');
+                    } else {
+                        flash('success', 'Booking confirmed successfully! It will automatically start when the booking time begins.');
+                    }
+                } catch (Exception $e) {
+                    error_log("Booking automation error in confirmBooking: " . $e->getMessage());
+                    flash('success', 'Booking confirmed successfully! It will automatically start when the booking time begins.');
+                } catch (Error $e) {
+                    error_log("Booking automation fatal error in confirmBooking: " . $e->getMessage());
+                    flash('success', 'Booking confirmed successfully! It will automatically start when the booking time begins.');
+                }
             } else {
                 flash('success', 'Booking confirmed successfully! It will automatically start when the booking time begins.');
             }
@@ -331,17 +371,27 @@ class OwnerController {
         );
 
         // Notify all admins
-        require_once __DIR__ . '/../helpers/notifications.php';
-        $admins = db()->fetchAll("SELECT id FROM users WHERE role = 'admin'");
-        $vehicleName = $booking['make'] . ' ' . $booking['model'];
+        if (file_exists(__DIR__ . '/../helpers/notifications.php')) {
+            try {
+                require_once __DIR__ . '/../helpers/notifications.php';
+                if (function_exists('notifyBookingCancellationPending')) {
+                    $admins = db()->fetchAll("SELECT id FROM users WHERE role = 'admin'");
+                    $vehicleName = $booking['make'] . ' ' . $booking['model'];
 
-        foreach ($admins as $admin) {
-            notifyBookingCancellationPending(
-                $admin['id'],
-                $booking['booking_reference'],
-                $vehicleName,
-                $reason
-            );
+                    foreach ($admins as $admin) {
+                        notifyBookingCancellationPending(
+                            $admin['id'],
+                            $booking['booking_reference'],
+                            $vehicleName,
+                            $reason
+                        );
+                    }
+                }
+            } catch (Exception $e) {
+                error_log("Notification error in cancelBooking: " . $e->getMessage());
+            } catch (Error $e) {
+                error_log("Notification fatal error in cancelBooking: " . $e->getMessage());
+            }
         }
 
         logAudit('request_booking_cancellation', 'bookings', $bookingId, [
