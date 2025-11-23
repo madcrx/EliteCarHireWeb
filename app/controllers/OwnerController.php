@@ -9,14 +9,25 @@ class OwnerController {
     public function dashboard() {
         $ownerId = $_SESSION['user_id'];
 
-        // Auto-update booking statuses
-        require_once __DIR__ . '/../helpers/booking_automation.php';
-        autoUpdateBookingStatuses();
+        // Auto-update booking statuses (with error handling)
+        try {
+            require_once __DIR__ . '/../helpers/booking_automation.php';
+            autoUpdateBookingStatuses();
+        } catch (Exception $e) {
+            error_log("Booking automation error: " . $e->getMessage());
+        }
 
-        // Load notifications
-        require_once __DIR__ . '/../helpers/notifications.php';
-        $notifications = getUnreadNotifications($ownerId, 5);
-        $notificationCount = getUnreadNotificationCount($ownerId);
+        // Load notifications (with error handling)
+        $notifications = [];
+        $notificationCount = 0;
+        try {
+            require_once __DIR__ . '/../helpers/notifications.php';
+            $notifications = getUnreadNotifications($ownerId, 5);
+            $notificationCount = getUnreadNotificationCount($ownerId);
+        } catch (Exception $e) {
+            error_log("Notifications error: " . $e->getMessage());
+            // Continue without notifications if there's an error
+        }
 
         $stats = [
             'total_vehicles' => db()->fetch("SELECT COUNT(*) as count FROM vehicles WHERE owner_id = ?", [$ownerId])['count'],
@@ -172,9 +183,13 @@ class OwnerController {
         $ownerId = $_SESSION['user_id'];
         $status = $_GET['status'] ?? 'all';
 
-        // Auto-update booking statuses
-        require_once __DIR__ . '/../helpers/booking_automation.php';
-        autoUpdateBookingStatuses();
+        // Auto-update booking statuses (with error handling)
+        try {
+            require_once __DIR__ . '/../helpers/booking_automation.php';
+            autoUpdateBookingStatuses();
+        } catch (Exception $e) {
+            error_log("Booking automation error: " . $e->getMessage());
+        }
 
         $sql = "SELECT b.*, v.make, v.model, u.first_name, u.last_name
                 FROM bookings b
