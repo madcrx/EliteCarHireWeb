@@ -70,11 +70,18 @@ class OwnerController {
             }
 
             error_log("OwnerController::dashboard() - Fetching stats");
+
+            // PHP 8.2 compatible: fetch results first, then access array keys
+            $vehicleCount = db()->fetch("SELECT COUNT(*) as count FROM vehicles WHERE owner_id = ?", [$ownerId]);
+            $bookingCount = db()->fetch("SELECT COUNT(*) as count FROM bookings WHERE owner_id = ? AND status IN ('confirmed', 'in_progress')", [$ownerId]);
+            $earnings = db()->fetch("SELECT COALESCE(SUM(total_amount - commission_amount), 0) as earnings FROM bookings WHERE owner_id = ? AND status='completed' AND MONTH(created_at) = MONTH(NOW())", [$ownerId]);
+            $payouts = db()->fetch("SELECT COALESCE(SUM(amount), 0) as amount FROM payouts WHERE owner_id = ? AND status='pending'", [$ownerId]);
+
             $stats = [
-                'total_vehicles' => db()->fetch("SELECT COUNT(*) as count FROM vehicles WHERE owner_id = ?", [$ownerId])['count'] ?? 0,
-                'active_bookings' => db()->fetch("SELECT COUNT(*) as count FROM bookings WHERE owner_id = ? AND status IN ('confirmed', 'in_progress')", [$ownerId])['count'] ?? 0,
-                'monthly_earnings' => db()->fetch("SELECT COALESCE(SUM(total_amount - commission_amount), 0) as earnings FROM bookings WHERE owner_id = ? AND status='completed' AND MONTH(created_at) = MONTH(NOW())", [$ownerId])['earnings'] ?? 0,
-                'pending_payouts' => db()->fetch("SELECT COALESCE(SUM(amount), 0) as amount FROM payouts WHERE owner_id = ? AND status='pending'", [$ownerId])['amount'] ?? 0,
+                'total_vehicles' => $vehicleCount['count'] ?? 0,
+                'active_bookings' => $bookingCount['count'] ?? 0,
+                'monthly_earnings' => $earnings['earnings'] ?? 0,
+                'pending_payouts' => $payouts['amount'] ?? 0,
             ];
 
             error_log("OwnerController::dashboard() - Fetching recent bookings");
