@@ -866,9 +866,15 @@ class AdminController {
                 continue;
             }
 
-            // Validate file size (5MB max)
-            if ($file['size'] > 5 * 1024 * 1024) {
-                $errors[] = "{$name}: File too large (" . round($file['size'] / 1024 / 1024, 2) . "MB)";
+            // Validate file size - use PHP's upload limit (currently 2MB)
+            $phpMaxSize = $this->parseSize(ini_get('upload_max_filesize'));
+            $configMaxSize = 5 * 1024 * 1024; // 5MB from config
+            $maxSize = min($phpMaxSize, $configMaxSize);
+
+            if ($file['size'] > $maxSize) {
+                $maxMB = round($maxSize / 1024 / 1024, 1);
+                $actualMB = round($file['size'] / 1024 / 1024, 2);
+                $errors[] = "{$name}: File too large ({$actualMB}MB, max {$maxMB}MB - server limit)";
                 continue;
             }
 
@@ -982,5 +988,24 @@ class AdminController {
 
         flash('success', 'Image deleted successfully');
         redirect('/admin/vehicles/' . $vehicleId . '/edit');
+    }
+
+    /**
+     * Parse PHP size values like "2M", "512K" to bytes
+     */
+    private function parseSize($size) {
+        $unit = strtoupper(substr($size, -1));
+        $value = (int) $size;
+
+        switch ($unit) {
+            case 'G':
+                $value *= 1024;
+            case 'M':
+                $value *= 1024;
+            case 'K':
+                $value *= 1024;
+        }
+
+        return $value;
     }
 }

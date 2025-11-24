@@ -181,7 +181,7 @@
                         <input type="file" name="images[]" id="images" multiple accept="image/jpeg,image/jpg,image/png,image/webp" required>
                         <small style="display: block; margin-top: 0.5rem; color: var(--dark-gray);">
                             <i class="fas fa-info-circle"></i>
-                            Accepted formats: JPG, PNG, WebP. Max 5MB per image.
+                            Accepted formats: JPG, PNG, WebP. Max 2MB per image (server limit).
                             <?php if (empty($images)): ?>
                                 The first image will be set as the primary image.
                             <?php endif; ?>
