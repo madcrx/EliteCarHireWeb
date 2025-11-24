@@ -106,9 +106,25 @@
                 <?php if ($vehicle['primary_image']): ?>
                     <img src="/<?= e($vehicle['primary_image']) ?>" alt="<?= e($vehicle['make'] . ' ' . $vehicle['model']) ?>">
                 <?php else: ?>
-                    <div style="height: 200px; background: var(--light-gray); display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-car" style="font-size: 4rem; color: var(--medium-gray);"></i>
-                    </div>
+                    <?php
+                    // Assign category-appropriate placeholder
+                    $placeholderMap = [
+                        'luxury_sedan' => 'luxury-sedan.svg',
+                        'sedan' => 'luxury-sedan.svg',
+                        'muscle_car' => 'muscle-car.svg',
+                        'classic' => 'muscle-car.svg',
+                        'suv' => 'luxury-suv.svg',
+                        'luxury_suv' => 'luxury-suv.svg',
+                        'wedding' => 'wedding-car.svg',
+                        'sports' => 'sports-car.svg',
+                        'sports_car' => 'sports-car.svg',
+                        'supercar' => 'sports-car.svg',
+                        'limousine' => 'limousine.svg',
+                        'limo' => 'limousine.svg',
+                    ];
+                    $placeholder = $placeholderMap[strtolower($vehicle['category'])] ?? 'placeholder.svg';
+                    ?>
+                    <img src="/assets/images/<?= $placeholder ?>" alt="<?= e($vehicle['make'] . ' ' . $vehicle['model']) ?>">
                 <?php endif; ?>
                 <div class="vehicle-card-body">
                     <h3><?= e($vehicle['make']) ?> <?= e($vehicle['model']) ?></h3>
