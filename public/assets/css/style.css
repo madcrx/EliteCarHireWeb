@@ -575,6 +575,12 @@ table tbody tr:hover {
 /* Bookings Calendar Styles */
 .bookings-calendar-container {
     border: 1px solid #ccc;
+    background: white;
+}
+
+#calendar {
+    width: 100%;
+    overflow-x: auto;
 }
 
 .bookings-calendar-header {
@@ -607,9 +613,10 @@ table tbody tr:hover {
 }
 
 .calendar-grid-bookings {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    border-collapse: collapse;
+    display: grid !important;
+    grid-template-columns: repeat(7, 1fr) !important;
+    width: 100%;
+    min-width: 700px;
 }
 
 .calendar-day-header-bookings {

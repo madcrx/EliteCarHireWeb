@@ -53,16 +53,20 @@
                 <div style="padding: 1.5rem; background: white; border-top: 1px solid var(--light-gray);">
                     <div style="display: flex; flex-wrap: wrap; gap: 2rem; align-items: center; justify-content: center;">
                         <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <div style="width: 50px; height: 50px; background: white; border: 1px solid #ccc; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #666; font-size: 1.2rem;">16</div>
-                            <span style="font-weight: 700; font-size: 0.95rem;">AVAILABLE</span>
+                            <div style="width: 50px; height: 50px; background: white; border: 1px solid #ccc; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #a0a0a0; font-size: 1.2rem;">16</div>
+                            <span style="font-weight: 700; font-size: 0.95rem; color: #333;">AVAILABLE</span>
                         </div>
                         <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <div style="width: 50px; height: 50px; background: #dc3545; display: flex; align-items: center; justify-content: center; font-weight: 700; color: white; font-size: 1.2rem;">16</div>
-                            <span style="font-weight: 700; font-size: 0.95rem;">BOOKED</span>
+                            <div style="width: 50px; height: 50px; background: #dc3545; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #8b0000; font-size: 1.2rem;">16</div>
+                            <span style="font-weight: 700; font-size: 0.95rem; color: #333;">BOOKED</span>
                         </div>
                         <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <div style="width: 50px; height: 50px; background: #f39c12; display: flex; align-items: center; justify-content: center; font-weight: 700; color: white; font-size: 1.2rem;">16</div>
-                            <span style="font-weight: 700; font-size: 0.95rem;">PENDING</span>
+                            <div style="width: 50px; height: 50px; background: #f39c12; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #b8860b; font-size: 1.2rem;">16</div>
+                            <span style="font-weight: 700; font-size: 0.95rem; color: #333;">PENDING</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <div style="width: 50px; height: 50px; background: #e9ecef; opacity: 0.6; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #868e96; font-size: 1.2rem; text-decoration: line-through;">16</div>
+                            <span style="font-weight: 700; font-size: 0.95rem; color: #333;">BLOCKED</span>
                         </div>
                     </div>
                 </div>
