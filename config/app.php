@@ -33,7 +33,7 @@ return [
     
     'upload' => [
         'max_file_size' => 5242880, // 5MB
-        'allowed_types' => ['jpg', 'jpeg', 'png', 'gif', 'pdf'],
+        'allowed_types' => ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'webp'],
         'upload_path' => __DIR__ . '/../storage/uploads/',
     ],
     

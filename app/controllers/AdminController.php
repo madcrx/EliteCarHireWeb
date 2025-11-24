@@ -843,44 +843,61 @@ class AdminController {
         }
 
         $uploadedCount = 0;
+        $errors = [];
+
         foreach ($_FILES['images']['name'] as $key => $name) {
-            if ($_FILES['images']['error'][$key] === UPLOAD_ERR_OK) {
-                $file = [
-                    'name' => $_FILES['images']['name'][$key],
-                    'type' => $_FILES['images']['type'][$key],
-                    'tmp_name' => $_FILES['images']['tmp_name'][$key],
-                    'error' => $_FILES['images']['error'][$key],
-                    'size' => $_FILES['images']['size'][$key],
-                ];
+            if ($_FILES['images']['error'][$key] !== UPLOAD_ERR_OK) {
+                $errors[] = "Upload error for {$name}";
+                continue;
+            }
 
-                // Validate file type
-                $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-                if (!in_array($file['type'], $allowedTypes)) {
-                    continue;
-                }
+            $file = [
+                'name' => $_FILES['images']['name'][$key],
+                'type' => $_FILES['images']['type'][$key],
+                'tmp_name' => $_FILES['images']['tmp_name'][$key],
+                'error' => $_FILES['images']['error'][$key],
+                'size' => $_FILES['images']['size'][$key],
+            ];
 
-                // Validate file size (5MB max)
-                if ($file['size'] > 5 * 1024 * 1024) {
-                    continue;
-                }
+            // Validate file type by MIME type
+            $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+            if (!in_array(strtolower($file['type']), $allowedTypes)) {
+                $errors[] = "{$name}: Invalid file type ({$file['type']})";
+                continue;
+            }
 
-                $path = uploadFile($file, 'vehicles');
-                if ($path) {
-                    // Set first image as primary if no existing images
-                    $isPrimary = (!$hasExistingImages && $key === 0) ? 1 : 0;
+            // Validate file size (5MB max)
+            if ($file['size'] > 5 * 1024 * 1024) {
+                $errors[] = "{$name}: File too large (" . round($file['size'] / 1024 / 1024, 2) . "MB)";
+                continue;
+            }
 
-                    db()->execute("INSERT INTO vehicle_images (vehicle_id, image_path, is_primary, display_order) VALUES (?, ?, ?, ?)",
-                                 [$vehicleId, $path, $isPrimary, $key]);
-                    $uploadedCount++;
-                }
+            $path = uploadFile($file, 'vehicles');
+            if ($path) {
+                // Set first image as primary if no existing images
+                $isPrimary = (!$hasExistingImages && $key === 0) ? 1 : 0;
+
+                db()->execute("INSERT INTO vehicle_images (vehicle_id, image_path, is_primary, display_order) VALUES (?, ?, ?, ?)",
+                             [$vehicleId, $path, $isPrimary, $key]);
+                $uploadedCount++;
+            } else {
+                $errors[] = "{$name}: Upload failed (check server permissions)";
             }
         }
 
         if ($uploadedCount > 0) {
             logAudit('upload_vehicle_images', 'vehicles', $vehicleId, ['count' => $uploadedCount]);
             flash('success', $uploadedCount . ' image(s) uploaded successfully');
+
+            if (!empty($errors)) {
+                flash('warning', 'Some images failed: ' . implode(', ', $errors));
+            }
         } else {
-            flash('error', 'No valid images were uploaded');
+            if (!empty($errors)) {
+                flash('error', 'Upload failed: ' . implode('; ', $errors));
+            } else {
+                flash('error', 'No valid images were uploaded. Please ensure files are JPG, PNG, or WebP format and under 5MB.');
+            }
         }
 
         redirect('/admin/vehicles/' . $vehicleId . '/edit');
