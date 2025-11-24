@@ -29,6 +29,8 @@
                         <th>Date</th>
                         <th>Time</th>
                         <th>Status</th>
+                        <th>Payment</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -38,7 +40,13 @@
                             <td><?= e($booking['make'] . ' ' . $booking['model']) ?></td>
                             <td><?= date('M d, Y', strtotime($booking['booking_date'])) ?></td>
                             <td><?= date('g:i A', strtotime($booking['start_time'])) ?></td>
-                            <td><span class="badge badge-info"><?= ucfirst($booking['status']) ?></span></td>
+                            <td><span class="badge badge-<?= $booking['status'] === 'confirmed' ? 'success' : 'info' ?>"><?= ucfirst($booking['status']) ?></span></td>
+                            <td><span class="badge badge-<?= $booking['payment_status'] === 'paid' ? 'success' : 'warning' ?>"><?= ucfirst($booking['payment_status']) ?></span></td>
+                            <td>
+                                <a href="/customer/bookings/<?= $booking['id'] ?>" class="btn btn-sm btn-<?= ($booking['status'] === 'confirmed' && $booking['payment_status'] !== 'paid') ? 'primary' : 'secondary' ?>">
+                                    <?= ($booking['status'] === 'confirmed' && $booking['payment_status'] !== 'paid') ? 'Pay Now' : 'View Details' ?>
+                                </a>
+                            </td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
