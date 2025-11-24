@@ -814,4 +814,156 @@ class AdminController {
         flash('success', 'Contact submission deleted successfully');
         redirect('/admin/contact-submissions');
     }
+
+    // Vehicle Image Management Methods
+
+    public function uploadVehicleImages($vehicleId) {
+        requireAuth('admin');
+
+        // Verify CSRF token
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token. Please try again.');
+            redirect('/admin/vehicles/' . $vehicleId . '/edit');
+        }
+
+        $vehicle = db()->fetch("SELECT * FROM vehicles WHERE id = ?", [$vehicleId]);
+        if (!$vehicle) {
+            flash('error', 'Vehicle not found');
+            redirect('/admin/vehicles');
+        }
+
+        // Check if images exist
+        $hasExistingImages = db()->fetch("SELECT COUNT(*) as count FROM vehicle_images WHERE vehicle_id = ?", [$vehicleId])['count'] > 0;
+
+        // Handle image uploads
+        if (empty($_FILES['images']['name'][0])) {
+            flash('error', 'No images selected');
+            redirect('/admin/vehicles/' . $vehicleId . '/edit');
+        }
+
+        $uploadedCount = 0;
+        foreach ($_FILES['images']['name'] as $key => $name) {
+            if ($_FILES['images']['error'][$key] === UPLOAD_ERR_OK) {
+                $file = [
+                    'name' => $_FILES['images']['name'][$key],
+                    'type' => $_FILES['images']['type'][$key],
+                    'tmp_name' => $_FILES['images']['tmp_name'][$key],
+                    'error' => $_FILES['images']['error'][$key],
+                    'size' => $_FILES['images']['size'][$key],
+                ];
+
+                // Validate file type
+                $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+                if (!in_array($file['type'], $allowedTypes)) {
+                    continue;
+                }
+
+                // Validate file size (5MB max)
+                if ($file['size'] > 5 * 1024 * 1024) {
+                    continue;
+                }
+
+                $path = uploadFile($file, 'vehicles');
+                if ($path) {
+                    // Set first image as primary if no existing images
+                    $isPrimary = (!$hasExistingImages && $key === 0) ? 1 : 0;
+
+                    db()->execute("INSERT INTO vehicle_images (vehicle_id, image_path, is_primary, display_order) VALUES (?, ?, ?, ?)",
+                                 [$vehicleId, $path, $isPrimary, $key]);
+                    $uploadedCount++;
+                }
+            }
+        }
+
+        if ($uploadedCount > 0) {
+            logAudit('upload_vehicle_images', 'vehicles', $vehicleId, ['count' => $uploadedCount]);
+            flash('success', $uploadedCount . ' image(s) uploaded successfully');
+        } else {
+            flash('error', 'No valid images were uploaded');
+        }
+
+        redirect('/admin/vehicles/' . $vehicleId . '/edit');
+    }
+
+    public function setVehicleImagePrimary($vehicleId, $imageId) {
+        requireAuth('admin');
+
+        // Verify CSRF token
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token. Please try again.');
+            redirect('/admin/vehicles/' . $vehicleId . '/edit');
+        }
+
+        $vehicle = db()->fetch("SELECT * FROM vehicles WHERE id = ?", [$vehicleId]);
+        if (!$vehicle) {
+            flash('error', 'Vehicle not found');
+            redirect('/admin/vehicles');
+        }
+
+        $image = db()->fetch("SELECT * FROM vehicle_images WHERE id = ? AND vehicle_id = ?", [$imageId, $vehicleId]);
+        if (!$image) {
+            flash('error', 'Image not found');
+            redirect('/admin/vehicles/' . $vehicleId . '/edit');
+        }
+
+        // Remove primary status from all images for this vehicle
+        db()->execute("UPDATE vehicle_images SET is_primary = 0 WHERE vehicle_id = ?", [$vehicleId]);
+
+        // Set this image as primary
+        db()->execute("UPDATE vehicle_images SET is_primary = 1 WHERE id = ?", [$imageId]);
+
+        logAudit('set_primary_vehicle_image', 'vehicle_images', $imageId, ['vehicle_id' => $vehicleId]);
+
+        flash('success', 'Primary image updated successfully');
+        redirect('/admin/vehicles/' . $vehicleId . '/edit');
+    }
+
+    public function deleteVehicleImage($vehicleId, $imageId) {
+        requireAuth('admin');
+
+        // Verify CSRF token
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token. Please try again.');
+            redirect('/admin/vehicles/' . $vehicleId . '/edit');
+        }
+
+        $vehicle = db()->fetch("SELECT * FROM vehicles WHERE id = ?", [$vehicleId]);
+        if (!$vehicle) {
+            flash('error', 'Vehicle not found');
+            redirect('/admin/vehicles');
+        }
+
+        $image = db()->fetch("SELECT * FROM vehicle_images WHERE id = ? AND vehicle_id = ?", [$imageId, $vehicleId]);
+        if (!$image) {
+            flash('error', 'Image not found');
+            redirect('/admin/vehicles/' . $vehicleId . '/edit');
+        }
+
+        $wasPrimary = $image['is_primary'];
+
+        // Delete the image record
+        db()->execute("DELETE FROM vehicle_images WHERE id = ?", [$imageId]);
+
+        // Delete the physical file
+        $filePath = __DIR__ . '/../../' . $image['image_path'];
+        if (file_exists($filePath)) {
+            @unlink($filePath);
+        }
+
+        // If this was the primary image, set the first remaining image as primary
+        if ($wasPrimary) {
+            $firstImage = db()->fetch("SELECT id FROM vehicle_images WHERE vehicle_id = ? ORDER BY display_order LIMIT 1", [$vehicleId]);
+            if ($firstImage) {
+                db()->execute("UPDATE vehicle_images SET is_primary = 1 WHERE id = ?", [$firstImage['id']]);
+            }
+        }
+
+        logAudit('delete_vehicle_image', 'vehicle_images', $imageId, ['vehicle_id' => $vehicleId]);
+
+        flash('success', 'Image deleted successfully');
+        redirect('/admin/vehicles/' . $vehicleId . '/edit');
+    }
 }
