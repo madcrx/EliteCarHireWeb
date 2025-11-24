@@ -572,6 +572,106 @@ table tbody tr:hover {
     background: #c82333;
 }
 
+/* Bookings Calendar Styles */
+.calendar-grid-bookings {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    background: var(--light-gray);
+    border: 1px solid var(--medium-gray);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+}
+
+.calendar-day-header-bookings {
+    background: var(--light-gray);
+    color: var(--dark-gray);
+    padding: 1rem;
+    text-align: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+    letter-spacing: 0.5px;
+}
+
+.calendar-day-bookings {
+    background: white;
+    min-height: 100px;
+    padding: 0.75rem;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.calendar-day-bookings.empty {
+    background: #f8f9fa;
+    cursor: default;
+    opacity: 0.4;
+}
+
+.calendar-day-bookings.today {
+    border: 3px solid var(--primary-gold);
+}
+
+.calendar-day-bookings:not(.empty):hover {
+    transform: scale(1.05);
+    z-index: 10;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.day-number-bookings {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--dark-gray);
+    margin-bottom: 0.25rem;
+}
+
+.booking-count-badge {
+    position: absolute;
+    bottom: 0.5rem;
+    right: 0.5rem;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.15rem 0.4rem;
+    border-radius: 10px;
+    min-width: 20px;
+    text-align: center;
+}
+
+/* Status-based colors for calendar days */
+.calendar-day-bookings.status-available {
+    background: white;
+}
+
+.calendar-day-bookings.status-booked {
+    background: #dc3545;
+}
+
+.calendar-day-bookings.status-booked .day-number-bookings {
+    color: white;
+}
+
+.calendar-day-bookings.status-pending {
+    background: #f39c12;
+}
+
+.calendar-day-bookings.status-pending .day-number-bookings {
+    color: white;
+}
+
+.calendar-day-bookings.status-completed {
+    background: #6c757d;
+}
+
+.calendar-day-bookings.status-completed .day-number-bookings {
+    color: white;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .sidebar-layout {
@@ -604,5 +704,24 @@ table tbody tr:hover {
     .calendar-day-header {
         font-size: 0.8rem;
         padding: 0.5rem;
+    }
+
+    .calendar-day-header-bookings {
+        font-size: 0.75rem;
+        padding: 0.75rem 0.25rem;
+    }
+
+    .calendar-day-bookings {
+        min-height: 80px;
+        padding: 0.5rem;
+    }
+
+    .day-number-bookings {
+        font-size: 1.2rem;
+    }
+
+    .booking-count-badge {
+        font-size: 0.6rem;
+        padding: 0.1rem 0.3rem;
     }
 }
