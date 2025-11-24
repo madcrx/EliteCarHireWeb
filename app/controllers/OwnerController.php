@@ -535,13 +535,34 @@ class OwnerController {
         $ownerId = $_SESSION['user_id'];
         $vehicles = db()->fetchAll("SELECT id, make, model, year, registration_number FROM vehicles WHERE owner_id = ? AND status = 'approved' ORDER BY make, model", [$ownerId]);
 
+        // Ensure vehicles is an array
+        if (!is_array($vehicles)) {
+            error_log("OwnerController::calendar() - vehicles fetchAll returned non-array: " . gettype($vehicles));
+            $vehicles = [];
+        }
+
         $blockedDates = db()->fetchAll("SELECT vbd.*, v.make, v.model, v.registration_number
                                         FROM vehicle_blocked_dates vbd
                                         JOIN vehicles v ON vbd.vehicle_id = v.id
                                         WHERE vbd.owner_id = ?
                                         ORDER BY vbd.start_date DESC", [$ownerId]);
 
-        view('owner/calendar', compact('vehicles', 'blockedDates'));
+        // Ensure blockedDates is an array
+        if (!is_array($blockedDates)) {
+            error_log("OwnerController::calendar() - blockedDates fetchAll returned non-array: " . gettype($blockedDates));
+            $blockedDates = [];
+        }
+
+        // Generate colors for vehicles (consistent color for each vehicle)
+        $colors = [];
+        $predefinedColors = ['#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#e67e22', '#34495e'];
+        $colorIndex = 0;
+        foreach ($vehicles as $vehicle) {
+            $colors[$vehicle['id']] = $predefinedColors[$colorIndex % count($predefinedColors)];
+            $colorIndex++;
+        }
+
+        view('owner/calendar', compact('vehicles', 'blockedDates', 'colors'));
     }
 
     public function blockDates() {
@@ -559,6 +580,8 @@ class OwnerController {
             }
             ob_start();
         }
+
+        try {
 
         // Verify CSRF token
         $token = $_POST['csrf_token'] ?? '';
@@ -690,43 +713,64 @@ class OwnerController {
             }
             redirect('/owner/calendar');
         }
+
+        } catch (Exception $e) {
+            error_log("Error in blockDates: " . $e->getMessage());
+            error_log("Stack trace: " . $e->getTraceAsString());
+
+            if ($isAjax) {
+                if (ob_get_level()) ob_get_clean();
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => 'An error occurred while blocking dates. Please try again.']);
+                exit;
+            } else {
+                flash('error', 'An error occurred while blocking dates. Please try again.');
+                redirect('/owner/calendar');
+            }
+        }
     }
 
     private function generateBlockDates($startDate, $endDate, $frequency, $customDays) {
         $dates = [];
-        $current = new DateTime($startDate);
-        $end = new DateTime($endDate);
 
-        while ($current <= $end) {
-            $dayOfWeek = (int)$current->format('w'); // 0 = Sunday, 6 = Saturday
-            $shouldBlock = false;
+        try {
+            $current = new DateTime($startDate);
+            $end = new DateTime($endDate);
 
-            switch ($frequency) {
-                case 'daily':
-                    $shouldBlock = true;
-                    break;
+            while ($current <= $end) {
+                $dayOfWeek = (int)$current->format('w'); // 0 = Sunday, 6 = Saturday
+                $shouldBlock = false;
 
-                case 'weekdays':
-                    // Monday = 1, Friday = 5
-                    $shouldBlock = ($dayOfWeek >= 1 && $dayOfWeek <= 5);
-                    break;
+                switch ($frequency) {
+                    case 'daily':
+                        $shouldBlock = true;
+                        break;
 
-                case 'weekends':
-                    // Saturday = 6, Sunday = 0
-                    $shouldBlock = ($dayOfWeek == 0 || $dayOfWeek == 6);
-                    break;
+                    case 'weekdays':
+                        // Monday = 1, Friday = 5
+                        $shouldBlock = ($dayOfWeek >= 1 && $dayOfWeek <= 5);
+                        break;
 
-                case 'custom':
-                    // Check if current day of week is in custom days array
-                    $shouldBlock = in_array((string)$dayOfWeek, $customDays);
-                    break;
+                    case 'weekends':
+                        // Saturday = 6, Sunday = 0
+                        $shouldBlock = ($dayOfWeek == 0 || $dayOfWeek == 6);
+                        break;
+
+                    case 'custom':
+                        // Check if current day of week is in custom days array
+                        $shouldBlock = in_array((string)$dayOfWeek, $customDays);
+                        break;
+                }
+
+                if ($shouldBlock) {
+                    $dates[] = $current->format('Y-m-d');
+                }
+
+                $current->modify('+1 day');
             }
-
-            if ($shouldBlock) {
-                $dates[] = $current->format('Y-m-d');
-            }
-
-            $current->modify('+1 day');
+        } catch (Exception $e) {
+            error_log("Error in generateBlockDates: " . $e->getMessage());
+            return [];
         }
 
         return $dates;
