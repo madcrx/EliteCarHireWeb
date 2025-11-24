@@ -541,7 +541,7 @@ class AdminController {
                 db()->execute("UPDATE settings SET setting_value = ?, updated_at = NOW() WHERE setting_key = ?",
                              [$value, $key]);
             } else {
-                db()->execute("INSERT INTO settings (setting_key, setting_value, created_at, updated_at) VALUES (?, ?, NOW(), NOW())",
+                db()->execute("INSERT INTO settings (setting_key, setting_value) VALUES (?, ?)",
                              [$key, $value]);
             }
 
@@ -619,7 +619,7 @@ class AdminController {
         if ($existing) {
             db()->execute("UPDATE settings SET setting_value = ?, updated_at = NOW() WHERE setting_key = 'company_logo'", [$webPath]);
         } else {
-            db()->execute("INSERT INTO settings (setting_key, setting_value, created_at, updated_at) VALUES ('company_logo', ?, NOW(), NOW())", [$webPath]);
+            db()->execute("INSERT INTO settings (setting_key, setting_value) VALUES ('company_logo', ?)", [$webPath]);
         }
 
         logAudit('upload_company_logo', 'settings', null, ['logo_path' => $webPath]);
