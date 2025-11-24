@@ -707,6 +707,22 @@ table tbody tr:hover {
     color: #3d4246;
 }
 
+.calendar-day-bookings.status-blocked {
+    background: #e9ecef;
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.calendar-day-bookings.status-blocked .day-number-bookings {
+    color: #868e96;
+    text-decoration: line-through;
+}
+
+.calendar-day-bookings.status-blocked:hover {
+    transform: none;
+    box-shadow: none;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .sidebar-layout {

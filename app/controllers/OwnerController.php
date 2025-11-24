@@ -289,7 +289,23 @@ class OwnerController {
             $bookings = [];
         }
 
-        view('owner/bookings', compact('bookings', 'status', 'view'));
+        // Fetch blocked dates for the calendar view
+        $blockedDates = db()->fetchAll(
+            "SELECT vbd.*, v.make, v.model
+             FROM vehicle_blocked_dates vbd
+             JOIN vehicles v ON vbd.vehicle_id = v.id
+             WHERE vbd.owner_id = ?
+             ORDER BY vbd.start_date ASC",
+            [$ownerId]
+        );
+
+        // Ensure blockedDates is an array
+        if (!is_array($blockedDates)) {
+            error_log("OwnerController::bookings() - blockedDates fetchAll returned non-array: " . gettype($blockedDates));
+            $blockedDates = [];
+        }
+
+        view('owner/bookings', compact('bookings', 'status', 'view', 'blockedDates'));
     }
 
     public function confirmBooking() {

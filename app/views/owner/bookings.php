@@ -230,6 +230,18 @@ const bookingsData = <?= json_encode(array_map(function($booking) {
     ];
 }, $bookings ?? [])) ?>;
 
+// Blocked dates data for calendar
+const blockedDatesData = <?= json_encode(array_map(function($block) {
+    return [
+        'id' => $block['id'],
+        'vehicle_id' => $block['vehicle_id'],
+        'vehicle' => $block['make'] . ' ' . $block['model'],
+        'start_date' => $block['start_date'],
+        'end_date' => $block['end_date'],
+        'reason' => $block['reason'] ?? 'Blocked'
+    ];
+}, $blockedDates ?? [])) ?>;
+
 let currentMonth = new Date().getMonth();
 let currentYear = new Date().getFullYear();
 
@@ -347,11 +359,22 @@ function renderCalendar() {
 
         const isToday = new Date().toDateString() === new Date(currentYear, currentMonth, day).toDateString();
 
+        // Check if this date is blocked
+        const currentDate = new Date(currentYear, currentMonth, day);
+        const isBlocked = blockedDatesData.some(block => {
+            const blockStart = new Date(block.start_date);
+            const blockEnd = new Date(block.end_date);
+            return currentDate >= blockStart && currentDate <= blockEnd;
+        });
+
         // Determine the primary status for the day
         let dayStatus = 'available';
         let bookingCount = dayBookings.length;
 
-        if (dayBookings.length > 0) {
+        if (isBlocked) {
+            // Blocked dates take priority over everything
+            dayStatus = 'blocked';
+        } else if (dayBookings.length > 0) {
             // Priority: confirmed/in_progress (red) > pending (orange) > completed/cancelled (gray)
             if (dayBookings.some(b => b.status === 'confirmed' || b.status === 'in_progress')) {
                 dayStatus = 'booked';
@@ -364,8 +387,9 @@ function renderCalendar() {
 
         const todayClass = isToday ? 'today' : '';
         const clickHandler = dayBookings.length > 0 ? `onclick="showDayBookings('${dateStr}')"` : '';
+        const blockedTitle = isBlocked ? 'Blocked' : (dayBookings.length > 0 ? dayBookings.length + ' booking(s)' : 'Available');
 
-        calendarHTML += `<div class="calendar-day-bookings ${todayClass} status-${dayStatus}" ${clickHandler} title="${dayBookings.length > 0 ? dayBookings.length + ' booking(s)' : 'No bookings'}">
+        calendarHTML += `<div class="calendar-day-bookings ${todayClass} status-${dayStatus}" ${clickHandler} title="${blockedTitle}">
             <div class="day-number-bookings">${day}</div>
             ${bookingCount > 0 ? `<div class="booking-count-badge">${bookingCount}</div>` : ''}
         </div>`;
