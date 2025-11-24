@@ -305,7 +305,45 @@ class OwnerController {
             $blockedDates = [];
         }
 
-        view('owner/bookings', compact('bookings', 'status', 'view', 'blockedDates'));
+        // Calculate status counts for the calendar legend
+        // We need to count unique dates, not bookings
+        $bookedDates = [];
+        $pendingDates = [];
+
+        foreach ($bookings as $booking) {
+            $date = $booking['booking_date'];
+            if ($booking['status'] === 'confirmed' || $booking['status'] === 'in_progress') {
+                $bookedDates[$date] = true;
+            } elseif ($booking['status'] === 'pending') {
+                // Only count as pending if not already booked
+                if (!isset($bookedDates[$date])) {
+                    $pendingDates[$date] = true;
+                }
+            }
+        }
+
+        // Count blocked dates (unique dates, not blocks)
+        $blockedUniqueDates = [];
+        foreach ($blockedDates as $block) {
+            $start = new DateTime($block['start_date']);
+            $end = new DateTime($block['end_date']);
+            $current = clone $start;
+
+            while ($current <= $end) {
+                $dateStr = $current->format('Y-m-d');
+                $blockedUniqueDates[$dateStr] = true;
+                $current->modify('+1 day');
+            }
+        }
+
+        $statusCounts = [
+            'booked' => count($bookedDates),
+            'pending' => count($pendingDates),
+            'blocked' => count($blockedUniqueDates),
+            'available' => 0 // Will be calculated based on current month in the view
+        ];
+
+        view('owner/bookings', compact('bookings', 'status', 'view', 'blockedDates', 'statusCounts'));
     }
 
     public function confirmBooking() {

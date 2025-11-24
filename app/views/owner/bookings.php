@@ -53,19 +53,19 @@
                 <div style="padding: 1.5rem; background: white; border-top: 1px solid var(--light-gray);">
                     <div style="display: flex; flex-wrap: wrap; gap: 2rem; align-items: center; justify-content: center;">
                         <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <div style="width: 50px; height: 50px; background: white; border: 1px solid #ccc; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #a0a0a0; font-size: 1.2rem;">16</div>
+                            <div id="legend-available" style="width: 50px; height: 50px; background: white; border: 1px solid #ccc; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #a0a0a0; font-size: 1.2rem;">0</div>
                             <span style="font-weight: 700; font-size: 0.95rem; color: #333;">AVAILABLE</span>
                         </div>
                         <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <div style="width: 50px; height: 50px; background: #dc3545; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #8b0000; font-size: 1.2rem;">16</div>
+                            <div id="legend-booked" style="width: 50px; height: 50px; background: #dc3545; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #8b0000; font-size: 1.2rem;">0</div>
                             <span style="font-weight: 700; font-size: 0.95rem; color: #333;">BOOKED</span>
                         </div>
                         <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <div style="width: 50px; height: 50px; background: #f39c12; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #b8860b; font-size: 1.2rem;">16</div>
+                            <div id="legend-pending" style="width: 50px; height: 50px; background: #f39c12; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #b8860b; font-size: 1.2rem;">0</div>
                             <span style="font-weight: 700; font-size: 0.95rem; color: #333;">PENDING</span>
                         </div>
                         <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <div style="width: 50px; height: 50px; background: #e9ecef; opacity: 0.6; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #868e96; font-size: 1.2rem; text-decoration: line-through;">16</div>
+                            <div id="legend-blocked" style="width: 50px; height: 50px; background: #e9ecef; opacity: 0.6; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #868e96; font-size: 1.2rem; text-decoration: line-through;">0</div>
                             <span style="font-weight: 700; font-size: 0.95rem; color: #333;">BLOCKED</span>
                         </div>
                     </div>
@@ -401,6 +401,51 @@ function renderCalendar() {
 
     calendarHTML += '</div>';
     calendar.innerHTML = calendarHTML;
+
+    // Update legend counts for the current month
+    updateLegendCounts();
+}
+
+function updateLegendCounts() {
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+    let availableCount = 0;
+    let bookedCount = 0;
+    let pendingCount = 0;
+    let blockedCount = 0;
+
+    // Count each day in the current month
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const dayBookings = bookingsData.filter(b => b.date === dateStr);
+        const currentDate = new Date(currentYear, currentMonth, day);
+
+        // Check if blocked
+        const isBlocked = blockedDatesData.some(block => {
+            const blockStart = new Date(block.start_date);
+            const blockEnd = new Date(block.end_date);
+            return currentDate >= blockStart && currentDate <= blockEnd;
+        });
+
+        if (isBlocked) {
+            blockedCount++;
+        } else if (dayBookings.length > 0) {
+            // Check booking status
+            if (dayBookings.some(b => b.status === 'confirmed' || b.status === 'in_progress')) {
+                bookedCount++;
+            } else if (dayBookings.some(b => b.status === 'pending')) {
+                pendingCount++;
+            }
+        } else {
+            availableCount++;
+        }
+    }
+
+    // Update legend display
+    document.getElementById('legend-available').textContent = availableCount;
+    document.getElementById('legend-booked').textContent = bookedCount;
+    document.getElementById('legend-pending').textContent = pendingCount;
+    document.getElementById('legend-blocked').textContent = blockedCount;
 }
 
 function showDayBookings(dateStr) {
