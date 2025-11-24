@@ -11,11 +11,11 @@ class OwnerController {
             requireAuth('owner');
 
             error_log("OwnerController::__construct() - Auth check passed");
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             error_log("OwnerController::__construct() - Exception: " . $e->getMessage());
             error_log("OwnerController::__construct() - Stack trace: " . $e->getTraceAsString());
             throw $e;
-        } catch (Error $e) {
+        } catch (\Error $e) {
             error_log("OwnerController::__construct() - Fatal Error: " . $e->getMessage());
             error_log("OwnerController::__construct() - Stack trace: " . $e->getTraceAsString());
             throw $e;
@@ -48,9 +48,9 @@ class OwnerController {
                         $notifications = getUnreadNotifications($ownerId, 5);
                         $notificationCount = getUnreadNotificationCount($ownerId);
                     }
-                } catch (Exception $e) {
+                } catch (\Exception $e) {
                     error_log("Notifications error: " . $e->getMessage());
-                } catch (Error $e) {
+                } catch (\Error $e) {
                     error_log("Notifications fatal error: " . $e->getMessage());
                 }
             }
@@ -62,9 +62,9 @@ class OwnerController {
                     if (function_exists('autoUpdateBookingStatuses')) {
                         autoUpdateBookingStatuses();
                     }
-                } catch (Exception $e) {
+                } catch (\Exception $e) {
                     error_log("Booking automation error: " . $e->getMessage());
-                } catch (Error $e) {
+                } catch (\Error $e) {
                     error_log("Booking automation fatal error: " . $e->getMessage());
                 }
             }
@@ -100,12 +100,12 @@ class OwnerController {
             view('owner/dashboard', compact('stats', 'recentBookings', 'notifications', 'notificationCount'));
             error_log("OwnerController::dashboard() - Complete");
 
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             error_log("OwnerController::dashboard() - Exception: " . $e->getMessage());
             error_log("OwnerController::dashboard() - Stack trace: " . $e->getTraceAsString());
             echo "An error occurred loading the dashboard. Please check the error logs.";
             exit;
-        } catch (Error $e) {
+        } catch (\Error $e) {
             error_log("OwnerController::dashboard() - Fatal Error: " . $e->getMessage());
             error_log("OwnerController::dashboard() - Stack trace: " . $e->getTraceAsString());
             echo "A fatal error occurred loading the dashboard. Please check the error logs.";
@@ -260,9 +260,9 @@ class OwnerController {
                 if (function_exists('autoUpdateBookingStatuses')) {
                     autoUpdateBookingStatuses();
                 }
-            } catch (Exception $e) {
+            } catch (\Exception $e) {
                 error_log("Booking automation error: " . $e->getMessage());
-            } catch (Error $e) {
+            } catch (\Error $e) {
                 error_log("Booking automation fatal error: " . $e->getMessage());
             }
         }
@@ -329,8 +329,8 @@ class OwnerController {
         foreach ($blockedDates as $block) {
             try {
                 if (!empty($block['start_date']) && !empty($block['end_date'])) {
-                    $start = new DateTime($block['start_date']);
-                    $end = new DateTime($block['end_date']);
+                    $start = new \DateTime($block['start_date']);
+                    $end = new \DateTime($block['end_date']);
                     $current = clone $start;
 
                     while ($current <= $end) {
@@ -339,7 +339,7 @@ class OwnerController {
                         $current->modify('+1 day');
                     }
                 }
-            } catch (Exception $e) {
+            } catch (\Exception $e) {
                 error_log("Error processing blocked date: " . $e->getMessage());
                 continue;
             }
@@ -407,9 +407,9 @@ class OwnerController {
                         $vehicleName
                     );
                 }
-            } catch (Exception $e) {
+            } catch (\Exception $e) {
                 error_log("Notification error in confirmBooking: " . $e->getMessage());
-            } catch (Error $e) {
+            } catch (\Error $e) {
                 error_log("Notification fatal error in confirmBooking: " . $e->getMessage());
             }
         }
@@ -425,10 +425,10 @@ class OwnerController {
                     } else {
                         flash('success', 'Booking confirmed successfully! It will automatically start when the booking time begins.');
                     }
-                } catch (Exception $e) {
+                } catch (\Exception $e) {
                     error_log("Booking automation error in confirmBooking: " . $e->getMessage());
                     flash('success', 'Booking confirmed successfully! It will automatically start when the booking time begins.');
-                } catch (Error $e) {
+                } catch (\Error $e) {
                     error_log("Booking automation fatal error in confirmBooking: " . $e->getMessage());
                     flash('success', 'Booking confirmed successfully! It will automatically start when the booking time begins.');
                 }
@@ -515,9 +515,9 @@ class OwnerController {
                         );
                     }
                 }
-            } catch (Exception $e) {
+            } catch (\Exception $e) {
                 error_log("Notification error in cancelBooking: " . $e->getMessage());
-            } catch (Error $e) {
+            } catch (\Error $e) {
                 error_log("Notification fatal error in cancelBooking: " . $e->getMessage());
             }
         }
@@ -673,7 +673,7 @@ class OwnerController {
                     $blockedCount++;
                 }
             }
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             error_log("Error blocking dates: " . $e->getMessage());
             if ($isAjax) {
                 ob_get_clean();
@@ -714,7 +714,7 @@ class OwnerController {
             redirect('/owner/calendar');
         }
 
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             error_log("Error in blockDates: " . $e->getMessage());
             error_log("Stack trace: " . $e->getTraceAsString());
 
@@ -734,8 +734,8 @@ class OwnerController {
         $dates = [];
 
         try {
-            $current = new DateTime($startDate);
-            $end = new DateTime($endDate);
+            $current = new \DateTime($startDate);
+            $end = new \DateTime($endDate);
 
             while ($current <= $end) {
                 $dayOfWeek = (int)$current->format('w'); // 0 = Sunday, 6 = Saturday
@@ -768,7 +768,7 @@ class OwnerController {
 
                 $current->modify('+1 day');
             }
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             error_log("Error in generateBlockDates: " . $e->getMessage());
             return [];
         }
@@ -836,7 +836,7 @@ class OwnerController {
         try {
             db()->execute("DELETE FROM vehicle_blocked_dates WHERE id = ?", [$blockId]);
             logAudit('unblock_vehicle_dates', 'vehicle_blocked_dates', $blockId);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             error_log("Error unblocking date: " . $e->getMessage());
             if ($isAjax) {
                 ob_get_clean();
