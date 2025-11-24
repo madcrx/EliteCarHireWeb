@@ -9,18 +9,48 @@
                 
                 <?php if (!empty($images)): ?>
                     <div style="margin-bottom: 2rem;">
-                        <img src="/<?= e($images[0]['image_path']) ?>" alt="<?= e($vehicle['make'] . ' ' . $vehicle['model']) ?>"
-                             style="width: 100%; border-radius: var(--border-radius);">
+                        <!-- Main Image Display -->
+                        <img id="mainVehicleImage"
+                             src="/<?= e($images[0]['image_path']) ?>"
+                             alt="<?= e($vehicle['make'] . ' ' . $vehicle['model']) ?>"
+                             style="width: 100%; max-height: 500px; object-fit: cover; border-radius: var(--border-radius); cursor: pointer;">
 
                         <?php if (count($images) > 1): ?>
-                            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-top: 1rem;">
-                                <?php foreach (array_slice($images, 1, 4) as $img): ?>
-                                    <img src="/<?= e($img['image_path']) ?>" alt="Image"
-                                         style="width: 100%; height: 100px; object-fit: cover; border-radius: var(--border-radius);">
+                            <!-- Thumbnail Gallery -->
+                            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                                <?php foreach ($images as $index => $img): ?>
+                                    <img src="/<?= e($img['image_path']) ?>"
+                                         alt="Image <?= $index + 1 ?>"
+                                         class="vehicle-thumbnail <?= $index === 0 ? 'active' : '' ?>"
+                                         onclick="changeMainImage('<?= e($img['image_path']) ?>', this)"
+                                         style="width: 100%; height: 100px; object-fit: cover; border-radius: var(--border-radius); cursor: pointer; border: 3px solid transparent; transition: all 0.3s;">
                                 <?php endforeach; ?>
                             </div>
                         <?php endif; ?>
                     </div>
+
+                    <style>
+                        .vehicle-thumbnail:hover {
+                            border-color: var(--primary-gold) !important;
+                            opacity: 0.8;
+                        }
+                        .vehicle-thumbnail.active {
+                            border-color: var(--primary-gold) !important;
+                        }
+                    </style>
+
+                    <script>
+                    function changeMainImage(imagePath, thumbnail) {
+                        // Update main image
+                        document.getElementById('mainVehicleImage').src = '/' + imagePath;
+
+                        // Update active state on thumbnails
+                        document.querySelectorAll('.vehicle-thumbnail').forEach(function(thumb) {
+                            thumb.classList.remove('active');
+                        });
+                        thumbnail.classList.add('active');
+                    }
+                    </script>
                 <?php else: ?>
                     <?php
                     // Assign category-appropriate placeholder
