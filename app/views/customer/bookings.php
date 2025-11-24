@@ -26,6 +26,7 @@
                         <th>Amount</th>
                         <th>Status</th>
                         <th>Payment</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -38,6 +39,11 @@
                             <td><?= formatMoney($booking['total_amount']) ?></td>
                             <td><span class="badge badge-<?= $booking['status'] === 'completed' ? 'success' : 'info' ?>"><?= ucfirst($booking['status']) ?></span></td>
                             <td><span class="badge badge-<?= $booking['payment_status'] === 'paid' ? 'success' : 'warning' ?>"><?= ucfirst($booking['payment_status']) ?></span></td>
+                            <td>
+                                <a href="/customer/bookings/<?= $booking['id'] ?>" class="btn btn-sm btn-<?= ($booking['status'] === 'confirmed' && $booking['payment_status'] !== 'paid') ? 'primary' : 'secondary' ?>">
+                                    <?= ($booking['status'] === 'confirmed' && $booking['payment_status'] !== 'paid') ? 'Pay Now' : 'View Details' ?>
+                                </a>
+                            </td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>

@@ -12,21 +12,12 @@
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 0;">
                 <div>
                     <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--dark-gray);">Filter by Status:</label>
-                    <a href="?status=all&view=<?= $view ?? 'table' ?>" class="btn <?= $status === 'all' ? 'btn-primary' : 'btn-secondary' ?>">All</a>
-                    <a href="?status=pending&view=<?= $view ?? 'table' ?>" class="btn <?= $status === 'pending' ? 'btn-primary' : 'btn-secondary' ?>">Pending</a>
-                    <a href="?status=confirmed&view=<?= $view ?? 'table' ?>" class="btn <?= $status === 'confirmed' ? 'btn-primary' : 'btn-secondary' ?>">Confirmed</a>
-                    <a href="?status=in_progress&view=<?= $view ?? 'table' ?>" class="btn <?= $status === 'in_progress' ? 'btn-primary' : 'btn-secondary' ?>">In Progress</a>
-                    <a href="?status=completed&view=<?= $view ?? 'table' ?>" class="btn <?= $status === 'completed' ? 'btn-primary' : 'btn-secondary' ?>">Completed</a>
-                    <a href="?status=cancelled&view=<?= $view ?? 'table' ?>" class="btn <?= $status === 'cancelled' ? 'btn-primary' : 'btn-secondary' ?>">Cancelled</a>
-                </div>
-                <div>
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--dark-gray);">View:</label>
-                    <a href="?status=<?= $status ?>&view=table" class="btn <?= ($view ?? 'table') === 'table' ? 'btn-primary' : 'btn-secondary' ?>">
-                        <i class="fas fa-list"></i> Table
-                    </a>
-                    <a href="?status=<?= $status ?>&view=calendar" class="btn <?= ($view ?? 'table') === 'calendar' ? 'btn-primary' : 'btn-secondary' ?>">
-                        <i class="fas fa-calendar"></i> Calendar
-                    </a>
+                    <a href="?status=all" class="btn <?= $status === 'all' ? 'btn-primary' : 'btn-secondary' ?>">All</a>
+                    <a href="?status=pending" class="btn <?= $status === 'pending' ? 'btn-primary' : 'btn-secondary' ?>">Pending</a>
+                    <a href="?status=confirmed" class="btn <?= $status === 'confirmed' ? 'btn-primary' : 'btn-secondary' ?>">Confirmed</a>
+                    <a href="?status=in_progress" class="btn <?= $status === 'in_progress' ? 'btn-primary' : 'btn-secondary' ?>">In Progress</a>
+                    <a href="?status=completed" class="btn <?= $status === 'completed' ? 'btn-primary' : 'btn-secondary' ?>">Completed</a>
+                    <a href="?status=cancelled" class="btn <?= $status === 'cancelled' ? 'btn-primary' : 'btn-secondary' ?>">Cancelled</a>
                 </div>
             </div>
         </div>
@@ -39,8 +30,49 @@
                 <a href="/owner/listings" class="btn btn-primary" style="margin-top: 1rem;">View My Listings</a>
             </div>
         <?php else: ?>
-            <?php if (($view ?? 'table') === 'table'): ?>
-            <!-- Table View -->
+            <!-- Calendar View - Always Displayed First -->
+            <div class="card" style="margin-bottom: 1.5rem; padding: 0; overflow: hidden;">
+                <!-- Calendar Container -->
+                <div class="bookings-calendar-container">
+                    <!-- Calendar Header with Navigation -->
+                    <div class="bookings-calendar-header">
+                        <button onclick="changeMonth(-1)" class="bookings-calendar-nav-btn">
+                            <i class="fas fa-angle-double-left"></i>
+                        </button>
+                        <h2 id="calendarMonth" class="bookings-calendar-month"></h2>
+                        <button onclick="changeMonth(1)" class="bookings-calendar-nav-btn">
+                            <i class="fas fa-angle-double-right"></i>
+                        </button>
+                    </div>
+
+                    <!-- Calendar Grid -->
+                    <div id="calendar"></div>
+                </div>
+
+                <!-- Status Legend -->
+                <div style="padding: 1.5rem; background: white; border-top: 1px solid var(--light-gray);">
+                    <div style="display: flex; flex-wrap: wrap; gap: 2rem; align-items: center; justify-content: center;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <div id="legend-available" style="width: 50px; height: 50px; background: white; border: 1px solid #ccc; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #a0a0a0; font-size: 1.2rem;">0</div>
+                            <span style="font-weight: 700; font-size: 0.95rem; color: #333;">AVAILABLE</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <div id="legend-booked" style="width: 50px; height: 50px; background: #dc3545; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #8b0000; font-size: 1.2rem;">0</div>
+                            <span style="font-weight: 700; font-size: 0.95rem; color: #333;">BOOKED</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <div id="legend-pending" style="width: 50px; height: 50px; background: #f39c12; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #b8860b; font-size: 1.2rem;">0</div>
+                            <span style="font-weight: 700; font-size: 0.95rem; color: #333;">PENDING</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <div id="legend-blocked" style="width: 50px; height: 50px; background: #e9ecef; opacity: 0.6; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #868e96; font-size: 1.2rem; text-decoration: line-through;">0</div>
+                            <span style="font-weight: 700; font-size: 0.95rem; color: #333;">BLOCKED</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Table View - Always Displayed Below Calendar -->
             <div class="card">
                 <h2><i class="fas fa-list"></i> All Bookings</h2>
                 <p style="margin-bottom: 1.5rem; color: var(--dark-gray);">
@@ -124,56 +156,6 @@
                     </table>
                 </div>
             </div>
-            <?php else: ?>
-            <!-- Calendar View -->
-            <div class="card">
-                <h2><i class="fas fa-calendar"></i> Calendar View</h2>
-                <p style="margin-bottom: 1.5rem; color: var(--dark-gray);">
-                    Visual calendar showing all your bookings with status indicators.
-                </p>
-
-                <!-- Calendar Navigation -->
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding: 1rem; background: var(--light-gray); border-radius: var(--border-radius);">
-                    <button onclick="changeMonth(-1)" class="btn btn-secondary">
-                        <i class="fas fa-chevron-left"></i> Previous
-                    </button>
-                    <h3 id="calendarMonth" style="margin: 0; color: var(--dark-gray);"></h3>
-                    <button onclick="changeMonth(1)" class="btn btn-secondary">
-                        Next <i class="fas fa-chevron-right"></i>
-                    </button>
-                </div>
-
-                <!-- Calendar Grid -->
-                <div id="calendar" class="booking-calendar"></div>
-
-                <!-- Status Legend -->
-                <div style="margin-top: 1.5rem; padding: 1rem; background: var(--light-gray); border-radius: var(--border-radius);">
-                    <h4 style="margin-top: 0; margin-bottom: 1rem;">Status Legend:</h4>
-                    <div style="display: flex; flex-wrap: wrap; gap: 1.5rem;">
-                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <span class="status-indicator status-pending"></span>
-                            <span>Pending</span>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <span class="status-indicator status-confirmed"></span>
-                            <span>Confirmed</span>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <span class="status-indicator status-in_progress"></span>
-                            <span>In Progress</span>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <span class="status-indicator status-completed"></span>
-                            <span>Completed</span>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <span class="status-indicator status-cancelled"></span>
-                            <span>Cancelled</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <?php endif; ?>
 
             <div class="card" style="background: var(--light-gray);">
                 <h3><i class="fas fa-info-circle"></i> Booking Information</h3>
@@ -251,6 +233,18 @@ const bookingsData = <?= json_encode(array_map(function($booking) {
         'dropoff_location' => $booking['dropoff_location'] ?? ''
     ];
 }, $bookings ?? [])) ?>;
+
+// Blocked dates data for calendar
+const blockedDatesData = <?= json_encode(array_map(function($block) {
+    return [
+        'id' => $block['id'],
+        'vehicle_id' => $block['vehicle_id'],
+        'vehicle' => $block['make'] . ' ' . $block['model'],
+        'start_date' => $block['start_date'],
+        'end_date' => $block['end_date'],
+        'reason' => $block['reason'] ?? 'Blocked'
+    ];
+}, $blockedDates ?? [])) ?>;
 
 let currentMonth = new Date().getMonth();
 let currentYear = new Date().getFullYear();
@@ -349,17 +343,17 @@ function renderCalendar() {
     const firstDay = new Date(currentYear, currentMonth, 1).getDay();
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
 
-    let calendarHTML = '<div class="calendar-grid">';
+    let calendarHTML = '<div class="calendar-grid-bookings">';
 
     // Day headers
-    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const dayNames = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
     dayNames.forEach(day => {
-        calendarHTML += `<div class="calendar-day-header">${day}</div>`;
+        calendarHTML += `<div class="calendar-day-header-bookings">${day}</div>`;
     });
 
     // Empty cells for days before month starts
     for (let i = 0; i < firstDay; i++) {
-        calendarHTML += '<div class="calendar-day empty"></div>';
+        calendarHTML += '<div class="calendar-day-bookings empty"></div>';
     }
 
     // Days of the month
@@ -369,29 +363,157 @@ function renderCalendar() {
 
         const isToday = new Date().toDateString() === new Date(currentYear, currentMonth, day).toDateString();
 
-        calendarHTML += `<div class="calendar-day ${isToday ? 'today' : ''}">
-            <div class="day-number">${day}</div>`;
+        // Check if this date is blocked
+        const currentDate = new Date(currentYear, currentMonth, day);
+        currentDate.setHours(0, 0, 0, 0);
+        const isBlocked = blockedDatesData.some(block => {
+            const blockStart = new Date(block.start_date + 'T00:00:00');
+            const blockEnd = new Date(block.end_date + 'T00:00:00');
+            blockStart.setHours(0, 0, 0, 0);
+            blockEnd.setHours(0, 0, 0, 0);
+            return currentDate >= blockStart && currentDate <= blockEnd;
+        });
 
-        if (dayBookings.length > 0) {
-            calendarHTML += '<div class="bookings-container">';
-            dayBookings.forEach(booking => {
-                const statusClass = booking.status.replace('_', '-');
-                calendarHTML += `
-                    <div class="booking-item status-${statusClass}"
-                         onclick='showBookingDetails(${JSON.stringify(booking).replace(/'/g, "&#39;")})'
-                         title="${booking.reference} - ${booking.vehicle}">
-                        <div class="booking-time">${booking.start_time}</div>
-                        <div class="booking-info">${booking.vehicle}</div>
-                    </div>`;
-            });
-            calendarHTML += '</div>';
+        // Determine the primary status for the day
+        let dayStatus = 'available';
+        let bookingCount = dayBookings.length;
+        let hasActiveBookings = dayBookings.some(b => b.status === 'confirmed' || b.status === 'in_progress' || b.status === 'pending');
+
+        // Check for CONFLICT: blocked date with active bookings
+        if (isBlocked && hasActiveBookings) {
+            dayStatus = 'conflict';
+        } else if (isBlocked) {
+            // Blocked dates without bookings
+            dayStatus = 'blocked';
+        } else if (dayBookings.length > 0) {
+            // Priority: confirmed/in_progress (red) > pending (orange) > completed/cancelled (gray)
+            if (dayBookings.some(b => b.status === 'confirmed' || b.status === 'in_progress')) {
+                dayStatus = 'booked';
+            } else if (dayBookings.some(b => b.status === 'pending')) {
+                dayStatus = 'pending';
+            } else {
+                dayStatus = 'completed';
+            }
         }
 
-        calendarHTML += '</div>';
+        const todayClass = isToday ? 'today' : '';
+        const clickHandler = dayBookings.length > 0 ? `onclick="showDayBookings('${dateStr}')"` : '';
+        let statusTitle = 'Available';
+        if (dayStatus === 'conflict') {
+            statusTitle = `⚠️ CONFLICT: ${bookingCount} booking(s) on blocked date!`;
+        } else if (isBlocked) {
+            statusTitle = 'Blocked';
+        } else if (dayBookings.length > 0) {
+            statusTitle = dayBookings.length + ' booking(s)';
+        }
+
+        calendarHTML += `<div class="calendar-day-bookings ${todayClass} status-${dayStatus}" ${clickHandler} title="${statusTitle}">
+            <div class="day-number-bookings">${day}</div>
+            ${bookingCount > 0 ? `<div class="booking-count-badge">${bookingCount}</div>` : ''}
+            ${dayStatus === 'conflict' ? '<div class="conflict-indicator">⚠️</div>' : ''}
+        </div>`;
     }
 
     calendarHTML += '</div>';
     calendar.innerHTML = calendarHTML;
+
+    // Update legend counts for the current month
+    updateLegendCounts();
+}
+
+function updateLegendCounts() {
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+    let availableCount = 0;
+    let bookedCount = 0;
+    let pendingCount = 0;
+    let blockedCount = 0;
+
+    // Count each day in the current month
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const dayBookings = bookingsData.filter(b => b.date === dateStr);
+        const currentDate = new Date(currentYear, currentMonth, day);
+        currentDate.setHours(0, 0, 0, 0);
+
+        // Check if blocked
+        const isBlocked = blockedDatesData.some(block => {
+            const blockStart = new Date(block.start_date + 'T00:00:00');
+            const blockEnd = new Date(block.end_date + 'T00:00:00');
+            blockStart.setHours(0, 0, 0, 0);
+            blockEnd.setHours(0, 0, 0, 0);
+            return currentDate >= blockStart && currentDate <= blockEnd;
+        });
+
+        const hasActiveBookings = dayBookings.some(b => b.status === 'confirmed' || b.status === 'in_progress' || b.status === 'pending');
+
+        // Check for conflict first
+        if (isBlocked && hasActiveBookings) {
+            // Conflicts count as booked (since they need immediate attention)
+            bookedCount++;
+        } else if (isBlocked) {
+            blockedCount++;
+        } else if (dayBookings.length > 0) {
+            // Check booking status
+            if (dayBookings.some(b => b.status === 'confirmed' || b.status === 'in_progress')) {
+                bookedCount++;
+            } else if (dayBookings.some(b => b.status === 'pending')) {
+                pendingCount++;
+            }
+        } else {
+            availableCount++;
+        }
+    }
+
+    // Update legend display
+    document.getElementById('legend-available').textContent = availableCount;
+    document.getElementById('legend-booked').textContent = bookedCount;
+    document.getElementById('legend-pending').textContent = pendingCount;
+    document.getElementById('legend-blocked').textContent = blockedCount;
+}
+
+function showDayBookings(dateStr) {
+    const dayBookings = bookingsData.filter(b => b.date === dateStr);
+
+    if (dayBookings.length === 1) {
+        showBookingDetails(dayBookings[0]);
+    } else {
+        // Show list of bookings for that day
+        let listHTML = `<h3 style="margin-top: 0;">Bookings for ${new Date(dateStr).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h3>`;
+        listHTML += '<div style="display: flex; flex-direction: column; gap: 1rem;">';
+
+        dayBookings.forEach(booking => {
+            const statusClass = {
+                'pending': 'secondary',
+                'confirmed': 'success',
+                'in_progress': 'warning',
+                'completed': 'info',
+                'cancelled': 'danger'
+            }[booking.status] || 'secondary';
+
+            listHTML += `
+                <div style="padding: 1rem; border: 2px solid var(--light-gray); border-radius: var(--border-radius); cursor: pointer; transition: all 0.2s;"
+                     onclick="showBookingDetails(${JSON.stringify(booking).replace(/'/g, '&#39;')})"
+                     onmouseover="this.style.borderColor='var(--primary-gold)'; this.style.background='#fffbf0';"
+                     onmouseout="this.style.borderColor='var(--light-gray)'; this.style.background='white';">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <strong>${booking.vehicle}</strong>
+                        <span class="badge badge-${statusClass}">${booking.status.replace('_', ' ').toUpperCase()}</span>
+                    </div>
+                    <div style="font-size: 0.9rem; color: var(--dark-gray);">
+                        <div>${booking.reference}</div>
+                        <div>${booking.start_time} - ${booking.end_time}</div>
+                        <div>${booking.customer}</div>
+                    </div>
+                </div>
+            `;
+        });
+
+        listHTML += '</div>';
+
+        document.getElementById('bookingDetailsContent').innerHTML = listHTML;
+        document.getElementById('bookingDetailsModal').style.display = 'flex';
+    }
 }
 
 function changeMonth(delta) {

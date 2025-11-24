@@ -11,11 +11,11 @@ class OwnerController {
             requireAuth('owner');
 
             error_log("OwnerController::__construct() - Auth check passed");
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             error_log("OwnerController::__construct() - Exception: " . $e->getMessage());
             error_log("OwnerController::__construct() - Stack trace: " . $e->getTraceAsString());
             throw $e;
-        } catch (Error $e) {
+        } catch (\Error $e) {
             error_log("OwnerController::__construct() - Fatal Error: " . $e->getMessage());
             error_log("OwnerController::__construct() - Stack trace: " . $e->getTraceAsString());
             throw $e;
@@ -48,9 +48,9 @@ class OwnerController {
                         $notifications = getUnreadNotifications($ownerId, 5);
                         $notificationCount = getUnreadNotificationCount($ownerId);
                     }
-                } catch (Exception $e) {
+                } catch (\Exception $e) {
                     error_log("Notifications error: " . $e->getMessage());
-                } catch (Error $e) {
+                } catch (\Error $e) {
                     error_log("Notifications fatal error: " . $e->getMessage());
                 }
             }
@@ -62,9 +62,9 @@ class OwnerController {
                     if (function_exists('autoUpdateBookingStatuses')) {
                         autoUpdateBookingStatuses();
                     }
-                } catch (Exception $e) {
+                } catch (\Exception $e) {
                     error_log("Booking automation error: " . $e->getMessage());
-                } catch (Error $e) {
+                } catch (\Error $e) {
                     error_log("Booking automation fatal error: " . $e->getMessage());
                 }
             }
@@ -100,12 +100,12 @@ class OwnerController {
             view('owner/dashboard', compact('stats', 'recentBookings', 'notifications', 'notificationCount'));
             error_log("OwnerController::dashboard() - Complete");
 
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             error_log("OwnerController::dashboard() - Exception: " . $e->getMessage());
             error_log("OwnerController::dashboard() - Stack trace: " . $e->getTraceAsString());
             echo "An error occurred loading the dashboard. Please check the error logs.";
             exit;
-        } catch (Error $e) {
+        } catch (\Error $e) {
             error_log("OwnerController::dashboard() - Fatal Error: " . $e->getMessage());
             error_log("OwnerController::dashboard() - Stack trace: " . $e->getTraceAsString());
             echo "A fatal error occurred loading the dashboard. Please check the error logs.";
@@ -260,9 +260,9 @@ class OwnerController {
                 if (function_exists('autoUpdateBookingStatuses')) {
                     autoUpdateBookingStatuses();
                 }
-            } catch (Exception $e) {
+            } catch (\Exception $e) {
                 error_log("Booking automation error: " . $e->getMessage());
-            } catch (Error $e) {
+            } catch (\Error $e) {
                 error_log("Booking automation fatal error: " . $e->getMessage());
             }
         }
@@ -289,7 +289,70 @@ class OwnerController {
             $bookings = [];
         }
 
-        view('owner/bookings', compact('bookings', 'status', 'view'));
+        // Fetch blocked dates for the calendar view
+        $blockedDates = db()->fetchAll(
+            "SELECT vbd.*, v.make, v.model
+             FROM vehicle_blocked_dates vbd
+             JOIN vehicles v ON vbd.vehicle_id = v.id
+             WHERE vbd.owner_id = ?
+             ORDER BY vbd.start_date ASC",
+            [$ownerId]
+        );
+
+        // Ensure blockedDates is an array
+        if (!is_array($blockedDates)) {
+            error_log("OwnerController::bookings() - blockedDates fetchAll returned non-array: " . gettype($blockedDates));
+            $blockedDates = [];
+        }
+
+        // Calculate status counts for the calendar legend
+        // We need to count unique dates, not bookings
+        $bookedDates = [];
+        $pendingDates = [];
+
+        foreach ($bookings as $booking) {
+            if (!empty($booking['booking_date']) && !empty($booking['status'])) {
+                $date = $booking['booking_date'];
+                if ($booking['status'] === 'confirmed' || $booking['status'] === 'in_progress') {
+                    $bookedDates[$date] = true;
+                } elseif ($booking['status'] === 'pending') {
+                    // Only count as pending if not already booked
+                    if (!isset($bookedDates[$date])) {
+                        $pendingDates[$date] = true;
+                    }
+                }
+            }
+        }
+
+        // Count blocked dates (unique dates, not blocks)
+        $blockedUniqueDates = [];
+        foreach ($blockedDates as $block) {
+            try {
+                if (!empty($block['start_date']) && !empty($block['end_date'])) {
+                    $start = new \DateTime($block['start_date']);
+                    $end = new \DateTime($block['end_date']);
+                    $current = clone $start;
+
+                    while ($current <= $end) {
+                        $dateStr = $current->format('Y-m-d');
+                        $blockedUniqueDates[$dateStr] = true;
+                        $current->modify('+1 day');
+                    }
+                }
+            } catch (\Exception $e) {
+                error_log("Error processing blocked date: " . $e->getMessage());
+                continue;
+            }
+        }
+
+        $statusCounts = [
+            'booked' => count($bookedDates),
+            'pending' => count($pendingDates),
+            'blocked' => count($blockedUniqueDates),
+            'available' => 0 // Will be calculated based on current month in the view
+        ];
+
+        view('owner/bookings', compact('bookings', 'status', 'view', 'blockedDates', 'statusCounts'));
     }
 
     public function confirmBooking() {
@@ -344,9 +407,9 @@ class OwnerController {
                         $vehicleName
                     );
                 }
-            } catch (Exception $e) {
+            } catch (\Exception $e) {
                 error_log("Notification error in confirmBooking: " . $e->getMessage());
-            } catch (Error $e) {
+            } catch (\Error $e) {
                 error_log("Notification fatal error in confirmBooking: " . $e->getMessage());
             }
         }
@@ -362,10 +425,10 @@ class OwnerController {
                     } else {
                         flash('success', 'Booking confirmed successfully! It will automatically start when the booking time begins.');
                     }
-                } catch (Exception $e) {
+                } catch (\Exception $e) {
                     error_log("Booking automation error in confirmBooking: " . $e->getMessage());
                     flash('success', 'Booking confirmed successfully! It will automatically start when the booking time begins.');
-                } catch (Error $e) {
+                } catch (\Error $e) {
                     error_log("Booking automation fatal error in confirmBooking: " . $e->getMessage());
                     flash('success', 'Booking confirmed successfully! It will automatically start when the booking time begins.');
                 }
@@ -452,9 +515,9 @@ class OwnerController {
                         );
                     }
                 }
-            } catch (Exception $e) {
+            } catch (\Exception $e) {
                 error_log("Notification error in cancelBooking: " . $e->getMessage());
-            } catch (Error $e) {
+            } catch (\Error $e) {
                 error_log("Notification fatal error in cancelBooking: " . $e->getMessage());
             }
         }
@@ -472,13 +535,34 @@ class OwnerController {
         $ownerId = $_SESSION['user_id'];
         $vehicles = db()->fetchAll("SELECT id, make, model, year, registration_number FROM vehicles WHERE owner_id = ? AND status = 'approved' ORDER BY make, model", [$ownerId]);
 
+        // Ensure vehicles is an array
+        if (!is_array($vehicles)) {
+            error_log("OwnerController::calendar() - vehicles fetchAll returned non-array: " . gettype($vehicles));
+            $vehicles = [];
+        }
+
         $blockedDates = db()->fetchAll("SELECT vbd.*, v.make, v.model, v.registration_number
                                         FROM vehicle_blocked_dates vbd
                                         JOIN vehicles v ON vbd.vehicle_id = v.id
                                         WHERE vbd.owner_id = ?
                                         ORDER BY vbd.start_date DESC", [$ownerId]);
 
-        view('owner/calendar', compact('vehicles', 'blockedDates'));
+        // Ensure blockedDates is an array
+        if (!is_array($blockedDates)) {
+            error_log("OwnerController::calendar() - blockedDates fetchAll returned non-array: " . gettype($blockedDates));
+            $blockedDates = [];
+        }
+
+        // Generate colors for vehicles (consistent color for each vehicle)
+        $colors = [];
+        $predefinedColors = ['#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#e67e22', '#34495e'];
+        $colorIndex = 0;
+        foreach ($vehicles as $vehicle) {
+            $colors[$vehicle['id']] = $predefinedColors[$colorIndex % count($predefinedColors)];
+            $colorIndex++;
+        }
+
+        view('owner/calendar', compact('vehicles', 'blockedDates', 'colors'));
     }
 
     public function blockDates() {
@@ -496,6 +580,8 @@ class OwnerController {
             }
             ob_start();
         }
+
+        try {
 
         // Verify CSRF token
         $token = $_POST['csrf_token'] ?? '';
@@ -587,7 +673,7 @@ class OwnerController {
                     $blockedCount++;
                 }
             }
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             error_log("Error blocking dates: " . $e->getMessage());
             if ($isAjax) {
                 ob_get_clean();
@@ -627,43 +713,64 @@ class OwnerController {
             }
             redirect('/owner/calendar');
         }
+
+        } catch (\Exception $e) {
+            error_log("Error in blockDates: " . $e->getMessage());
+            error_log("Stack trace: " . $e->getTraceAsString());
+
+            if ($isAjax) {
+                if (ob_get_level()) ob_get_clean();
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => 'An error occurred while blocking dates. Please try again.']);
+                exit;
+            } else {
+                flash('error', 'An error occurred while blocking dates. Please try again.');
+                redirect('/owner/calendar');
+            }
+        }
     }
 
     private function generateBlockDates($startDate, $endDate, $frequency, $customDays) {
         $dates = [];
-        $current = new DateTime($startDate);
-        $end = new DateTime($endDate);
 
-        while ($current <= $end) {
-            $dayOfWeek = (int)$current->format('w'); // 0 = Sunday, 6 = Saturday
-            $shouldBlock = false;
+        try {
+            $current = new \DateTime($startDate);
+            $end = new \DateTime($endDate);
 
-            switch ($frequency) {
-                case 'daily':
-                    $shouldBlock = true;
-                    break;
+            while ($current <= $end) {
+                $dayOfWeek = (int)$current->format('w'); // 0 = Sunday, 6 = Saturday
+                $shouldBlock = false;
 
-                case 'weekdays':
-                    // Monday = 1, Friday = 5
-                    $shouldBlock = ($dayOfWeek >= 1 && $dayOfWeek <= 5);
-                    break;
+                switch ($frequency) {
+                    case 'daily':
+                        $shouldBlock = true;
+                        break;
 
-                case 'weekends':
-                    // Saturday = 6, Sunday = 0
-                    $shouldBlock = ($dayOfWeek == 0 || $dayOfWeek == 6);
-                    break;
+                    case 'weekdays':
+                        // Monday = 1, Friday = 5
+                        $shouldBlock = ($dayOfWeek >= 1 && $dayOfWeek <= 5);
+                        break;
 
-                case 'custom':
-                    // Check if current day of week is in custom days array
-                    $shouldBlock = in_array((string)$dayOfWeek, $customDays);
-                    break;
+                    case 'weekends':
+                        // Saturday = 6, Sunday = 0
+                        $shouldBlock = ($dayOfWeek == 0 || $dayOfWeek == 6);
+                        break;
+
+                    case 'custom':
+                        // Check if current day of week is in custom days array
+                        $shouldBlock = in_array((string)$dayOfWeek, $customDays);
+                        break;
+                }
+
+                if ($shouldBlock) {
+                    $dates[] = $current->format('Y-m-d');
+                }
+
+                $current->modify('+1 day');
             }
-
-            if ($shouldBlock) {
-                $dates[] = $current->format('Y-m-d');
-            }
-
-            $current->modify('+1 day');
+        } catch (\Exception $e) {
+            error_log("Error in generateBlockDates: " . $e->getMessage());
+            return [];
         }
 
         return $dates;
@@ -729,7 +836,7 @@ class OwnerController {
         try {
             db()->execute("DELETE FROM vehicle_blocked_dates WHERE id = ?", [$blockId]);
             logAudit('unblock_vehicle_dates', 'vehicle_blocked_dates', $blockId);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             error_log("Error unblocking date: " . $e->getMessage());
             if ($isAjax) {
                 ob_get_clean();

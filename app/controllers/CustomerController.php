@@ -14,9 +14,9 @@ class CustomerController {
             'completed_bookings' => db()->fetch("SELECT COUNT(*) as count FROM bookings WHERE customer_id = ? AND status='completed'", [$customerId])['count'],
         ];
         
-        $upcomingBookings = db()->fetchAll("SELECT b.*, v.make, v.model FROM bookings b 
-                                            JOIN vehicles v ON b.vehicle_id = v.id 
-                                            WHERE b.customer_id = ? AND b.booking_date >= CURDATE() 
+        $upcomingBookings = db()->fetchAll("SELECT b.*, v.make, v.model FROM bookings b
+                                            JOIN vehicles v ON b.vehicle_id = v.id
+                                            WHERE b.customer_id = ? AND b.booking_date >= CURDATE()
                                             ORDER BY b.booking_date ASC LIMIT 5", [$customerId]);
         
         view('customer/dashboard', compact('stats', 'upcomingBookings'));
@@ -56,12 +56,37 @@ class CustomerController {
         $firstName = $_POST['first_name'] ?? '';
         $lastName = $_POST['last_name'] ?? '';
         $phone = $_POST['phone'] ?? '';
-        
-        db()->execute("UPDATE users SET first_name = ?, last_name = ?, phone = ? WHERE id = ?", 
+
+        db()->execute("UPDATE users SET first_name = ?, last_name = ?, phone = ? WHERE id = ?",
                      [$firstName, $lastName, $phone, $userId]);
-        
+
         logAudit('update_profile', 'users', $userId);
         flash('success', 'Profile updated successfully');
         redirect('/customer/profile');
+    }
+
+    public function viewBooking($id) {
+        $customerId = $_SESSION['user_id'];
+
+        // Get booking details with vehicle and owner information
+        $booking = db()->fetch("SELECT b.*, v.make, v.model, v.year, v.color, v.category,
+                                u.first_name as owner_first_name, u.last_name as owner_last_name,
+                                u.phone as owner_phone
+                                FROM bookings b
+                                JOIN vehicles v ON b.vehicle_id = v.id
+                                JOIN users u ON b.owner_id = u.id
+                                WHERE b.id = ? AND b.customer_id = ?", [$id, $customerId]);
+
+        if (!$booking) {
+            flash('error', 'Booking not found');
+            redirect('/customer/bookings');
+        }
+
+        // Get vehicle images
+        $images = db()->fetchAll("SELECT image_path FROM vehicle_images
+                                  WHERE vehicle_id = ? ORDER BY is_primary DESC, display_order ASC",
+                                 [$booking['vehicle_id']]);
+
+        view('customer/booking-detail', compact('booking', 'images'));
     }
 }
