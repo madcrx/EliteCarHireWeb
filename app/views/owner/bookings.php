@@ -374,9 +374,13 @@ function renderCalendar() {
         // Determine the primary status for the day
         let dayStatus = 'available';
         let bookingCount = dayBookings.length;
+        let hasActiveBookings = dayBookings.some(b => b.status === 'confirmed' || b.status === 'in_progress' || b.status === 'pending');
 
-        if (isBlocked) {
-            // Blocked dates take priority over everything
+        // Check for CONFLICT: blocked date with active bookings
+        if (isBlocked && hasActiveBookings) {
+            dayStatus = 'conflict';
+        } else if (isBlocked) {
+            // Blocked dates without bookings
             dayStatus = 'blocked';
         } else if (dayBookings.length > 0) {
             // Priority: confirmed/in_progress (red) > pending (orange) > completed/cancelled (gray)
@@ -391,11 +395,19 @@ function renderCalendar() {
 
         const todayClass = isToday ? 'today' : '';
         const clickHandler = dayBookings.length > 0 ? `onclick="showDayBookings('${dateStr}')"` : '';
-        const blockedTitle = isBlocked ? 'Blocked' : (dayBookings.length > 0 ? dayBookings.length + ' booking(s)' : 'Available');
+        let statusTitle = 'Available';
+        if (dayStatus === 'conflict') {
+            statusTitle = `⚠️ CONFLICT: ${bookingCount} booking(s) on blocked date!`;
+        } else if (isBlocked) {
+            statusTitle = 'Blocked';
+        } else if (dayBookings.length > 0) {
+            statusTitle = dayBookings.length + ' booking(s)';
+        }
 
-        calendarHTML += `<div class="calendar-day-bookings ${todayClass} status-${dayStatus}" ${clickHandler} title="${blockedTitle}">
+        calendarHTML += `<div class="calendar-day-bookings ${todayClass} status-${dayStatus}" ${clickHandler} title="${statusTitle}">
             <div class="day-number-bookings">${day}</div>
             ${bookingCount > 0 ? `<div class="booking-count-badge">${bookingCount}</div>` : ''}
+            ${dayStatus === 'conflict' ? '<div class="conflict-indicator">⚠️</div>' : ''}
         </div>`;
     }
 
@@ -427,7 +439,13 @@ function updateLegendCounts() {
             return currentDate >= blockStart && currentDate <= blockEnd;
         });
 
-        if (isBlocked) {
+        const hasActiveBookings = dayBookings.some(b => b.status === 'confirmed' || b.status === 'in_progress' || b.status === 'pending');
+
+        // Check for conflict first
+        if (isBlocked && hasActiveBookings) {
+            // Conflicts count as booked (since they need immediate attention)
+            bookedCount++;
+        } else if (isBlocked) {
             blockedCount++;
         } else if (dayBookings.length > 0) {
             // Check booking status

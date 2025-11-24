@@ -730,6 +730,54 @@ table tbody tr:hover {
     box-shadow: none;
 }
 
+/* Conflict Status - Flashing Animation for Booking/Blocked Conflicts */
+.calendar-day-bookings.status-conflict {
+    background: #ff4444;
+    cursor: pointer;
+    animation: conflictFlash 1.5s ease-in-out infinite;
+    border: 3px solid #cc0000;
+}
+
+.calendar-day-bookings.status-conflict .day-number-bookings {
+    color: #ffffff;
+    font-weight: 900;
+}
+
+.calendar-day-bookings.status-conflict:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 12px rgba(255, 0, 0, 0.4);
+}
+
+.conflict-indicator {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    font-size: 1.5rem;
+    animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes conflictFlash {
+    0%, 100% {
+        background: #ff4444;
+        border-color: #cc0000;
+    }
+    50% {
+        background: #ff8888;
+        border-color: #ff4444;
+    }
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 0.7;
+    }
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .sidebar-layout {
