@@ -365,9 +365,12 @@ function renderCalendar() {
 
         // Check if this date is blocked
         const currentDate = new Date(currentYear, currentMonth, day);
+        currentDate.setHours(0, 0, 0, 0);
         const isBlocked = blockedDatesData.some(block => {
-            const blockStart = new Date(block.start_date);
-            const blockEnd = new Date(block.end_date);
+            const blockStart = new Date(block.start_date + 'T00:00:00');
+            const blockEnd = new Date(block.end_date + 'T00:00:00');
+            blockStart.setHours(0, 0, 0, 0);
+            blockEnd.setHours(0, 0, 0, 0);
             return currentDate >= blockStart && currentDate <= blockEnd;
         });
 
@@ -431,11 +434,14 @@ function updateLegendCounts() {
         const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         const dayBookings = bookingsData.filter(b => b.date === dateStr);
         const currentDate = new Date(currentYear, currentMonth, day);
+        currentDate.setHours(0, 0, 0, 0);
 
         // Check if blocked
         const isBlocked = blockedDatesData.some(block => {
-            const blockStart = new Date(block.start_date);
-            const blockEnd = new Date(block.end_date);
+            const blockStart = new Date(block.start_date + 'T00:00:00');
+            const blockEnd = new Date(block.end_date + 'T00:00:00');
+            blockStart.setHours(0, 0, 0, 0);
+            blockEnd.setHours(0, 0, 0, 0);
             return currentDate >= blockStart && currentDate <= blockEnd;
         });
 
