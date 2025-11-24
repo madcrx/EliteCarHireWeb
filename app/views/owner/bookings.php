@@ -31,40 +31,38 @@
             </div>
         <?php else: ?>
             <!-- Calendar View - Always Displayed First -->
-            <div class="card" style="margin-bottom: 1.5rem;">
-                <h2 style="margin-bottom: 0.5rem;"><i class="fas fa-calendar"></i> Calendar View</h2>
-                <p style="margin-bottom: 1.5rem; color: var(--dark-gray);">
-                    Visual calendar showing all your bookings with status indicators.
-                </p>
+            <div class="card" style="margin-bottom: 1.5rem; padding: 0; overflow: hidden;">
+                <!-- Calendar Container -->
+                <div class="bookings-calendar-container">
+                    <!-- Calendar Header with Navigation -->
+                    <div class="bookings-calendar-header">
+                        <button onclick="changeMonth(-1)" class="bookings-calendar-nav-btn">
+                            <i class="fas fa-angle-double-left"></i>
+                        </button>
+                        <h2 id="calendarMonth" class="bookings-calendar-month"></h2>
+                        <button onclick="changeMonth(1)" class="bookings-calendar-nav-btn">
+                            <i class="fas fa-angle-double-right"></i>
+                        </button>
+                    </div>
 
-                <!-- Calendar Navigation -->
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding: 1rem; background: var(--light-gray); border-radius: var(--border-radius);">
-                    <button onclick="changeMonth(-1)" class="btn btn-secondary">
-                        <i class="fas fa-chevron-left"></i>
-                    </button>
-                    <h3 id="calendarMonth" style="margin: 0; color: var(--dark-gray);"></h3>
-                    <button onclick="changeMonth(1)" class="btn btn-secondary">
-                        <i class="fas fa-chevron-right"></i>
-                    </button>
+                    <!-- Calendar Grid -->
+                    <div id="calendar"></div>
                 </div>
 
-                <!-- Calendar Grid -->
-                <div id="calendar" class="booking-calendar"></div>
-
                 <!-- Status Legend -->
-                <div style="margin-top: 1.5rem; padding: 1rem; background: var(--light-gray); border-radius: var(--border-radius);">
-                    <div style="display: flex; flex-wrap: wrap; gap: 2rem; align-items: center;">
+                <div style="padding: 1.5rem; background: white; border-top: 1px solid var(--light-gray);">
+                    <div style="display: flex; flex-wrap: wrap; gap: 2rem; align-items: center; justify-content: center;">
                         <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <div style="width: 40px; height: 40px; background: white; border: 1px solid var(--medium-gray); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: 600; color: var(--dark-gray);">16</div>
-                            <span style="font-weight: 600;">AVAILABLE</span>
+                            <div style="width: 50px; height: 50px; background: white; border: 1px solid #ccc; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #666; font-size: 1.2rem;">16</div>
+                            <span style="font-weight: 700; font-size: 0.95rem;">AVAILABLE</span>
                         </div>
                         <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <div style="width: 40px; height: 40px; background: #dc3545; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: 600; color: white;">16</div>
-                            <span style="font-weight: 600;">BOOKED</span>
+                            <div style="width: 50px; height: 50px; background: #dc3545; display: flex; align-items: center; justify-content: center; font-weight: 700; color: white; font-size: 1.2rem;">16</div>
+                            <span style="font-weight: 700; font-size: 0.95rem;">BOOKED</span>
                         </div>
                         <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <div style="width: 40px; height: 40px; background: #f39c12; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: 600; color: white;">16</div>
-                            <span style="font-weight: 600;">PENDING</span>
+                            <div style="width: 50px; height: 50px; background: #f39c12; display: flex; align-items: center; justify-content: center; font-weight: 700; color: white; font-size: 1.2rem;">16</div>
+                            <span style="font-weight: 700; font-size: 0.95rem;">PENDING</span>
                         </div>
                     </div>
                 </div>
