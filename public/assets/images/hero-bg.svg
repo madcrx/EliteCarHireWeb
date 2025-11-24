@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080">
+  <!-- Hero Background Image -->
+  <defs>
+    <linearGradient id="heroGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0a0a;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#1a1a1a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0a0a0a;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="heroGold" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#d4af37;stop-opacity:0.3" />
+      <stop offset="50%" style="stop-color:#f4d03f;stop-opacity:0.5" />
+      <stop offset="100%" style="stop-color:#d4af37;stop-opacity:0.3" />
+    </linearGradient>
+    <radialGradient id="spotlight" cx="50%" cy="50%">
+      <stop offset="0%" style="stop-color:#d4af37;stop-opacity:0.4" />
+      <stop offset="100%" style="stop-color:#000000;stop-opacity:0" />
+    </radialGradient>
+  </defs>
+
+  <!-- Base Background -->
+  <rect width="1920" height="1080" fill="url(#heroGradient)"/>
+
+  <!-- Spotlight Effect -->
+  <ellipse cx="960" cy="540" rx="800" ry="600" fill="url(#spotlight)"/>
+
+  <!-- Geometric Luxury Pattern -->
+  <g opacity="0.15" stroke="url(#heroGold)" stroke-width="2" fill="none">
+    <rect x="100" y="100" width="200" height="150" transform="rotate(15 200 175)"/>
+    <rect x="1620" y="800" width="180" height="120" transform="rotate(-20 1710 860)"/>
+    <circle cx="300" cy="850" r="80"/>
+    <circle cx="1650" cy="250" r="60"/>
+  </g>
+
+  <!-- Road Lines - Perspective -->
+  <g opacity="0.2" stroke="url(#heroGold)" stroke-width="8" stroke-dasharray="60,40">
+    <line x1="800" y1="1080" x2="900" y2="600"/>
+    <line x1="1120" y1="1080" x2="1020" y2="600"/>
+  </g>
+
+  <!-- Luxury Car Silhouette in Spotlight -->
+  <g transform="translate(600, 450)" opacity="0.4">
+    <path d="M 50 100 L 100 60 L 250 45 L 500 45 L 620 60 L 680 100 L 680 145 L 650 145 L 635 130 L 590 130 L 575 145 L 155 145 L 140 130 L 95 130 L 80 145 L 50 145 Z"
+          fill="#1a1a1a" stroke="url(#heroGold)" stroke-width="2"/>
+    <path d="M 130 60 L 200 48 L 280 46 L 280 90 L 130 95 Z" fill="#000" opacity="0.9"/>
+    <path d="M 300 46 L 470 46 L 470 90 L 300 90 Z" fill="#000" opacity="0.9"/>
+    <circle cx="155" cy="145" r="25" fill="#000" stroke="url(#heroGold)" stroke-width="2"/>
+    <circle cx="155" cy="145" r="14" fill="url(#heroGold)"/>
+    <circle cx="575" cy="145" r="25" fill="#000" stroke="url(#heroGold)" stroke-width="2"/>
+    <circle cx="575" cy="145" r="14" fill="url(#heroGold)"/>
+  </g>
+
+  <!-- Golden Shine Effect -->
+  <line x1="0" y1="400" x2="1920" y2="400" stroke="url(#heroGold)" stroke-width="1" opacity="0.3"/>
+  <line x1="0" y1="680" x2="1920" y2="680" stroke="url(#heroGold)" stroke-width="1" opacity="0.3"/>
+
+  <!-- Decorative Corner Elements -->
+  <g stroke="url(#heroGold)" stroke-width="3" fill="none" opacity="0.5">
+    <polyline points="50,50 50,150 150,150"/>
+    <polyline points="1870,50 1870,150 1770,150"/>
+    <polyline points="50,1030 50,930 150,930"/>
+    <polyline points="1870,1030 1870,930 1770,930"/>
+  </g>
+</svg>

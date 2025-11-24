@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
+  <!-- Sports Car Placeholder -->
+  <defs>
+    <linearGradient id="bgGradient5" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f0f0f;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1a1a1a;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="goldGradient5" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#d4af37;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#f4d03f;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#d4af37;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="sportsBody" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffd700;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#d4af37;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="600" fill="url(#bgGradient5)"/>
+
+  <!-- Speed Lines -->
+  <g opacity="0.3" stroke="url(#goldGradient5)" stroke-width="2">
+    <line x1="50" y1="250" x2="200" y2="250"/>
+    <line x1="30" y1="280" x2="150" y2="280"/>
+    <line x1="60" y1="310" x2="180" y2="310"/>
+    <line x1="80" y1="340" x2="220" y2="340"/>
+  </g>
+
+  <!-- Sleek Sports Car - Low Profile -->
+  <g transform="translate(120, 220)">
+    <!-- Car Body - Very Low and Aerodynamic -->
+    <path d="M 70 125 L 120 105 L 200 95 L 280 90 L 420 90 L 500 95 L 560 110 L 590 125 L 590 145 L 570 145 L 560 135 L 520 135 L 510 145 L 150 145 L 140 135 L 100 135 L 90 145 L 70 145 Z"
+          fill="url(#sportsBody)" stroke="url(#goldGradient5)" stroke-width="3"/>
+
+    <!-- Windshield - Very Sloped -->
+    <path d="M 150 105 L 200 97 L 260 94 L 260 112 L 150 118 Z" fill="#000" opacity="0.9"/>
+
+    <!-- Side Window -->
+    <path d="M 280 94 L 380 94 L 380 112 L 280 112 Z" fill="#000" opacity="0.9"/>
+
+    <!-- Air Intake -->
+    <rect x="460" y="95" width="30" height="15" fill="#000" rx="2"/>
+
+    <!-- Wheels - Low Profile Tires -->
+    <circle cx="150" cy="145" r="26" fill="#1a1a1a" stroke="url(#goldGradient5)" stroke-width="3"/>
+    <circle cx="150" cy="145" r="16" fill="#2c2c2c"/>
+    <circle cx="150" cy="145" r="8" fill="url(#goldGradient5)"/>
+    <path d="M 150 137 L 150 153 M 142 145 L 158 145" stroke="url(#goldGradient5)" stroke-width="2"/>
+
+    <circle cx="510" cy="145" r="26" fill="#1a1a1a" stroke="url(#goldGradient5)" stroke-width="3"/>
+    <circle cx="510" cy="145" r="16" fill="#2c2c2c"/>
+    <circle cx="510" cy="145" r="8" fill="url(#goldGradient5)"/>
+    <path d="M 510 137 L 510 153 M 502 145 L 518 145" stroke="url(#goldGradient5)" stroke-width="2"/>
+
+    <!-- Headlight -->
+    <ellipse cx="570" cy="115" rx="12" ry="8" fill="#fff" opacity="0.9"/>
+
+    <!-- Spoiler -->
+    <rect x="85" y="120" width="60" height="4" fill="url(#goldGradient5)" rx="1"/>
+    <rect x="95" y="116" width="40" height="4" fill="#000" opacity="0.6"/>
+
+    <!-- Carbon Fiber Details -->
+    <line x1="270" y1="94" x2="270" y2="112" stroke="#000" stroke-width="2" opacity="0.5"/>
+  </g>
+
+  <!-- Text -->
+  <text x="400" y="480" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="url(#goldGradient5)" text-anchor="middle">
+    SPORTS CAR
+  </text>
+  <text x="400" y="520" font-family="Arial, sans-serif" font-size="18" fill="#999" text-anchor="middle">
+    Performance & Prestige
+  </text>
+</svg>

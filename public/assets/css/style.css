@@ -30,6 +30,36 @@ body {
     padding: 0 20px;
 }
 
+/* Hero Section */
+.hero {
+    background: linear-gradient(135deg, rgba(0,0,0,0.7), rgba(0,0,0,0.5)),
+                url('/assets/images/hero-bg.svg') center/cover;
+    color: var(--white);
+    text-align: center;
+    padding: 8rem 0 6rem;
+    position: relative;
+}
+
+.hero h1 {
+    font-size: 3.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: var(--white);
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+.hero p {
+    font-size: 1.5rem;
+    margin-bottom: 2rem;
+    color: var(--light-gray);
+}
+
+.hero .btn {
+    font-size: 1.2rem;
+    padding: 15px 40px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+}
+
 /* Navigation */
 .navbar {
     background: var(--dark-gray);
@@ -252,10 +282,26 @@ table tbody tr:hover {
     transform: translateY(-5px);
 }
 
-.vehicle-card img {
+.vehicle-card img,
+.vehicle-card svg {
     width: 100%;
     height: 200px;
     object-fit: cover;
+    display: block;
+}
+
+.vehicle-card .vehicle-placeholder {
+    width: 100%;
+    height: 200px;
+    background: var(--light-gray);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.vehicle-card .vehicle-placeholder i {
+    font-size: 4rem;
+    color: var(--medium-gray);
 }
 
 .vehicle-card-body {
@@ -780,6 +826,27 @@ table tbody tr:hover {
 
 /* Responsive */
 @media (max-width: 768px) {
+    .hero {
+        padding: 4rem 0 3rem;
+    }
+
+    .hero h1 {
+        font-size: 2rem;
+    }
+
+    .hero p {
+        font-size: 1.1rem;
+    }
+
+    .hero .btn {
+        font-size: 1rem;
+        padding: 12px 30px;
+    }
+
+    .vehicle-grid {
+        grid-template-columns: 1fr;
+    }
+
     .sidebar-layout {
         flex-direction: column;
     }
