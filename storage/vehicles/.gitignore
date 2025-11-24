@@ -1,0 +1,3 @@
+# Keep storage directories but not their contents
+*
+!.gitignore
