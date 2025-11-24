@@ -311,13 +311,15 @@ class OwnerController {
         $pendingDates = [];
 
         foreach ($bookings as $booking) {
-            $date = $booking['booking_date'];
-            if ($booking['status'] === 'confirmed' || $booking['status'] === 'in_progress') {
-                $bookedDates[$date] = true;
-            } elseif ($booking['status'] === 'pending') {
-                // Only count as pending if not already booked
-                if (!isset($bookedDates[$date])) {
-                    $pendingDates[$date] = true;
+            if (!empty($booking['booking_date']) && !empty($booking['status'])) {
+                $date = $booking['booking_date'];
+                if ($booking['status'] === 'confirmed' || $booking['status'] === 'in_progress') {
+                    $bookedDates[$date] = true;
+                } elseif ($booking['status'] === 'pending') {
+                    // Only count as pending if not already booked
+                    if (!isset($bookedDates[$date])) {
+                        $pendingDates[$date] = true;
+                    }
                 }
             }
         }
@@ -325,14 +327,21 @@ class OwnerController {
         // Count blocked dates (unique dates, not blocks)
         $blockedUniqueDates = [];
         foreach ($blockedDates as $block) {
-            $start = new DateTime($block['start_date']);
-            $end = new DateTime($block['end_date']);
-            $current = clone $start;
+            try {
+                if (!empty($block['start_date']) && !empty($block['end_date'])) {
+                    $start = new DateTime($block['start_date']);
+                    $end = new DateTime($block['end_date']);
+                    $current = clone $start;
 
-            while ($current <= $end) {
-                $dateStr = $current->format('Y-m-d');
-                $blockedUniqueDates[$dateStr] = true;
-                $current->modify('+1 day');
+                    while ($current <= $end) {
+                        $dateStr = $current->format('Y-m-d');
+                        $blockedUniqueDates[$dateStr] = true;
+                        $current->modify('+1 day');
+                    }
+                }
+            } catch (Exception $e) {
+                error_log("Error processing blocked date: " . $e->getMessage());
+                continue;
             }
         }
 
