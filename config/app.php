@@ -24,6 +24,7 @@ return [
     'email' => [
         'from_address' => 'support@elitecarhire.au',
         'from_name' => 'Elite Car Hire',
+        'admin_address' => getenv('ADMIN_EMAIL') ?: 'admin@elitecarhire.au',
         'smtp_host' => getenv('SMTP_HOST') ?: 'localhost',
         'smtp_port' => getenv('SMTP_PORT') ?: 587,
         'smtp_username' => getenv('SMTP_USER') ?: '',

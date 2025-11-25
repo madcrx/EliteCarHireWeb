@@ -227,3 +227,119 @@ function timeAgo($timestamp) {
 
     return 'just now';
 }
+
+/**
+ * Generate a secure action token for email links
+ *
+ * @param int $userId User who can use this token
+ * @param string $actionType Type of action (e.g., 'confirm_booking', 'cancel_booking')
+ * @param string $entityType Entity type (e.g., 'booking', 'vehicle')
+ * @param int $entityId ID of the entity
+ * @param int $expiryHours Hours until token expires (default 72)
+ * @param array $metadata Optional additional data
+ * @return string The generated token
+ */
+function generateActionToken($userId, $actionType, $entityType, $entityId, $expiryHours = 72, $metadata = null) {
+    // Generate cryptographically secure random token
+    $token = bin2hex(random_bytes(32));
+
+    $expiresAt = date('Y-m-d H:i:s', strtotime("+{$expiryHours} hours"));
+
+    $metadataJson = $metadata ? json_encode($metadata) : null;
+
+    db()->execute(
+        "INSERT INTO action_tokens (token, user_id, action_type, entity_type, entity_id, metadata, expires_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)",
+        [$token, $userId, $actionType, $entityType, $entityId, $metadataJson, $expiresAt]
+    );
+
+    return $token;
+}
+
+/**
+ * Verify and consume an action token
+ *
+ * @param string $token The token to verify
+ * @return array|false Token data if valid, false otherwise
+ */
+function verifyActionToken($token) {
+    $tokenData = db()->fetch(
+        "SELECT * FROM action_tokens WHERE token = ? AND expires_at > NOW() AND used_at IS NULL",
+        [$token]
+    );
+
+    if (!$tokenData) {
+        return false;
+    }
+
+    // Mark token as used
+    db()->execute("UPDATE action_tokens SET used_at = NOW() WHERE id = ?", [$tokenData['id']]);
+
+    // Decode metadata if present
+    if ($tokenData['metadata']) {
+        $tokenData['metadata'] = json_decode($tokenData['metadata'], true);
+    }
+
+    return $tokenData;
+}
+
+/**
+ * Generate action URL with token
+ *
+ * @param string $actionType Action type
+ * @param string $path Base path
+ * @param int $userId User ID
+ * @param string $entityType Entity type
+ * @param int $entityId Entity ID
+ * @param int $expiryHours Expiry hours
+ * @return string Full URL with token
+ */
+function generateActionUrl($actionType, $path, $userId, $entityType, $entityId, $expiryHours = 72) {
+    $token = generateActionToken($userId, $actionType, $entityType, $entityId, $expiryHours);
+    $baseUrl = rtrim(config('app.url', 'http://localhost'), '/');
+    return "{$baseUrl}{$path}?token={$token}";
+}
+
+/**
+ * Generate login redirect URL
+ *
+ * @param string $redirectPath Where to redirect after login
+ * @return string Full URL
+ */
+function generateLoginUrl($redirectPath) {
+    $baseUrl = rtrim(config('app.url', 'http://localhost'), '/');
+    $encodedPath = urlencode($redirectPath);
+    return "{$baseUrl}/login?redirect={$encodedPath}";
+}
+
+/**
+ * Get email button HTML
+ *
+ * @param string $url Button URL
+ * @param string $text Button text
+ * @param string $color Button color (primary/success/danger/warning)
+ * @return string HTML for email button
+ */
+function getEmailButton($url, $text, $color = 'primary') {
+    $colors = [
+        'primary' => '#C5A253',
+        'success' => '#4caf50',
+        'danger' => '#e74c3c',
+        'warning' => '#f39c12',
+        'info' => '#3498db'
+    ];
+
+    $bgColor = $colors[$color] ?? $colors['primary'];
+
+    return "
+    <table border='0' cellpadding='0' cellspacing='0' style='margin: 20px 0;'>
+        <tr>
+            <td align='center' style='border-radius: 4px;' bgcolor='{$bgColor}'>
+                <a href='{$url}' target='_blank' style='font-size: 16px; font-family: Arial, sans-serif; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 4px; display: inline-block; font-weight: 600;'>
+                    {$text}
+                </a>
+            </td>
+        </tr>
+    </table>
+    ";
+}
