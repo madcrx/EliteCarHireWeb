@@ -394,12 +394,14 @@ class PaymentController {
     private function getPaymentConfirmationEmail($booking, $transactionId, $cardBrand, $cardLastFour) {
         $amount = number_format($booking['total_amount'], 2);
         $vehicle = "{$booking['year']} {$booking['make']} {$booking['model']}";
+        $viewUrl = generateLoginUrl("/customer/bookings");
+        $viewButton = getEmailButton($viewUrl, 'View My Bookings', 'success');
 
         return "
         <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
-            <h2 style='color: #C5A253;'>Payment Confirmation</h2>
+            <h2 style='color: #4caf50;'>✓ Payment Successful!</h2>
             <p>Dear {$booking['first_name']},</p>
-            <p>Your payment has been successfully processed!</p>
+            <p>Your payment has been successfully processed and your booking is now <strong>fully confirmed</strong>!</p>
 
             <div style='background: #f5f5f5; padding: 20px; border-left: 4px solid #C5A253; margin: 20px 0;'>
                 <h3 style='margin-top: 0;'>Booking Details</h3>
@@ -420,7 +422,9 @@ class PaymentController {
 
             <p>Your booking is now fully confirmed. The vehicle owner will contact you closer to the booking date with pickup arrangements.</p>
 
-            <p>If you have any questions, please contact us at support@elitecarhire.au or call 0406 907 849.</p>
+            {$viewButton}
+
+            <p>If you have any questions, please contact us at " . config('email.support', 'support@elitecarhire.au') . " or call 0406 907 849.</p>
 
             <p style='margin-top: 30px;'>Best regards,<br>
             <strong>Elite Car Hire Team</strong><br>
@@ -437,10 +441,14 @@ class PaymentController {
         $payout = number_format($payoutAmount, 2);
         $commission = number_format($booking['commission_amount'], 2);
         $vehicle = "{$booking['year']} {$booking['make']} {$booking['model']}";
+        $viewBookingsUrl = generateLoginUrl("/owner/bookings");
+        $viewPayoutsUrl = generateLoginUrl("/owner/payouts");
+        $viewButton = getEmailButton($viewBookingsUrl, 'View Booking Details', 'primary');
+        $payoutsButton = getEmailButton($viewPayoutsUrl, 'View Payouts', 'success');
 
         return "
         <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
-            <h2 style='color: #C5A253;'>Payment Received for Your Vehicle</h2>
+            <h2 style='color: #4caf50;'>💰 Payment Received for Your Vehicle</h2>
             <p>Good news! Payment has been received for your upcoming booking.</p>
 
             <div style='background: #f5f5f5; padding: 20px; border-left: 4px solid #C5A253; margin: 20px 0;'>
@@ -461,6 +469,9 @@ class PaymentController {
             </div>
 
             <p>Please ensure your vehicle is clean, fueled, and ready for pickup on the scheduled date.</p>
+
+            {$viewButton}
+            {$payoutsButton}
 
             <p style='margin-top: 30px;'>Best regards,<br>
             <strong>Elite Car Hire Team</strong></p>
