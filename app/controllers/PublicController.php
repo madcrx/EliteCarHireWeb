@@ -3,28 +3,6 @@ namespace controllers;
 
 class PublicController {
     public function vehicles() {
-        // Auto-logout authenticated users when accessing public pages
-        if (auth()) {
-            $userId = $_SESSION['user_id'] ?? null;
-            if ($userId) {
-                logAudit('auto_logout_public_page', 'users', $userId, ['page' => 'vehicles']);
-            }
-
-            // Clear all session variables
-            $_SESSION = [];
-
-            // Destroy the session cookie
-            if (isset($_COOKIE[session_name()])) {
-                setcookie(session_name(), '', time() - 3600, '/');
-            }
-
-            // Destroy the session
-            session_destroy();
-
-            // Restart session for the public page
-            session_start();
-        }
-
         // Get filter parameters
         $state = $_GET['state'] ?? '';
         $category = $_GET['category'] ?? '';
@@ -105,28 +83,6 @@ class PublicController {
     }
     
     public function viewVehicle($id) {
-        // Auto-logout authenticated users when accessing public pages
-        if (auth()) {
-            $userId = $_SESSION['user_id'] ?? null;
-            if ($userId) {
-                logAudit('auto_logout_public_page', 'users', $userId, ['page' => 'vehicle_detail', 'vehicle_id' => $id]);
-            }
-
-            // Clear all session variables
-            $_SESSION = [];
-
-            // Destroy the session cookie
-            if (isset($_COOKIE[session_name()])) {
-                setcookie(session_name(), '', time() - 3600, '/');
-            }
-
-            // Destroy the session
-            session_destroy();
-
-            // Restart session for the public page
-            session_start();
-        }
-
         $vehicle = db()->fetch("SELECT v.*, u.first_name, u.last_name FROM vehicles v
                                 JOIN users u ON v.owner_id = u.id
                                 WHERE v.id = ? AND v.status = 'approved'", [$id]);

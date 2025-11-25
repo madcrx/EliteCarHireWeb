@@ -42,8 +42,6 @@ try {
                 <?php else: ?>
                     <a href="/">Home</a>
                     <a href="/vehicles">Fleet</a>
-                    <a href="/services">Services</a>
-                    <a href="/about">About</a>
                     <a href="/contact">Contact</a>
                     <a href="/login" class="btn btn-primary">Login</a>
                 <?php endif; ?>
@@ -80,8 +78,6 @@ try {
                     <h3>Quick Links</h3>
                     <ul>
                         <li><a href="/vehicles">Our Fleet</a></li>
-                        <li><a href="/services">Services</a></li>
-                        <li><a href="/about">About Us</a></li>
                         <li><a href="/contact">Support</a></li>
                     </ul>
                 </div>
