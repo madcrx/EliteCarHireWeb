@@ -1012,7 +1012,6 @@ class AdminController {
     // ===== Communication Management =====
 
     public function emailSettings() {
-        requireRole('admin');
 
         $pageTitle = 'Email Settings - SMTP Configuration';
         $emailConfig = [
@@ -1026,14 +1025,12 @@ class AdminController {
     }
 
     public function saveEmailSettings() {
-        requireRole('admin');
         // TODO: Implement email settings save functionality
         flash('info', 'Email settings functionality coming soon');
         redirect('/admin/email-settings');
     }
 
     public function emailQueue() {
-        requireRole('admin');
 
         $pageTitle = 'Email Queue';
         $status = $_GET['status'] ?? 'all';
@@ -1056,7 +1053,6 @@ class AdminController {
     // ===== Analytics =====
 
     public function analyticsRevenue() {
-        requireRole('admin');
 
         $pageTitle = 'Revenue Reports';
 
@@ -1068,7 +1064,6 @@ class AdminController {
     }
 
     public function analyticsBookings() {
-        requireRole('admin');
 
         $pageTitle = 'Booking Analytics';
 
@@ -1080,7 +1075,6 @@ class AdminController {
     }
 
     public function analyticsVehicles() {
-        requireRole('admin');
 
         $pageTitle = 'Vehicle Performance';
 
@@ -1098,7 +1092,6 @@ class AdminController {
     }
 
     public function analyticsUsers() {
-        requireRole('admin');
 
         $pageTitle = 'User Statistics';
 
@@ -1113,7 +1106,6 @@ class AdminController {
     // ===== Settings Management =====
 
     public function settingsPayment() {
-        requireRole('admin');
 
         $pageTitle = 'Payment Settings - Stripe Configuration';
 
@@ -1127,28 +1119,24 @@ class AdminController {
     }
 
     public function saveSettingsPayment() {
-        requireRole('admin');
         // TODO: Implement payment settings save functionality
         flash('info', 'Payment settings functionality coming soon');
         redirect('/admin/settings/payment');
     }
 
     public function settingsEmail() {
-        requireRole('admin');
 
         $pageTitle = 'Email Configuration - SMTP & Templates';
         view('admin/settings-email', compact('pageTitle'));
     }
 
     public function saveSettingsEmail() {
-        requireRole('admin');
         // TODO: Implement email settings save functionality
         flash('info', 'Email configuration functionality coming soon');
         redirect('/admin/settings/email');
     }
 
     public function settingsCommission() {
-        requireRole('admin');
 
         $pageTitle = 'Commission Rates - Platform Fees';
 
@@ -1158,35 +1146,30 @@ class AdminController {
     }
 
     public function saveSettingsCommission() {
-        requireRole('admin');
         // TODO: Implement commission settings save functionality
         flash('info', 'Commission settings functionality coming soon');
         redirect('/admin/settings/commission');
     }
 
     public function settingsBooking() {
-        requireRole('admin');
 
         $pageTitle = 'Booking Settings - Rules & Policies';
         view('admin/settings-booking', compact('pageTitle'));
     }
 
     public function saveSettingsBooking() {
-        requireRole('admin');
         // TODO: Implement booking settings save functionality
         flash('info', 'Booking settings functionality coming soon');
         redirect('/admin/settings/booking');
     }
 
     public function settingsNotifications() {
-        requireRole('admin');
 
         $pageTitle = 'Notification Settings - Email Notifications';
         view('admin/settings-notifications', compact('pageTitle'));
     }
 
     public function saveSettingsNotifications() {
-        requireRole('admin');
         // TODO: Implement notification settings save functionality
         flash('info', 'Notification settings functionality coming soon');
         redirect('/admin/settings/notifications');
@@ -1195,7 +1178,6 @@ class AdminController {
     // ===== Logs Management =====
 
     public function logsPayment() {
-        requireRole('admin');
 
         $pageTitle = 'Payment Logs';
 
@@ -1213,7 +1195,6 @@ class AdminController {
     }
 
     public function logsEmail() {
-        requireRole('admin');
 
         $pageTitle = 'Email Logs';
 
@@ -1228,7 +1209,6 @@ class AdminController {
     }
 
     public function logsLogin() {
-        requireRole('admin');
 
         $pageTitle = 'Login History';
 
@@ -1248,7 +1228,6 @@ class AdminController {
     // ===== API Methods =====
 
     public function clearCache() {
-        requireRole('admin');
 
         // Clear various cache types
         $cleared = [];
