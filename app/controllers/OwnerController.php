@@ -395,6 +395,22 @@ class OwnerController {
             [$bookingId]
         );
 
+        // Get full booking and vehicle details for email
+        $fullBooking = db()->fetch(
+            "SELECT b.*, v.year, v.make, v.model, v.hourly_rate,
+                    c.email as customer_email, c.first_name as customer_first_name,
+                    o.first_name as owner_first_name
+             FROM bookings b
+             JOIN vehicles v ON b.vehicle_id = v.id
+             JOIN users c ON b.customer_id = c.id
+             JOIN users o ON b.owner_id = o.id
+             WHERE b.id = ?",
+            [$bookingId]
+        );
+
+        // Send booking confirmation email to customer
+        $this->sendBookingConfirmedEmail($fullBooking);
+
         // Create notification for customer
         if (file_exists(__DIR__ . '/../helpers/notifications.php')) {
             try {
@@ -936,5 +952,46 @@ class OwnerController {
         $ownerId = $_SESSION['user_id'];
         $changes = db()->fetchAll("SELECT * FROM pending_changes WHERE owner_id = ? ORDER BY created_at DESC", [$ownerId]);
         view('owner/pending-changes', compact('changes'));
+    }
+
+    private function sendBookingConfirmedEmail($booking) {
+        $vehicleName = "{$booking['year']} {$booking['make']} {$booking['model']}";
+        $paymentUrl = generateLoginUrl("/customer/bookings");
+        $viewButton = getEmailButton($paymentUrl, 'View Booking & Make Payment', 'success');
+
+        $body = "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+            <h2 style='color: #4caf50;'>✓ Booking Confirmed!</h2>
+            <p>Dear {$booking['customer_first_name']},</p>
+            <p>Great news! <strong>{$booking['owner_first_name']}</strong> has confirmed your booking request.</p>
+
+            <div style='background: #e8f5e9; padding: 20px; border-left: 4px solid #4caf50; margin: 20px 0;'>
+                <h3 style='margin-top: 0; color: #2e7d32;'>Booking Confirmed</h3>
+                <p><strong>Booking Reference:</strong> {$booking['booking_reference']}</p>
+                <p><strong>Vehicle:</strong> {$vehicleName}</p>
+                <p><strong>Date:</strong> {$booking['booking_date']}</p>
+                <p><strong>Time:</strong> {$booking['start_time']} - {$booking['end_time']}</p>
+                <p><strong>Duration:</strong> {$booking['duration_hours']} hours</p>
+                <p><strong>Total Amount:</strong> \$" . number_format($booking['total_amount'], 2) . " AUD</p>
+                <p><strong>Status:</strong> <span style='color: #4caf50; font-weight: bold;'>CONFIRMED - AWAITING PAYMENT</span></p>
+            </div>
+
+            <div style='background: #fff3cd; padding: 15px; border-left: 4px solid #f39c12; margin: 20px 0;'>
+                <p style='margin: 0;'><strong>⚡ Next Step:</strong> Complete your payment to secure this booking. Once payment is received, you'll get instant confirmation.</p>
+            </div>
+
+            {$viewButton}
+
+            <p style='color: #666; font-size: 14px;'><em>Please note: This booking is reserved for you, but payment must be completed within 24 hours to maintain the reservation.</em></p>
+
+            <p>If you have any questions, please contact us at support@elitecarhire.au or call 0406 907 849.</p>
+
+            <p style='margin-top: 30px;'>Best regards,<br>
+            <strong>Elite Car Hire Team</strong><br>
+            Melbourne, Australia</p>
+        </div>
+        ";
+
+        sendEmail($booking['customer_email'], "Booking Confirmed - {$booking['booking_reference']}", $body);
     }
 }
