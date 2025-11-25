@@ -196,7 +196,7 @@ class BookingController {
         ";
 
         // Send to admin email (get from config or database)
-        $adminEmail = config('email.admin_address', 'admin@elitecarhire.au');
+        $adminEmail = config('email.booking_confirmations', 'bookings_confirmations@elitecarhire.au');
         sendEmail($adminEmail, "New Booking - {$reference}", $body);
     }
 }

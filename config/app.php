@@ -22,9 +22,20 @@ return [
     ],
     
     'email' => [
-        'from_address' => 'support@elitecarhire.au',
+        'from_address' => 'noreply@elitecarhire.au',
         'from_name' => 'Elite Car Hire',
+
+        // Role-specific email addresses
         'admin_address' => getenv('ADMIN_EMAIL') ?: 'admin@elitecarhire.au',
+        'booking_confirmations' => getenv('BOOKING_EMAIL') ?: 'bookings_confirmations@elitecarhire.au',
+        'payment_confirmations' => getenv('PAYMENT_EMAIL') ?: 'payment_confirmations@elitecarhire.au',
+        'cancellations' => getenv('CANCELLATION_EMAIL') ?: 'cancellations@elitecarhire.au',
+        'disputes' => getenv('DISPUTES_EMAIL') ?: 'disputes@elitecarhire.au',
+        'contact_inquiries' => getenv('CONTACT_EMAIL') ?: 'inquiries@elitecarhire.au',
+        'vehicle_approvals' => getenv('VEHICLE_EMAIL') ?: 'vehicles@elitecarhire.au',
+        'support' => getenv('SUPPORT_EMAIL') ?: 'support@elitecarhire.au',
+
+        // SMTP Settings
         'smtp_host' => getenv('SMTP_HOST') ?: 'localhost',
         'smtp_port' => getenv('SMTP_PORT') ?: 587,
         'smtp_username' => getenv('SMTP_USER') ?: '',
