@@ -134,11 +134,75 @@ class PublicController {
         $subject = $_POST['subject'] ?? '';
         $message = $_POST['message'] ?? '';
 
-        db()->execute("INSERT INTO contact_submissions (name, email, phone, subject, message) VALUES (?, ?, ?, ?, ?)",
+        $submissionId = db()->execute("INSERT INTO contact_submissions (name, email, phone, subject, message) VALUES (?, ?, ?, ?, ?)",
                      [$name, $email, $phone, $subject, $message]);
+
+        // Send notification to admin/inquiries team
+        $this->sendContactNotificationToAdmin($name, $email, $phone, $subject, $message, $submissionId);
+
+        // Send auto-reply to customer
+        $this->sendContactAutoReply($name, $email, $subject);
 
         flash('success', 'Thank you for contacting us. We will respond soon.');
         redirect('/contact');
+    }
+
+    private function sendContactNotificationToAdmin($name, $email, $phone, $subject, $message, $submissionId) {
+        $replyUrl = generateLoginUrl("/admin/contact-submissions");
+        $replyButton = getEmailButton($replyUrl, 'View & Reply', 'primary');
+
+        $body = "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+            <h2 style='color: #C5A253;'>📩 New Contact Form Submission</h2>
+            <p>A new inquiry has been submitted through the contact form.</p>
+
+            <div style='background: #f5f5f5; padding: 20px; border-left: 4px solid #C5A253; margin: 20px 0;'>
+                <h3 style='margin-top: 0;'>Contact Details</h3>
+                <p><strong>Name:</strong> {$name}</p>
+                <p><strong>Email:</strong> <a href='mailto:{$email}'>{$email}</a></p>
+                <p><strong>Phone:</strong> " . ($phone ?: 'Not provided') . "</p>
+                <p><strong>Subject:</strong> {$subject}</p>
+            </div>
+
+            <div style='background: #fff; padding: 20px; border: 1px solid #ddd; margin: 20px 0;'>
+                <h3 style='margin-top: 0;'>Message:</h3>
+                <p style='white-space: pre-wrap;'>" . htmlspecialchars($message) . "</p>
+            </div>
+
+            {$replyButton}
+
+            <p style='margin-top: 30px;'>- Elite Car Hire System</p>
+        </div>
+        ";
+
+        $inquiriesEmail = config('email.contact_inquiries', 'inquiries@elitecarhire.au');
+        sendEmail($inquiriesEmail, "New Contact Inquiry: {$subject}", $body);
+    }
+
+    private function sendContactAutoReply($name, $email, $subject) {
+        $body = "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+            <h2 style='color: #C5A253;'>Thank You for Contacting Us</h2>
+            <p>Dear {$name},</p>
+            <p>We have received your message and will get back to you as soon as possible.</p>
+
+            <div style='background: #f5f5f5; padding: 20px; border-left: 4px solid #C5A253; margin: 20px 0;'>
+                <h3 style='margin-top: 0;'>Your Inquiry</h3>
+                <p><strong>Subject:</strong> {$subject}</p>
+                <p><strong>Status:</strong> <span style='color: #f39c12;'>Received - Pending Response</span></p>
+            </div>
+
+            <p>Our team typically responds within 24 hours during business days (Monday - Friday, 9 AM - 5 PM AEST).</p>
+
+            <p>If your inquiry is urgent, please call us at <strong>0406 907 849</strong>.</p>
+
+            <p style='margin-top: 30px;'>Best regards,<br>
+            <strong>Elite Car Hire Team</strong><br>
+            Melbourne, Australia</p>
+        </div>
+        ";
+
+        sendEmail($email, "We've Received Your Message - Elite Car Hire", $body);
     }
 
     public function about() {
