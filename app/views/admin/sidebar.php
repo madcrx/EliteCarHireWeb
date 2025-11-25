@@ -11,7 +11,21 @@ $failedPayments = db()->fetch("SELECT COUNT(*) as count FROM payments WHERE stat
 // Get current path for active state
 $currentPath = $_SERVER['REQUEST_URI'];
 $isActive = function($path) use ($currentPath) {
-    return strpos($currentPath, $path) === 0 ? 'active' : '';
+    // Remove query string for comparison
+    $currentPathBase = parse_url($currentPath, PHP_URL_PATH);
+    $pathBase = parse_url($path, PHP_URL_PATH);
+
+    // Exact match for paths with query strings
+    if (strpos($path, '?') !== false && $currentPath === $path) {
+        return 'active';
+    }
+
+    // Partial match for base paths
+    if ($currentPathBase === $pathBase || strpos($currentPathBase, $pathBase) === 0) {
+        return 'active';
+    }
+
+    return '';
 };
 ?>
 
@@ -67,26 +81,26 @@ $isActive = function($path) use ($currentPath) {
                 <i class="fas fa-chevron-down toggle-icon"></i>
             </div>
             <div class="section-items">
-                <a href="/admin/users?role=all" class="nav-item <?= $isActive('/admin/users') ?>">
+                <a href="/admin/users?role=all" class="nav-item <?= $isActive('/admin/users?role=all') ?>">
                     <i class="fas fa-user"></i>
                     <span>All Users</span>
                 </a>
-                <a href="/admin/users?role=customer" class="nav-item">
+                <a href="/admin/users?role=customer" class="nav-item <?= $isActive('/admin/users?role=customer') ?>">
                     <i class="fas fa-user-circle"></i>
                     <span>Customers</span>
                 </a>
-                <a href="/admin/users?role=owner" class="nav-item">
+                <a href="/admin/users?role=owner" class="nav-item <?= $isActive('/admin/users?role=owner') ?>">
                     <i class="fas fa-user-tie"></i>
                     <span>Vehicle Owners</span>
                 </a>
-                <a href="/admin/users?status=pending" class="nav-item">
+                <a href="/admin/users?status=pending" class="nav-item <?= $isActive('/admin/users?status=pending') ?>">
                     <i class="fas fa-user-clock"></i>
                     <span>Pending Approvals</span>
                     <?php if ($pendingUsers > 0): ?>
                         <span class="badge-small"><?= $pendingUsers ?></span>
                     <?php endif; ?>
                 </a>
-                <a href="/admin/users?status=suspended" class="nav-item">
+                <a href="/admin/users?status=suspended" class="nav-item <?= $isActive('/admin/users?status=suspended') ?>">
                     <i class="fas fa-user-slash"></i>
                     <span>Suspended Users</span>
                 </a>
@@ -104,26 +118,26 @@ $isActive = function($path) use ($currentPath) {
                 <i class="fas fa-chevron-down toggle-icon"></i>
             </div>
             <div class="section-items">
-                <a href="/admin/vehicles?status=all" class="nav-item <?= $isActive('/admin/vehicles') ?>">
+                <a href="/admin/vehicles?status=all" class="nav-item <?= $isActive('/admin/vehicles?status=all') ?>">
                     <i class="fas fa-list"></i>
                     <span>All Vehicles</span>
                 </a>
-                <a href="/admin/vehicles?status=approved" class="nav-item">
+                <a href="/admin/vehicles?status=approved" class="nav-item <?= $isActive('/admin/vehicles?status=approved') ?>">
                     <i class="fas fa-check-circle"></i>
                     <span>Active Listings</span>
                 </a>
-                <a href="/admin/vehicles?status=pending" class="nav-item">
+                <a href="/admin/vehicles?status=pending" class="nav-item <?= $isActive('/admin/vehicles?status=pending') ?>">
                     <i class="fas fa-clock"></i>
                     <span>Pending Approval</span>
                     <?php if ($pendingVehicles > 0): ?>
                         <span class="badge-small"><?= $pendingVehicles ?></span>
                     <?php endif; ?>
                 </a>
-                <a href="/admin/vehicles?status=rejected" class="nav-item">
+                <a href="/admin/vehicles?status=rejected" class="nav-item <?= $isActive('/admin/vehicles?status=rejected') ?>">
                     <i class="fas fa-times-circle"></i>
                     <span>Rejected Listings</span>
                 </a>
-                <a href="/admin/pending-changes" class="nav-item">
+                <a href="/admin/pending-changes" class="nav-item <?= $isActive('/admin/pending-changes') ?>">
                     <i class="fas fa-edit"></i>
                     <span>Vehicle Updates</span>
                     <?php if ($pendingChanges > 0): ?>
@@ -144,30 +158,30 @@ $isActive = function($path) use ($currentPath) {
                 <i class="fas fa-chevron-down toggle-icon"></i>
             </div>
             <div class="section-items">
-                <a href="/admin/bookings?status=all" class="nav-item <?= $isActive('/admin/bookings') ?>">
+                <a href="/admin/bookings?status=all" class="nav-item <?= $isActive('/admin/bookings?status=all') ?>">
                     <i class="fas fa-list"></i>
                     <span>All Bookings</span>
                 </a>
-                <a href="/admin/bookings?status=pending" class="nav-item">
+                <a href="/admin/bookings?status=pending" class="nav-item <?= $isActive('/admin/bookings?status=pending') ?>">
                     <i class="fas fa-hourglass-half"></i>
                     <span>Pending</span>
                     <?php if ($pendingBookings > 0): ?>
                         <span class="badge-small"><?= $pendingBookings ?></span>
                     <?php endif; ?>
                 </a>
-                <a href="/admin/bookings?status=confirmed" class="nav-item">
+                <a href="/admin/bookings?status=confirmed" class="nav-item <?= $isActive('/admin/bookings?status=confirmed') ?>">
                     <i class="fas fa-check"></i>
                     <span>Confirmed</span>
                 </a>
-                <a href="/admin/bookings?status=in_progress" class="nav-item">
+                <a href="/admin/bookings?status=in_progress" class="nav-item <?= $isActive('/admin/bookings?status=in_progress') ?>">
                     <i class="fas fa-clock"></i>
                     <span>In Progress</span>
                 </a>
-                <a href="/admin/bookings?status=completed" class="nav-item">
+                <a href="/admin/bookings?status=completed" class="nav-item <?= $isActive('/admin/bookings?status=completed') ?>">
                     <i class="fas fa-check-double"></i>
                     <span>Completed</span>
                 </a>
-                <a href="/admin/bookings?status=cancelled" class="nav-item">
+                <a href="/admin/bookings?status=cancelled" class="nav-item <?= $isActive('/admin/bookings?status=cancelled') ?>">
                     <i class="fas fa-ban"></i>
                     <span>Cancelled</span>
                 </a>
@@ -185,34 +199,34 @@ $isActive = function($path) use ($currentPath) {
                 <i class="fas fa-chevron-down toggle-icon"></i>
             </div>
             <div class="section-items">
-                <a href="/admin/payments?status=all" class="nav-item <?= $isActive('/admin/payments') ?>">
+                <a href="/admin/payments?status=all" class="nav-item <?= $isActive('/admin/payments?status=all') ?>">
                     <i class="fas fa-credit-card"></i>
                     <span>Payments</span>
                 </a>
-                <a href="/admin/payments?status=completed" class="nav-item">
+                <a href="/admin/payments?status=completed" class="nav-item <?= $isActive('/admin/payments?status=completed') ?>">
                     <i class="fas fa-check-circle"></i>
                     <span>Successful Payments</span>
                 </a>
-                <a href="/admin/payments?status=failed" class="nav-item">
+                <a href="/admin/payments?status=failed" class="nav-item <?= $isActive('/admin/payments?status=failed') ?>">
                     <i class="fas fa-exclamation-triangle"></i>
                     <span>Failed Payments</span>
                     <?php if ($failedPayments > 0): ?>
                         <span class="badge-small warning"><?= $failedPayments ?></span>
                     <?php endif; ?>
                 </a>
-                <a href="/admin/payments?status=refunded" class="nav-item">
+                <a href="/admin/payments?status=refunded" class="nav-item <?= $isActive('/admin/payments?status=refunded') ?>">
                     <i class="fas fa-undo"></i>
                     <span>Refunds</span>
                 </a>
-                <a href="/admin/payouts?status=all" class="nav-item <?= $isActive('/admin/payouts') ?>">
+                <a href="/admin/payouts?status=all" class="nav-item <?= $isActive('/admin/payouts?status=all') ?>">
                     <i class="fas fa-money-bill-wave"></i>
                     <span>Owner Payouts</span>
                 </a>
-                <a href="/admin/payouts?status=pending" class="nav-item">
+                <a href="/admin/payouts?status=pending" class="nav-item <?= $isActive('/admin/payouts?status=pending') ?>">
                     <i class="fas fa-clock"></i>
                     <span>Pending Payouts</span>
                 </a>
-                <a href="/admin/payouts?status=completed" class="nav-item">
+                <a href="/admin/payouts?status=completed" class="nav-item <?= $isActive('/admin/payouts?status=completed') ?>">
                     <i class="fas fa-check"></i>
                     <span>Completed Payouts</span>
                 </a>
@@ -237,27 +251,27 @@ $isActive = function($path) use ($currentPath) {
                 <i class="fas fa-chevron-down toggle-icon"></i>
             </div>
             <div class="section-items">
-                <a href="/admin/contact-submissions?status=all" class="nav-item <?= $isActive('/admin/contact-submissions') ?>">
+                <a href="/admin/contact-submissions?status=all" class="nav-item <?= $isActive('/admin/contact-submissions?status=all') ?>">
                     <i class="fas fa-inbox"></i>
                     <span>Contact Submissions</span>
                     <?php if ($newContacts > 0): ?>
                         <span class="badge-small"><?= $newContacts ?></span>
                     <?php endif; ?>
                 </a>
-                <a href="/admin/contact-submissions?status=new" class="nav-item">
+                <a href="/admin/contact-submissions?status=new" class="nav-item <?= $isActive('/admin/contact-submissions?status=new') ?>">
                     <i class="fas fa-envelope"></i>
                     <span>New Messages</span>
                 </a>
-                <a href="/admin/contact-submissions?status=responded" class="nav-item">
+                <a href="/admin/contact-submissions?status=responded" class="nav-item <?= $isActive('/admin/contact-submissions?status=responded') ?>">
                     <i class="fas fa-reply"></i>
                     <span>Responded</span>
                 </a>
-                <a href="/admin/email-settings" class="nav-item">
+                <a href="/admin/email-settings" class="nav-item <?= $isActive('/admin/email-settings') ?>">
                     <i class="fas fa-mail-bulk"></i>
                     <span>Email Settings</span>
                     <small>SMTP Configuration</small>
                 </a>
-                <a href="/admin/email-queue" class="nav-item">
+                <a href="/admin/email-queue" class="nav-item <?= $isActive('/admin/email-queue') ?>">
                     <i class="fas fa-list"></i>
                     <span>Email Queue</span>
                     <small>View Pending Emails</small>
@@ -277,19 +291,19 @@ $isActive = function($path) use ($currentPath) {
                     <i class="fas fa-chart-bar"></i>
                     <span>Dashboard Analytics</span>
                 </a>
-                <a href="/admin/analytics/revenue" class="nav-item">
+                <a href="/admin/analytics/revenue" class="nav-item <?= $isActive('/admin/analytics/revenue') ?>">
                     <i class="fas fa-dollar-sign"></i>
                     <span>Revenue Reports</span>
                 </a>
-                <a href="/admin/analytics/bookings" class="nav-item">
+                <a href="/admin/analytics/bookings" class="nav-item <?= $isActive('/admin/analytics/bookings') ?>">
                     <i class="fas fa-calendar"></i>
                     <span>Booking Analytics</span>
                 </a>
-                <a href="/admin/analytics/vehicles" class="nav-item">
+                <a href="/admin/analytics/vehicles" class="nav-item <?= $isActive('/admin/analytics/vehicles') ?>">
                     <i class="fas fa-car"></i>
                     <span>Vehicle Performance</span>
                 </a>
-                <a href="/admin/analytics/users" class="nav-item">
+                <a href="/admin/analytics/users" class="nav-item <?= $isActive('/admin/analytics/users') ?>">
                     <i class="fas fa-users"></i>
                     <span>User Statistics</span>
                 </a>
@@ -309,27 +323,27 @@ $isActive = function($path) use ($currentPath) {
                     <span>General Settings</span>
                     <small>Site Name, Logo, etc.</small>
                 </a>
-                <a href="/admin/settings/payment" class="nav-item">
+                <a href="/admin/settings/payment" class="nav-item <?= $isActive('/admin/settings/payment') ?>">
                     <i class="fas fa-credit-card"></i>
                     <span>Payment Settings</span>
                     <small>Stripe Configuration</small>
                 </a>
-                <a href="/admin/settings/email" class="nav-item">
+                <a href="/admin/settings/email" class="nav-item <?= $isActive('/admin/settings/email') ?>">
                     <i class="fas fa-envelope-open-text"></i>
                     <span>Email Configuration</span>
                     <small>SMTP & Templates</small>
                 </a>
-                <a href="/admin/settings/commission" class="nav-item">
+                <a href="/admin/settings/commission" class="nav-item <?= $isActive('/admin/settings/commission') ?>">
                     <i class="fas fa-percent"></i>
                     <span>Commission Rates</span>
                     <small>Platform Fees</small>
                 </a>
-                <a href="/admin/settings/booking" class="nav-item">
+                <a href="/admin/settings/booking" class="nav-item <?= $isActive('/admin/settings/booking') ?>">
                     <i class="fas fa-calendar-alt"></i>
                     <span>Booking Settings</span>
                     <small>Rules & Policies</small>
                 </a>
-                <a href="/admin/settings/notifications" class="nav-item">
+                <a href="/admin/settings/notifications" class="nav-item <?= $isActive('/admin/settings/notifications') ?>">
                     <i class="fas fa-bell"></i>
                     <span>Notification Settings</span>
                     <small>Email Notifications</small>
@@ -354,15 +368,15 @@ $isActive = function($path) use ($currentPath) {
                     <span>Audit Logs</span>
                     <small>User Actions</small>
                 </a>
-                <a href="/admin/logs/payment" class="nav-item">
+                <a href="/admin/logs/payment" class="nav-item <?= $isActive('/admin/logs/payment') ?>">
                     <i class="fas fa-receipt"></i>
                     <span>Payment Logs</span>
                 </a>
-                <a href="/admin/logs/email" class="nav-item">
+                <a href="/admin/logs/email" class="nav-item <?= $isActive('/admin/logs/email') ?>">
                     <i class="fas fa-mail-bulk"></i>
                     <span>Email Logs</span>
                 </a>
-                <a href="/admin/logs/login" class="nav-item">
+                <a href="/admin/logs/login" class="nav-item <?= $isActive('/admin/logs/login') ?>">
                     <i class="fas fa-sign-in-alt"></i>
                     <span>Login History</span>
                 </a>
@@ -713,13 +727,29 @@ function clearCache() {
     }
 }
 
-// Keep sections open/closed state in localStorage
+// Keep sections open/closed state in sessionStorage (resets on login)
 document.addEventListener('DOMContentLoaded', function() {
+    const sidebar = document.querySelector('.admin-sidebar');
     const sectionTitles = document.querySelectorAll('.section-title');
 
+    // Restore scroll position
+    const savedScrollPos = sessionStorage.getItem('sidebar-scroll-position');
+    if (savedScrollPos) {
+        sidebar.scrollTop = parseInt(savedScrollPos);
+    }
+
+    // Save scroll position before navigation
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
+        item.addEventListener('click', function() {
+            sessionStorage.setItem('sidebar-scroll-position', sidebar.scrollTop);
+        });
+    });
+
+    // Restore section states
     sectionTitles.forEach((title, index) => {
         const storageKey = `sidebar-section-${index}`;
-        const isCollapsed = localStorage.getItem(storageKey) === 'true';
+        const isCollapsed = sessionStorage.getItem(storageKey) === 'true';
 
         if (isCollapsed) {
             title.classList.add('collapsed');
@@ -728,7 +758,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         title.addEventListener('click', function() {
             const collapsed = this.classList.contains('collapsed');
-            localStorage.setItem(storageKey, !collapsed);
+            sessionStorage.setItem(storageKey, !collapsed);
         });
     });
 });
