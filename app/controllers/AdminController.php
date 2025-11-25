@@ -1008,4 +1008,276 @@ class AdminController {
 
         return $value;
     }
+
+    // ===== Communication Management =====
+
+    public function emailSettings() {
+        requireRole('admin');
+
+        $pageTitle = 'Email Settings - SMTP Configuration';
+        $emailConfig = [
+            'smtp_host' => getenv('SMTP_HOST') ?: '',
+            'smtp_port' => getenv('SMTP_PORT') ?: '587',
+            'smtp_user' => getenv('SMTP_USER') ?: '',
+            'smtp_encryption' => getenv('SMTP_ENCRYPTION') ?: 'tls',
+        ];
+
+        view('admin/email-settings', compact('pageTitle', 'emailConfig'));
+    }
+
+    public function saveEmailSettings() {
+        requireRole('admin');
+        // TODO: Implement email settings save functionality
+        flash('info', 'Email settings functionality coming soon');
+        redirect('/admin/email-settings');
+    }
+
+    public function emailQueue() {
+        requireRole('admin');
+
+        $pageTitle = 'Email Queue';
+        $status = $_GET['status'] ?? 'all';
+
+        $query = "SELECT * FROM email_queue WHERE 1=1";
+        $params = [];
+
+        if ($status !== 'all') {
+            $query .= " AND status = ?";
+            $params[] = $status;
+        }
+
+        $query .= " ORDER BY created_at DESC LIMIT 100";
+
+        $emails = db()->fetchAll($query, $params);
+
+        view('admin/email-queue', compact('pageTitle', 'emails', 'status'));
+    }
+
+    // ===== Analytics =====
+
+    public function analyticsRevenue() {
+        requireRole('admin');
+
+        $pageTitle = 'Revenue Reports';
+
+        // Get revenue statistics
+        $totalRevenue = db()->fetch("SELECT SUM(amount) as total FROM payments WHERE status = 'completed'")['total'] ?? 0;
+        $monthlyRevenue = db()->fetch("SELECT SUM(amount) as total FROM payments WHERE status = 'completed' AND MONTH(created_at) = MONTH(CURRENT_DATE())")['total'] ?? 0;
+
+        view('admin/analytics-revenue', compact('pageTitle', 'totalRevenue', 'monthlyRevenue'));
+    }
+
+    public function analyticsBookings() {
+        requireRole('admin');
+
+        $pageTitle = 'Booking Analytics';
+
+        // Get booking statistics
+        $totalBookings = db()->fetch("SELECT COUNT(*) as count FROM bookings")['count'] ?? 0;
+        $completedBookings = db()->fetch("SELECT COUNT(*) as count FROM bookings WHERE status = 'completed'")['count'] ?? 0;
+
+        view('admin/analytics-bookings', compact('pageTitle', 'totalBookings', 'completedBookings'));
+    }
+
+    public function analyticsVehicles() {
+        requireRole('admin');
+
+        $pageTitle = 'Vehicle Performance';
+
+        // Get vehicle statistics
+        $topVehicles = db()->fetchAll("
+            SELECT v.*, COUNT(b.id) as booking_count
+            FROM vehicles v
+            LEFT JOIN bookings b ON v.id = b.vehicle_id
+            GROUP BY v.id
+            ORDER BY booking_count DESC
+            LIMIT 10
+        ");
+
+        view('admin/analytics-vehicles', compact('pageTitle', 'topVehicles'));
+    }
+
+    public function analyticsUsers() {
+        requireRole('admin');
+
+        $pageTitle = 'User Statistics';
+
+        // Get user statistics
+        $totalUsers = db()->fetch("SELECT COUNT(*) as count FROM users")['count'] ?? 0;
+        $customerCount = db()->fetch("SELECT COUNT(*) as count FROM users WHERE role = 'customer'")['count'] ?? 0;
+        $ownerCount = db()->fetch("SELECT COUNT(*) as count FROM users WHERE role = 'owner'")['count'] ?? 0;
+
+        view('admin/analytics-users', compact('pageTitle', 'totalUsers', 'customerCount', 'ownerCount'));
+    }
+
+    // ===== Settings Management =====
+
+    public function settingsPayment() {
+        requireRole('admin');
+
+        $pageTitle = 'Payment Settings - Stripe Configuration';
+
+        $stripeConfig = [
+            'publishable_key' => getenv('STRIPE_PUBLISHABLE_KEY') ?: '',
+            'has_secret_key' => !empty(getenv('STRIPE_SECRET_KEY')),
+            'webhook_configured' => !empty(getenv('STRIPE_WEBHOOK_SECRET')),
+        ];
+
+        view('admin/settings-payment', compact('pageTitle', 'stripeConfig'));
+    }
+
+    public function saveSettingsPayment() {
+        requireRole('admin');
+        // TODO: Implement payment settings save functionality
+        flash('info', 'Payment settings functionality coming soon');
+        redirect('/admin/settings/payment');
+    }
+
+    public function settingsEmail() {
+        requireRole('admin');
+
+        $pageTitle = 'Email Configuration - SMTP & Templates';
+        view('admin/settings-email', compact('pageTitle'));
+    }
+
+    public function saveSettingsEmail() {
+        requireRole('admin');
+        // TODO: Implement email settings save functionality
+        flash('info', 'Email configuration functionality coming soon');
+        redirect('/admin/settings/email');
+    }
+
+    public function settingsCommission() {
+        requireRole('admin');
+
+        $pageTitle = 'Commission Rates - Platform Fees';
+
+        $currentRate = config('payment.commission_rate', 15.00);
+
+        view('admin/settings-commission', compact('pageTitle', 'currentRate'));
+    }
+
+    public function saveSettingsCommission() {
+        requireRole('admin');
+        // TODO: Implement commission settings save functionality
+        flash('info', 'Commission settings functionality coming soon');
+        redirect('/admin/settings/commission');
+    }
+
+    public function settingsBooking() {
+        requireRole('admin');
+
+        $pageTitle = 'Booking Settings - Rules & Policies';
+        view('admin/settings-booking', compact('pageTitle'));
+    }
+
+    public function saveSettingsBooking() {
+        requireRole('admin');
+        // TODO: Implement booking settings save functionality
+        flash('info', 'Booking settings functionality coming soon');
+        redirect('/admin/settings/booking');
+    }
+
+    public function settingsNotifications() {
+        requireRole('admin');
+
+        $pageTitle = 'Notification Settings - Email Notifications';
+        view('admin/settings-notifications', compact('pageTitle'));
+    }
+
+    public function saveSettingsNotifications() {
+        requireRole('admin');
+        // TODO: Implement notification settings save functionality
+        flash('info', 'Notification settings functionality coming soon');
+        redirect('/admin/settings/notifications');
+    }
+
+    // ===== Logs Management =====
+
+    public function logsPayment() {
+        requireRole('admin');
+
+        $pageTitle = 'Payment Logs';
+
+        // Get recent payment transactions
+        $paymentLogs = db()->fetchAll("
+            SELECT p.*, b.booking_reference, u.email as customer_email
+            FROM payments p
+            LEFT JOIN bookings b ON p.booking_id = b.id
+            LEFT JOIN users u ON b.customer_id = u.id
+            ORDER BY p.created_at DESC
+            LIMIT 100
+        ");
+
+        view('admin/logs-payment', compact('pageTitle', 'paymentLogs'));
+    }
+
+    public function logsEmail() {
+        requireRole('admin');
+
+        $pageTitle = 'Email Logs';
+
+        // Get recent email activity
+        $emailLogs = db()->fetchAll("
+            SELECT * FROM email_queue
+            ORDER BY created_at DESC
+            LIMIT 100
+        ");
+
+        view('admin/logs-email', compact('pageTitle', 'emailLogs'));
+    }
+
+    public function logsLogin() {
+        requireRole('admin');
+
+        $pageTitle = 'Login History';
+
+        // Get recent login attempts from audit logs
+        $loginLogs = db()->fetchAll("
+            SELECT a.*, u.email, u.first_name, u.last_name
+            FROM audit_logs a
+            LEFT JOIN users u ON a.user_id = u.id
+            WHERE a.action IN ('login', 'logout', 'login_failed')
+            ORDER BY a.created_at DESC
+            LIMIT 100
+        ");
+
+        view('admin/logs-login', compact('pageTitle', 'loginLogs'));
+    }
+
+    // ===== API Methods =====
+
+    public function clearCache() {
+        requireRole('admin');
+
+        // Clear various cache types
+        $cleared = [];
+
+        // Clear session cache (if using file-based sessions)
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            $cleared[] = 'session';
+        }
+
+        // Clear opcode cache if available
+        if (function_exists('opcache_reset')) {
+            opcache_reset();
+            $cleared[] = 'opcache';
+        }
+
+        // Clear temp files
+        $tempDir = __DIR__ . '/../../storage/cache';
+        if (is_dir($tempDir)) {
+            $files = glob($tempDir . '/*');
+            foreach ($files as $file) {
+                if (is_file($file)) {
+                    @unlink($file);
+                }
+            }
+            $cleared[] = 'temp_files';
+        }
+
+        logAudit('clear_cache', 'system', 0, ['cleared' => $cleared]);
+
+        json(['success' => true, 'message' => 'Cache cleared successfully', 'cleared' => $cleared]);
+    }
 }

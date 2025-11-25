@@ -78,6 +78,37 @@ $router->get('/admin/images', 'ImageController@index');
 $router->post('/admin/images/upload', 'ImageController@upload');
 $router->post('/admin/images/revert', 'ImageController@revertToDefault');
 
+// Admin - Communication routes
+$router->get('/admin/email-settings', 'AdminController@emailSettings');
+$router->post('/admin/email-settings/save', 'AdminController@saveEmailSettings');
+$router->get('/admin/email-queue', 'AdminController@emailQueue');
+
+// Admin - Analytics routes
+$router->get('/admin/analytics/revenue', 'AdminController@analyticsRevenue');
+$router->get('/admin/analytics/bookings', 'AdminController@analyticsBookings');
+$router->get('/admin/analytics/vehicles', 'AdminController@analyticsVehicles');
+$router->get('/admin/analytics/users', 'AdminController@analyticsUsers');
+
+// Admin - Settings routes
+$router->get('/admin/settings/payment', 'AdminController@settingsPayment');
+$router->post('/admin/settings/payment/save', 'AdminController@saveSettingsPayment');
+$router->get('/admin/settings/email', 'AdminController@settingsEmail');
+$router->post('/admin/settings/email/save', 'AdminController@saveSettingsEmail');
+$router->get('/admin/settings/commission', 'AdminController@settingsCommission');
+$router->post('/admin/settings/commission/save', 'AdminController@saveSettingsCommission');
+$router->get('/admin/settings/booking', 'AdminController@settingsBooking');
+$router->post('/admin/settings/booking/save', 'AdminController@saveSettingsBooking');
+$router->get('/admin/settings/notifications', 'AdminController@settingsNotifications');
+$router->post('/admin/settings/notifications/save', 'AdminController@saveSettingsNotifications');
+
+// Admin - Logs routes
+$router->get('/admin/logs/payment', 'AdminController@logsPayment');
+$router->get('/admin/logs/email', 'AdminController@logsEmail');
+$router->get('/admin/logs/login', 'AdminController@logsLogin');
+
+// Admin - API routes
+$router->post('/admin/api/clear-cache', 'AdminController@clearCache');
+
 // Owner routes
 $router->get('/owner/dashboard', 'OwnerController@dashboard');
 $router->get('/owner/listings', 'OwnerController@listings');
