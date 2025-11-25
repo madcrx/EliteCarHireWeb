@@ -120,9 +120,14 @@ $router->get('/support', 'PublicController@support');
 
 // API routes for AJAX
 $router->post('/api/payment/process', 'PaymentController@process');
+$router->post('/api/payment/create-intent', 'PaymentController@createIntent');
+$router->post('/api/payment/refund', 'PaymentController@refund');
 $router->get('/api/calendar/events', 'CalendarController@getEvents');
 $router->get('/api/analytics/data', 'AnalyticsController@getData');
 $router->post('/api/notifications/mark-read', 'NotificationController@markAsRead');
+
+// Stripe webhook
+$router->post('/webhooks/stripe', 'StripeWebhookController@handle');
 
 // Dispatch the request
 $router->dispatch();

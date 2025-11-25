@@ -44,6 +44,12 @@ return [
     'payment' => [
         'currency' => 'AUD',
         'commission_rate' => 15.00, // percentage
+        'stripe' => [
+            'secret_key' => getenv('STRIPE_SECRET_KEY') ?: '',
+            'publishable_key' => getenv('STRIPE_PUBLISHABLE_KEY') ?: '',
+            'webhook_secret' => getenv('STRIPE_WEBHOOK_SECRET') ?: '',
+            'connect_client_id' => getenv('STRIPE_CONNECT_CLIENT_ID') ?: '',
+        ],
     ],
     
     'settings' => [
