@@ -250,12 +250,198 @@ class AdminController {
     }
     
     public function approveVehicle($id) {
-        $vehicle = db()->fetch("SELECT owner_id FROM vehicles WHERE id = ?", [$id]);
+        // Get full vehicle and owner details
+        $vehicle = db()->fetch(
+            "SELECT v.*, u.email as owner_email, u.first_name as owner_first_name, u.last_name as owner_last_name
+             FROM vehicles v
+             JOIN users u ON v.owner_id = u.id
+             WHERE v.id = ?",
+            [$id]
+        );
+
+        if (!$vehicle) {
+            flash('error', 'Vehicle not found');
+            redirect('/admin/vehicles');
+        }
+
         db()->execute("UPDATE vehicles SET status = 'approved' WHERE id = ?", [$id]);
         logAudit('approve_vehicle', 'vehicles', $id);
         createNotification($vehicle['owner_id'], 'approval', 'Vehicle Approved', 'Your vehicle listing has been approved!');
+
+        // Send approval email
+        $this->sendVehicleApprovalEmail($vehicle);
+
         flash('success', 'Vehicle approved');
         redirect('/admin/vehicles');
+    }
+
+    public function rejectVehicle($id) {
+        // Get full vehicle and owner details
+        $vehicle = db()->fetch(
+            "SELECT v.*, u.email as owner_email, u.first_name as owner_first_name, u.last_name as owner_last_name
+             FROM vehicles v
+             JOIN users u ON v.owner_id = u.id
+             WHERE v.id = ?",
+            [$id]
+        );
+
+        if (!$vehicle) {
+            flash('error', 'Vehicle not found');
+            redirect('/admin/vehicles');
+        }
+
+        // Get rejection reason from POST
+        $reason = $_POST['rejection_reason'] ?? 'Your vehicle listing did not meet our approval criteria.';
+
+        db()->execute("UPDATE vehicles SET status = 'rejected', rejection_reason = ? WHERE id = ?", [$reason, $id]);
+        logAudit('reject_vehicle', 'vehicles', $id, null, ['reason' => $reason]);
+        createNotification($vehicle['owner_id'], 'rejection', 'Vehicle Rejected', 'Your vehicle listing has been rejected.');
+
+        // Send rejection email
+        $this->sendVehicleRejectionEmail($vehicle, $reason);
+
+        flash('success', 'Vehicle rejected');
+        redirect('/admin/vehicles');
+    }
+
+    private function sendVehicleApprovalEmail($vehicle) {
+        $vehicleName = "{$vehicle['year']} {$vehicle['make']} {$vehicle['model']}";
+        $viewUrl = generateLoginUrl("/owner/listings");
+        $viewButton = getEmailButton($viewUrl, 'View My Listings', 'success');
+
+        $body = "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+            <h2 style='color: #4caf50;'>✓ Vehicle Listing Approved!</h2>
+            <p>Dear {$vehicle['owner_first_name']},</p>
+            <p>Great news! Your vehicle listing has been approved and is now live on Elite Car Hire.</p>
+
+            <div style='background: #e8f5e9; padding: 20px; border-left: 4px solid #4caf50; margin: 20px 0;'>
+                <h3 style='margin-top: 0; color: #2e7d32;'>Approved Vehicle</h3>
+                <p><strong>Vehicle:</strong> {$vehicleName}</p>
+                <p><strong>Color:</strong> {$vehicle['color']}</p>
+                <p><strong>Category:</strong> {$vehicle['category']}</p>
+                <p><strong>Hourly Rate:</strong> \$" . number_format($vehicle['hourly_rate'], 2) . " AUD</p>
+                <p><strong>Registration:</strong> " . ($vehicle['registration_number'] ?? 'Not provided') . "</p>
+                <p><strong>Status:</strong> <span style='color: #4caf50; font-weight: bold;'>APPROVED & LIVE</span></p>
+            </div>
+
+            <div style='background: #e3f2fd; padding: 15px; border-left: 4px solid #2196f3; margin: 20px 0;'>
+                <p style='margin: 0;'><strong>📢 Your vehicle is now visible to customers!</strong> You can start receiving booking requests immediately. Make sure your calendar is up to date with any blocked dates.</p>
+            </div>
+
+            {$viewButton}
+
+            <div style='margin-top: 20px; padding: 15px; background: #f9f9f9; border-radius: 4px;'>
+                <h3 style='margin-top: 0;'>Next Steps:</h3>
+                <ul style='margin: 10px 0; padding-left: 20px;'>
+                    <li>Review your vehicle details and make any updates if needed</li>
+                    <li>Block any dates when your vehicle is unavailable</li>
+                    <li>Respond promptly to booking requests</li>
+                    <li>Keep your vehicle well-maintained for customer satisfaction</li>
+                </ul>
+            </div>
+
+            <p>If you have any questions, please contact us at vehicles@elitecarhire.au or call 0406 907 849.</p>
+
+            <p style='margin-top: 30px;'>Best regards,<br>
+            <strong>Elite Car Hire Team</strong><br>
+            Melbourne, Australia</p>
+        </div>
+        ";
+
+        sendEmail($vehicle['owner_email'], "Vehicle Approved - {$vehicleName}", $body);
+
+        // Also notify admin at vehicles email
+        $vehiclesEmail = config('email.vehicle_approvals', 'vehicles@elitecarhire.au');
+        $adminBody = "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+            <h2 style='color: #4caf50;'>🚗 Vehicle Listing Approved</h2>
+            <p>A vehicle listing has been approved.</p>
+
+            <div style='background: #f5f5f5; padding: 20px; border-left: 4px solid #4caf50; margin: 20px 0;'>
+                <h3 style='margin-top: 0;'>Vehicle Details</h3>
+                <p><strong>Vehicle:</strong> {$vehicleName}</p>
+                <p><strong>Owner:</strong> {$vehicle['owner_first_name']} {$vehicle['owner_last_name']} ({$vehicle['owner_email']})</p>
+                <p><strong>Color:</strong> {$vehicle['color']}</p>
+                <p><strong>Category:</strong> {$vehicle['category']}</p>
+                <p><strong>Hourly Rate:</strong> \$" . number_format($vehicle['hourly_rate'], 2) . " AUD</p>
+                <p><strong>Registration:</strong> " . ($vehicle['registration_number'] ?? 'Not provided') . "</p>
+            </div>
+
+            <p style='margin-top: 30px;'>This is an automated notification from Elite Car Hire.</p>
+        </div>
+        ";
+
+        sendEmail($vehiclesEmail, "Vehicle Approved - {$vehicleName}", $adminBody);
+    }
+
+    private function sendVehicleRejectionEmail($vehicle, $reason) {
+        $vehicleName = "{$vehicle['year']} {$vehicle['make']} {$vehicle['model']}";
+        $viewUrl = generateLoginUrl("/owner/listings");
+        $viewButton = getEmailButton($viewUrl, 'View My Listings', 'primary');
+
+        $body = "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+            <h2 style='color: #e74c3c;'>Vehicle Listing Not Approved</h2>
+            <p>Dear {$vehicle['owner_first_name']},</p>
+            <p>Thank you for submitting your vehicle listing to Elite Car Hire. Unfortunately, we are unable to approve your listing at this time.</p>
+
+            <div style='background: #ffebee; padding: 20px; border-left: 4px solid #e74c3c; margin: 20px 0;'>
+                <h3 style='margin-top: 0;'>Vehicle Details</h3>
+                <p><strong>Vehicle:</strong> {$vehicleName}</p>
+                <p><strong>Color:</strong> {$vehicle['color']}</p>
+                <p><strong>Category:</strong> {$vehicle['category']}</p>
+                <p><strong>Hourly Rate:</strong> \$" . number_format($vehicle['hourly_rate'], 2) . " AUD</p>
+                <p><strong>Status:</strong> <span style='color: #e74c3c; font-weight: bold;'>REJECTED</span></p>
+            </div>
+
+            <div style='background: #fff; padding: 15px; border: 1px solid #ddd; margin: 20px 0;'>
+                <h3 style='margin-top: 0;'>Rejection Reason:</h3>
+                <p style='white-space: pre-wrap;'>" . htmlspecialchars($reason) . "</p>
+            </div>
+
+            <div style='background: #e3f2fd; padding: 15px; border-left: 4px solid #2196f3; margin: 20px 0;'>
+                <p style='margin: 0;'><strong>What you can do:</strong> You can update your listing to address the issues mentioned above and resubmit it for approval. Our team will review it again.</p>
+            </div>
+
+            {$viewButton}
+
+            <p>If you have any questions about this decision or need clarification on the requirements, please contact us at vehicles@elitecarhire.au or call 0406 907 849.</p>
+
+            <p style='margin-top: 30px;'>Best regards,<br>
+            <strong>Elite Car Hire Team</strong><br>
+            Melbourne, Australia</p>
+        </div>
+        ";
+
+        sendEmail($vehicle['owner_email'], "Vehicle Listing Status - {$vehicleName}", $body);
+
+        // Also notify admin at vehicles email
+        $vehiclesEmail = config('email.vehicle_approvals', 'vehicles@elitecarhire.au');
+        $adminBody = "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+            <h2 style='color: #e74c3c;'>🚗 Vehicle Listing Rejected</h2>
+            <p>A vehicle listing has been rejected.</p>
+
+            <div style='background: #f5f5f5; padding: 20px; border-left: 4px solid #e74c3c; margin: 20px 0;'>
+                <h3 style='margin-top: 0;'>Vehicle Details</h3>
+                <p><strong>Vehicle:</strong> {$vehicleName}</p>
+                <p><strong>Owner:</strong> {$vehicle['owner_first_name']} {$vehicle['owner_last_name']} ({$vehicle['owner_email']})</p>
+                <p><strong>Color:</strong> {$vehicle['color']}</p>
+                <p><strong>Category:</strong> {$vehicle['category']}</p>
+                <p><strong>Hourly Rate:</strong> \$" . number_format($vehicle['hourly_rate'], 2) . " AUD</p>
+            </div>
+
+            <div style='background: #fff; padding: 15px; border: 1px solid #ddd; margin: 20px 0;'>
+                <h3 style='margin-top: 0;'>Rejection Reason:</h3>
+                <p style='white-space: pre-wrap;'>" . htmlspecialchars($reason) . "</p>
+            </div>
+
+            <p style='margin-top: 30px;'>This is an automated notification from Elite Car Hire.</p>
+        </div>
+        ";
+
+        sendEmail($vehiclesEmail, "Vehicle Rejected - {$vehicleName}", $adminBody);
     }
 
     public function editVehicle($id) {
@@ -671,10 +857,10 @@ class AdminController {
     
     public function approvePendingChange($id) {
         $change = db()->fetch("SELECT * FROM pending_changes WHERE id = ?", [$id]);
-        
+
         if ($change && $change['status'] === 'pending') {
             $newData = json_decode($change['new_data'], true);
-            
+
             // Apply the change based on entity type
             if ($change['entity_type'] === 'vehicle') {
                 $fields = [];
@@ -684,20 +870,231 @@ class AdminController {
                     $values[] = $value;
                 }
                 $values[] = $change['entity_id'];
-                
+
                 $sql = "UPDATE vehicles SET " . implode(', ', $fields) . " WHERE id = ?";
                 db()->execute($sql, $values);
+            } elseif ($change['entity_type'] === 'booking' && $change['change_type'] === 'cancellation') {
+                // Get full booking details before cancellation
+                $booking = db()->fetch(
+                    "SELECT b.*, v.year, v.make, v.model, v.hourly_rate,
+                            c.email as customer_email, c.first_name as customer_first_name, c.last_name as customer_last_name,
+                            o.email as owner_email, o.first_name as owner_first_name, o.last_name as owner_last_name
+                     FROM bookings b
+                     JOIN vehicles v ON b.vehicle_id = v.id
+                     JOIN users c ON b.customer_id = c.id
+                     JOIN users o ON b.owner_id = o.id
+                     WHERE b.id = ?",
+                    [$change['entity_id']]
+                );
+
+                if ($booking) {
+                    // Calculate refund if payment was made
+                    $refundAmount = 0;
+                    $refundStatus = 'not_applicable';
+
+                    if ($booking['payment_status'] === 'paid') {
+                        // Calculate refund based on cancellation timing
+                        $bookingDateTime = strtotime($booking['booking_date'] . ' ' . $booking['start_time']);
+                        $hoursUntilBooking = ($bookingDateTime - time()) / 3600;
+
+                        if ($hoursUntilBooking > 48) {
+                            // Full refund if cancelled more than 48 hours in advance
+                            $refundAmount = $booking['total_amount'];
+                            $refundStatus = 'full_refund';
+                        } elseif ($hoursUntilBooking > 24) {
+                            // 50% refund if cancelled 24-48 hours in advance
+                            $refundAmount = $booking['total_amount'] * 0.5;
+                            $refundStatus = 'partial_refund';
+                        } else {
+                            // No refund if cancelled less than 24 hours in advance
+                            $refundAmount = 0;
+                            $refundStatus = 'no_refund';
+                        }
+                    }
+
+                    // Update booking status
+                    db()->execute(
+                        "UPDATE bookings SET status = 'cancelled', cancellation_reason = ?, cancelled_at = NOW(), refund_amount = ?, refund_status = ? WHERE id = ?",
+                        [$newData['cancellation_reason'] ?? $change['reason'], $refundAmount, $refundStatus, $change['entity_id']]
+                    );
+
+                    // Send cancellation emails
+                    $this->sendCancellationEmails($booking, $change['reason'], $refundAmount, $refundStatus);
+                }
             }
-            
-            db()->execute("UPDATE pending_changes SET status = 'approved', reviewed_by = ?, reviewed_at = NOW() WHERE id = ?", 
+
+            db()->execute("UPDATE pending_changes SET status = 'approved', reviewed_by = ?, reviewed_at = NOW() WHERE id = ?",
                          [$_SESSION['user_id'], $id]);
-            
+
             createNotification($change['owner_id'], 'approval', 'Change Approved', 'Your submitted change has been approved.');
             logAudit('approve_pending_change', 'pending_changes', $id);
             flash('success', 'Change approved successfully');
         }
-        
+
         redirect('/admin/pending-changes');
+    }
+
+    private function sendCancellationEmails($booking, $reason, $refundAmount, $refundStatus) {
+        $vehicleName = "{$booking['year']} {$booking['make']} {$booking['model']}";
+
+        // Send email to customer
+        $this->sendCustomerCancellationEmail($booking, $vehicleName, $reason, $refundAmount, $refundStatus);
+
+        // Send email to owner
+        $this->sendOwnerCancellationEmail($booking, $vehicleName, $reason);
+
+        // Send email to admin
+        $this->sendAdminCancellationEmail($booking, $vehicleName, $reason, $refundAmount, $refundStatus);
+    }
+
+    private function sendCustomerCancellationEmail($booking, $vehicleName, $reason, $refundAmount, $refundStatus) {
+        $viewUrl = generateLoginUrl("/customer/bookings");
+        $viewButton = getEmailButton($viewUrl, 'View My Bookings', 'primary');
+
+        // Build refund message
+        $refundMessage = '';
+        if ($refundStatus === 'full_refund') {
+            $refundMessage = "
+            <div style='background: #e8f5e9; padding: 15px; border-left: 4px solid #4caf50; margin: 20px 0;'>
+                <p style='margin: 0;'><strong>✓ Full Refund:</strong> \$" . number_format($refundAmount, 2) . " AUD will be refunded to your original payment method within 5-7 business days.</p>
+            </div>";
+        } elseif ($refundStatus === 'partial_refund') {
+            $refundMessage = "
+            <div style='background: #fff3cd; padding: 15px; border-left: 4px solid #f39c12; margin: 20px 0;'>
+                <p style='margin: 0;'><strong>⚠ Partial Refund:</strong> \$" . number_format($refundAmount, 2) . " AUD (50%) will be refunded to your original payment method within 5-7 business days.</p>
+            </div>";
+        } elseif ($refundStatus === 'no_refund') {
+            $refundMessage = "
+            <div style='background: #ffebee; padding: 15px; border-left: 4px solid #e74c3c; margin: 20px 0;'>
+                <p style='margin: 0;'><strong>No Refund:</strong> As per our cancellation policy, bookings cancelled less than 24 hours in advance are not eligible for a refund.</p>
+            </div>";
+        }
+
+        $body = "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+            <h2 style='color: #e74c3c;'>Booking Cancelled</h2>
+            <p>Dear {$booking['customer_first_name']},</p>
+            <p>Your booking has been cancelled as requested.</p>
+
+            <div style='background: #f5f5f5; padding: 20px; border-left: 4px solid #e74c3c; margin: 20px 0;'>
+                <h3 style='margin-top: 0;'>Cancelled Booking Details</h3>
+                <p><strong>Booking Reference:</strong> {$booking['booking_reference']}</p>
+                <p><strong>Vehicle:</strong> {$vehicleName}</p>
+                <p><strong>Date:</strong> {$booking['booking_date']}</p>
+                <p><strong>Time:</strong> {$booking['start_time']} - {$booking['end_time']}</p>
+                <p><strong>Duration:</strong> {$booking['duration_hours']} hours</p>
+                <p><strong>Total Amount:</strong> \$" . number_format($booking['total_amount'], 2) . " AUD</p>
+                <p><strong>Status:</strong> <span style='color: #e74c3c; font-weight: bold;'>CANCELLED</span></p>
+            </div>
+
+            <div style='background: #fff; padding: 15px; border: 1px solid #ddd; margin: 20px 0;'>
+                <h3 style='margin-top: 0;'>Cancellation Reason:</h3>
+                <p style='white-space: pre-wrap;'>" . htmlspecialchars($reason) . "</p>
+            </div>
+
+            {$refundMessage}
+
+            {$viewButton}
+
+            <p>We're sorry this booking didn't work out. We hope to serve you again in the future.</p>
+
+            <p>If you have any questions about this cancellation, please contact us at support@elitecarhire.au or call 0406 907 849.</p>
+
+            <p style='margin-top: 30px;'>Best regards,<br>
+            <strong>Elite Car Hire Team</strong><br>
+            Melbourne, Australia</p>
+        </div>
+        ";
+
+        sendEmail($booking['customer_email'], "Booking Cancelled - {$booking['booking_reference']}", $body);
+    }
+
+    private function sendOwnerCancellationEmail($booking, $vehicleName, $reason) {
+        $viewUrl = generateLoginUrl("/owner/bookings");
+        $viewButton = getEmailButton($viewUrl, 'View My Bookings', 'primary');
+
+        $earningsLost = $booking['payment_status'] === 'paid'
+            ? $booking['total_amount'] - $booking['commission_amount']
+            : 0;
+
+        $body = "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+            <h2 style='color: #e74c3c;'>Booking Cancelled</h2>
+            <p>Dear {$booking['owner_first_name']},</p>
+            <p>A booking for your vehicle has been cancelled.</p>
+
+            <div style='background: #f5f5f5; padding: 20px; border-left: 4px solid #e74c3c; margin: 20px 0;'>
+                <h3 style='margin-top: 0;'>Cancelled Booking Details</h3>
+                <p><strong>Booking Reference:</strong> {$booking['booking_reference']}</p>
+                <p><strong>Vehicle:</strong> {$vehicleName}</p>
+                <p><strong>Customer:</strong> {$booking['customer_first_name']} {$booking['customer_last_name']}</p>
+                <p><strong>Date:</strong> {$booking['booking_date']}</p>
+                <p><strong>Time:</strong> {$booking['start_time']} - {$booking['end_time']}</p>
+                <p><strong>Duration:</strong> {$booking['duration_hours']} hours</p>
+                <p><strong>Payment Status:</strong> {$booking['payment_status']}</p>
+                " . ($earningsLost > 0 ? "<p><strong>Earnings Lost:</strong> \$" . number_format($earningsLost, 2) . " AUD</p>" : "") . "
+                <p><strong>Status:</strong> <span style='color: #e74c3c; font-weight: bold;'>CANCELLED</span></p>
+            </div>
+
+            <div style='background: #fff; padding: 15px; border: 1px solid #ddd; margin: 20px 0;'>
+                <h3 style='margin-top: 0;'>Cancellation Reason:</h3>
+                <p style='white-space: pre-wrap;'>" . htmlspecialchars($reason) . "</p>
+            </div>
+
+            <div style='background: #e8f5e9; padding: 15px; border-left: 4px solid #4caf50; margin: 20px 0;'>
+                <p style='margin: 0;'><strong>Good News:</strong> Your vehicle is now available for this time slot. It may receive new booking requests.</p>
+            </div>
+
+            {$viewButton}
+
+            <p>If you have any questions about this cancellation, please contact us at support@elitecarhire.au or call 0406 907 849.</p>
+
+            <p style='margin-top: 30px;'>Best regards,<br>
+            <strong>Elite Car Hire Team</strong><br>
+            Melbourne, Australia</p>
+        </div>
+        ";
+
+        sendEmail($booking['owner_email'], "Booking Cancelled - {$vehicleName}", $body);
+    }
+
+    private function sendAdminCancellationEmail($booking, $vehicleName, $reason, $refundAmount, $refundStatus) {
+        $viewUrl = generateLoginUrl("/admin/bookings");
+        $viewButton = getEmailButton($viewUrl, 'View All Bookings', 'primary');
+
+        $body = "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+            <h2 style='color: #e74c3c;'>📅 Booking Cancelled</h2>
+            <p>A booking cancellation has been processed.</p>
+
+            <div style='background: #f5f5f5; padding: 20px; border-left: 4px solid #e74c3c; margin: 20px 0;'>
+                <h3 style='margin-top: 0;'>Cancelled Booking Details</h3>
+                <p><strong>Booking Reference:</strong> {$booking['booking_reference']}</p>
+                <p><strong>Vehicle:</strong> {$vehicleName}</p>
+                <p><strong>Owner:</strong> {$booking['owner_first_name']} {$booking['owner_last_name']} ({$booking['owner_email']})</p>
+                <p><strong>Customer:</strong> {$booking['customer_first_name']} {$booking['customer_last_name']} ({$booking['customer_email']})</p>
+                <p><strong>Date:</strong> {$booking['booking_date']}</p>
+                <p><strong>Time:</strong> {$booking['start_time']} - {$booking['end_time']}</p>
+                <p><strong>Duration:</strong> {$booking['duration_hours']} hours</p>
+                <p><strong>Total Amount:</strong> \$" . number_format($booking['total_amount'], 2) . " AUD</p>
+                <p><strong>Payment Status:</strong> {$booking['payment_status']}</p>
+                <p><strong>Refund Status:</strong> {$refundStatus}</p>
+                " . ($refundAmount > 0 ? "<p><strong>Refund Amount:</strong> \$" . number_format($refundAmount, 2) . " AUD</p>" : "") . "
+            </div>
+
+            <div style='background: #fff; padding: 15px; border: 1px solid #ddd; margin: 20px 0;'>
+                <h3 style='margin-top: 0;'>Cancellation Reason:</h3>
+                <p style='white-space: pre-wrap;'>" . htmlspecialchars($reason) . "</p>
+            </div>
+
+            {$viewButton}
+
+            <p style='margin-top: 30px;'>This is an automated notification from Elite Car Hire.</p>
+        </div>
+        ";
+
+        $cancellationsEmail = config('email.cancellations', 'cancellations@elitecarhire.au');
+        sendEmail($cancellationsEmail, "Booking Cancelled - {$booking['booking_reference']}", $body);
     }
     
     public function contactSubmissions() {

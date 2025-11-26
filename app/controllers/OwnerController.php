@@ -355,6 +355,133 @@ class OwnerController {
         view('owner/bookings', compact('bookings', 'status', 'view', 'blockedDates', 'statusCounts'));
     }
 
+    public function confirmBookingAction() {
+        requireAuth('owner');
+
+        $token = $_GET['token'] ?? '';
+        $ownerId = $_SESSION['user_id'];
+
+        if (empty($token)) {
+            flash('error', 'Invalid or missing action token');
+            redirect('/owner/bookings');
+        }
+
+        // Verify the action token
+        $tokenData = verifyActionToken($token);
+
+        if (!$tokenData) {
+            flash('error', 'This link has expired or has already been used. Please use the booking management page instead.');
+            redirect('/owner/bookings');
+        }
+
+        // Verify the token belongs to the current user
+        if ($tokenData['user_id'] != $ownerId) {
+            flash('error', 'This action is not authorized for your account');
+            redirect('/owner/bookings');
+        }
+
+        // Verify the action type
+        if ($tokenData['action_type'] !== 'confirm_booking' || $tokenData['entity_type'] !== 'booking') {
+            flash('error', 'Invalid action type');
+            redirect('/owner/bookings');
+        }
+
+        $bookingId = $tokenData['entity_id'];
+
+        // Verify booking belongs to owner
+        $booking = db()->fetch(
+            "SELECT b.*, v.make, v.model, u.first_name, u.last_name
+             FROM bookings b
+             JOIN vehicles v ON b.vehicle_id = v.id
+             JOIN users u ON b.customer_id = u.id
+             WHERE b.id = ? AND b.owner_id = ?",
+            [$bookingId, $ownerId]
+        );
+
+        if (!$booking) {
+            flash('error', 'Booking not found or access denied');
+            redirect('/owner/bookings');
+        }
+
+        if ($booking['status'] !== 'pending') {
+            flash('warning', 'This booking has already been ' . $booking['status']);
+            redirect('/owner/bookings');
+        }
+
+        // Update booking status
+        db()->execute(
+            "UPDATE bookings SET status = 'confirmed', updated_at = NOW()
+             WHERE id = ?",
+            [$bookingId]
+        );
+
+        // Get full booking and vehicle details for email
+        $fullBooking = db()->fetch(
+            "SELECT b.*, v.year, v.make, v.model, v.hourly_rate,
+                    c.email as customer_email, c.first_name as customer_first_name,
+                    o.first_name as owner_first_name
+             FROM bookings b
+             JOIN vehicles v ON b.vehicle_id = v.id
+             JOIN users c ON b.customer_id = c.id
+             JOIN users o ON b.owner_id = o.id
+             WHERE b.id = ?",
+            [$bookingId]
+        );
+
+        // Send booking confirmation email to customer
+        $this->sendBookingConfirmedEmail($fullBooking);
+
+        // Create notification for customer
+        if (file_exists(__DIR__ . '/../helpers/notifications.php')) {
+            try {
+                require_once __DIR__ . '/../helpers/notifications.php';
+                if (function_exists('notifyBookingConfirmed')) {
+                    $vehicleName = $booking['make'] . ' ' . $booking['model'];
+                    notifyBookingConfirmed(
+                        $booking['customer_id'],
+                        $booking['booking_reference'],
+                        $vehicleName
+                    );
+                }
+            } catch (\Exception $e) {
+                error_log("Notification error in confirmBookingAction: " . $e->getMessage());
+            } catch (\Error $e) {
+                error_log("Notification fatal error in confirmBookingAction: " . $e->getMessage());
+            }
+        }
+
+        // If payment is already made and booking time has started, transition to in_progress
+        if ($booking['payment_status'] === 'paid') {
+            if (file_exists(__DIR__ . '/../helpers/booking_automation.php')) {
+                try {
+                    require_once __DIR__ . '/../helpers/booking_automation.php';
+                    if (function_exists('canTransitionToInProgress') && canTransitionToInProgress($bookingId)) {
+                        transitionBookingToInProgress($bookingId);
+                        flash('success', 'Booking confirmed and started!');
+                    } else {
+                        flash('success', 'Booking confirmed successfully! It will automatically start when the booking time begins.');
+                    }
+                } catch (\Exception $e) {
+                    error_log("Booking automation error in confirmBookingAction: " . $e->getMessage());
+                    flash('success', 'Booking confirmed successfully! It will automatically start when the booking time begins.');
+                } catch (\Error $e) {
+                    error_log("Booking automation fatal error in confirmBookingAction: " . $e->getMessage());
+                    flash('success', 'Booking confirmed successfully! It will automatically start when the booking time begins.');
+                }
+            } else {
+                flash('success', 'Booking confirmed successfully! It will automatically start when the booking time begins.');
+            }
+        } else {
+            flash('success', 'Booking confirmed successfully! Waiting for customer payment.');
+        }
+
+        logAudit('confirm_booking_via_email', 'bookings', $bookingId, [
+            'booking_reference' => $booking['booking_reference']
+        ]);
+
+        redirect('/owner/bookings');
+    }
+
     public function confirmBooking() {
         requireAuth('owner');
 

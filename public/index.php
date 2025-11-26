@@ -49,6 +49,7 @@ $router->post('/admin/users/{id}/change-status', 'AdminController@changeUserStat
 $router->post('/admin/users/{id}/delete', 'AdminController@deleteUser');
 $router->get('/admin/vehicles', 'AdminController@vehicles');
 $router->get('/admin/vehicles/{id}/approve', 'AdminController@approveVehicle');
+$router->post('/admin/vehicles/{id}/reject', 'AdminController@rejectVehicle');
 $router->get('/admin/vehicles/{id}/edit', 'AdminController@editVehicle');
 $router->post('/admin/vehicles/{id}/update', 'AdminController@updateVehicle');
 $router->post('/admin/vehicles/{id}/delete', 'AdminController@deleteVehicle');
@@ -117,6 +118,7 @@ $router->post('/owner/listings/add', 'OwnerController@saveListing');
 $router->get('/owner/listings/{id}/edit', 'OwnerController@editListing');
 $router->post('/owner/listings/{id}/edit', 'OwnerController@updateListing');
 $router->get('/owner/bookings', 'OwnerController@bookings');
+$router->get('/owner/bookings/confirm-action', 'OwnerController@confirmBookingAction');
 $router->post('/owner/bookings/confirm', 'OwnerController@confirmBooking');
 $router->post('/owner/bookings/cancel', 'OwnerController@cancelBooking');
 $router->get('/owner/calendar', 'OwnerController@calendar');
