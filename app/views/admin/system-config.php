@@ -329,54 +329,54 @@
                         <div class="config-grid">
                             <div class="config-item">
                                 <label>Stripe Mode</label>
-                                <div class="current-value"><?= e(config('stripe.mode', 'test')) ?></div>
+                                <div class="current-value">Using environment keys</div>
                                 <select name="stripe_mode">
-                                    <option value="test" <?= config('stripe.mode') === 'test' ? 'selected' : '' ?>>Test Mode</option>
-                                    <option value="live" <?= config('stripe.mode') === 'live' ? 'selected' : '' ?>>Live Mode</option>
+                                    <option value="test" selected>Test Mode</option>
+                                    <option value="live">Live Mode</option>
                                 </select>
-                                <div class="help-text">Switch between test and live Stripe keys</div>
+                                <div class="help-text">Switch between test and live Stripe keys (configured via environment variables)</div>
                             </div>
 
                             <div class="config-item password-field">
-                                <label>Stripe Publishable Key (Test)</label>
-                                <div class="current-value"><?= e(substr(config('stripe.test_publishable_key', ''), 0, 20)) ?>...</div>
-                                <input type="password" name="stripe_test_pub_key" id="stripe_test_pub_key" value="<?= e(config('stripe.test_publishable_key', '')) ?>" placeholder="pk_test_...">
+                                <label>Stripe Publishable Key</label>
+                                <div class="current-value"><?= e(substr(config('payment.stripe.publishable_key', ''), 0, 20)) ?><?= strlen(config('payment.stripe.publishable_key', '')) > 0 ? '...' : 'Not set' ?></div>
+                                <input type="password" name="stripe_test_pub_key" id="stripe_test_pub_key" value="<?= e(config('payment.stripe.publishable_key', '')) ?>" placeholder="pk_test_... or pk_live_...">
                                 <button type="button" class="toggle-password" onclick="togglePassword('stripe_test_pub_key')">👁️</button>
-                                <div class="help-text">Stripe test publishable key (starts with pk_test_)</div>
+                                <div class="help-text">Stripe publishable key (starts with pk_test_ or pk_live_)</div>
                             </div>
 
                             <div class="config-item password-field">
-                                <label>Stripe Secret Key (Test)</label>
-                                <div class="current-value">sk_test_••••••••</div>
-                                <input type="password" name="stripe_test_secret_key" id="stripe_test_secret_key" value="<?= e(config('stripe.test_secret_key', '')) ?>" placeholder="sk_test_...">
+                                <label>Stripe Secret Key</label>
+                                <div class="current-value"><?= strlen(config('payment.stripe.secret_key', '')) > 0 ? 'sk_••••••••' : 'Not set' ?></div>
+                                <input type="password" name="stripe_test_secret_key" id="stripe_test_secret_key" value="<?= e(config('payment.stripe.secret_key', '')) ?>" placeholder="sk_test_... or sk_live_...">
                                 <button type="button" class="toggle-password" onclick="togglePassword('stripe_test_secret_key')">👁️</button>
-                                <div class="help-text">Stripe test secret key (starts with sk_test_)</div>
+                                <div class="help-text">Stripe secret key (starts with sk_test_ or sk_live_)</div>
                             </div>
 
                             <div class="config-item password-field">
-                                <label>Stripe Publishable Key (Live)</label>
-                                <div class="current-value"><?= e(substr(config('stripe.live_publishable_key', ''), 0, 20)) ?>...</div>
-                                <input type="password" name="stripe_live_pub_key" id="stripe_live_pub_key" value="<?= e(config('stripe.live_publishable_key', '')) ?>" placeholder="pk_live_...">
-                                <button type="button" class="toggle-password" onclick="togglePassword('stripe_live_pub_key')">👁️</button>
-                                <div class="help-text">Stripe live publishable key (starts with pk_live_)</div>
+                                <label>Stripe Webhook Secret</label>
+                                <div class="current-value"><?= strlen(config('payment.stripe.webhook_secret', '')) > 0 ? 'whsec_••••••••' : 'Not set' ?></div>
+                                <input type="password" name="stripe_webhook_secret" id="stripe_webhook_secret" value="<?= e(config('payment.stripe.webhook_secret', '')) ?>" placeholder="whsec_...">
+                                <button type="button" class="toggle-password" onclick="togglePassword('stripe_webhook_secret')">👁️</button>
+                                <div class="help-text">Stripe webhook secret (starts with whsec_)</div>
                             </div>
 
                             <div class="config-item password-field">
-                                <label>Stripe Secret Key (Live)</label>
-                                <div class="current-value">sk_live_••••••••</div>
-                                <input type="password" name="stripe_live_secret_key" id="stripe_live_secret_key" value="<?= e(config('stripe.live_secret_key', '')) ?>" placeholder="sk_live_...">
-                                <button type="button" class="toggle-password" onclick="togglePassword('stripe_live_secret_key')">👁️</button>
-                                <div class="help-text">Stripe live secret key (starts with sk_live_)</div>
+                                <label>Stripe Connect Client ID</label>
+                                <div class="current-value"><?= strlen(config('payment.stripe.connect_client_id', '')) > 0 ? 'ca_••••••••' : 'Not set' ?></div>
+                                <input type="password" name="stripe_connect_client_id" id="stripe_connect_client_id" value="<?= e(config('payment.stripe.connect_client_id', '')) ?>" placeholder="ca_...">
+                                <button type="button" class="toggle-password" onclick="togglePassword('stripe_connect_client_id')">👁️</button>
+                                <div class="help-text">Stripe Connect client ID for vehicle owner payments</div>
                             </div>
 
                             <div class="config-item">
                                 <label>Currency</label>
-                                <div class="current-value"><?= e(config('stripe.currency', 'AUD')) ?></div>
+                                <div class="current-value"><?= e(config('payment.currency', 'AUD')) ?></div>
                                 <select name="stripe_currency">
-                                    <option value="AUD" <?= config('stripe.currency') === 'AUD' ? 'selected' : '' ?>>AUD - Australian Dollar</option>
-                                    <option value="USD" <?= config('stripe.currency') === 'USD' ? 'selected' : '' ?>>USD - US Dollar</option>
-                                    <option value="EUR" <?= config('stripe.currency') === 'EUR' ? 'selected' : '' ?>>EUR - Euro</option>
-                                    <option value="GBP" <?= config('stripe.currency') === 'GBP' ? 'selected' : '' ?>>GBP - British Pound</option>
+                                    <option value="AUD" <?= config('payment.currency') === 'AUD' ? 'selected' : '' ?>>AUD - Australian Dollar</option>
+                                    <option value="USD" <?= config('payment.currency') === 'USD' ? 'selected' : '' ?>>USD - US Dollar</option>
+                                    <option value="EUR" <?= config('payment.currency') === 'EUR' ? 'selected' : '' ?>>EUR - Euro</option>
+                                    <option value="GBP" <?= config('payment.currency') === 'GBP' ? 'selected' : '' ?>>GBP - British Pound</option>
                                 </select>
                                 <div class="help-text">Payment currency</div>
                             </div>
@@ -439,8 +439,8 @@
 
                             <div class="config-item">
                                 <label>Commission Rate (%)</label>
-                                <div class="current-value"><?= e(config('app.commission_rate', '15')) ?>%</div>
-                                <input type="number" name="commission_rate" value="<?= e(config('app.commission_rate', '15')) ?>" placeholder="15" min="0" max="100" step="0.1">
+                                <div class="current-value"><?= e(config('payment.commission_rate', '15')) ?>%</div>
+                                <input type="number" name="commission_rate" value="<?= e(config('payment.commission_rate', '15')) ?>" placeholder="15" min="0" max="100" step="0.1">
                                 <div class="help-text">Platform commission percentage on bookings</div>
                             </div>
                         </div>
@@ -452,43 +452,46 @@
                     <div class="config-section">
                         <h3>Security Settings</h3>
                         <div class="config-grid">
-                            <div class="config-item password-field">
-                                <label>Session Secret Key</label>
-                                <div class="current-value">••••••••</div>
-                                <input type="password" name="session_secret" id="session_secret" value="<?= e(config('app.session_secret', '')) ?>" placeholder="••••••••">
-                                <button type="button" class="toggle-password" onclick="togglePassword('session_secret')">👁️</button>
-                                <div class="help-text">Secret key for session encryption</div>
+                            <div class="config-item">
+                                <label>Session Name</label>
+                                <div class="current-value"><?= e(config('security.session_name', 'elite_car_hire_session')) ?></div>
+                                <input type="text" name="session_name" value="<?= e(config('security.session_name', 'elite_car_hire_session')) ?>" placeholder="elite_car_hire_session">
+                                <div class="help-text">Name of the session cookie</div>
                             </div>
 
                             <div class="config-item">
-                                <label>Session Lifetime (minutes)</label>
-                                <div class="current-value"><?= e(config('app.session_lifetime', '120')) ?> minutes</div>
-                                <input type="number" name="session_lifetime" value="<?= e(config('app.session_lifetime', '120')) ?>" placeholder="120" min="15" max="1440">
-                                <div class="help-text">How long users stay logged in (15-1440 minutes)</div>
+                                <label>Session Lifetime (seconds)</label>
+                                <div class="current-value"><?= e(config('security.session_lifetime', '7200')) ?> seconds (<?= round(config('security.session_lifetime', 7200) / 60) ?> minutes)</div>
+                                <input type="number" name="session_lifetime" value="<?= e(config('security.session_lifetime', '7200')) ?>" placeholder="7200" min="900" max="86400">
+                                <div class="help-text">How long users stay logged in (900-86400 seconds)</div>
                             </div>
 
                             <div class="config-item">
-                                <label>CSRF Protection</label>
-                                <div class="current-value"><?= config('app.csrf_protection', true) ? 'Enabled' : 'Disabled' ?></div>
-                                <select name="csrf_protection">
-                                    <option value="1" <?= config('app.csrf_protection', true) ? 'selected' : '' ?>>Enabled (Recommended)</option>
-                                    <option value="0" <?= !config('app.csrf_protection', true) ? 'selected' : '' ?>>Disabled</option>
-                                </select>
-                                <div class="help-text">CSRF protection for forms</div>
+                                <label>CSRF Token Name</label>
+                                <div class="current-value"><?= e(config('security.csrf_token_name', '_csrf_token')) ?></div>
+                                <input type="text" name="csrf_token_name" value="<?= e(config('security.csrf_token_name', '_csrf_token')) ?>" placeholder="_csrf_token">
+                                <div class="help-text">Name of the CSRF token field</div>
+                            </div>
+
+                            <div class="config-item">
+                                <label>Minimum Password Length</label>
+                                <div class="current-value"><?= e(config('security.password_min_length', '8')) ?> characters</div>
+                                <input type="number" name="password_min_length" value="<?= e(config('security.password_min_length', '8')) ?>" placeholder="8" min="6" max="20">
+                                <div class="help-text">Minimum required password length (6-20 characters)</div>
                             </div>
 
                             <div class="config-item">
                                 <label>Maximum Login Attempts</label>
-                                <div class="current-value"><?= e(config('app.max_login_attempts', '5')) ?> attempts</div>
-                                <input type="number" name="max_login_attempts" value="<?= e(config('app.max_login_attempts', '5')) ?>" placeholder="5" min="3" max="10">
+                                <div class="current-value"><?= e(config('security.max_login_attempts', '5')) ?> attempts</div>
+                                <input type="number" name="max_login_attempts" value="<?= e(config('security.max_login_attempts', '5')) ?>" placeholder="5" min="3" max="10">
                                 <div class="help-text">Failed login attempts before lockout</div>
                             </div>
 
                             <div class="config-item">
-                                <label>Account Lockout Duration (minutes)</label>
-                                <div class="current-value"><?= e(config('app.lockout_duration', '30')) ?> minutes</div>
-                                <input type="number" name="lockout_duration" value="<?= e(config('app.lockout_duration', '30')) ?>" placeholder="30" min="5" max="120">
-                                <div class="help-text">How long accounts are locked after max failed attempts</div>
+                                <label>Account Lockout Time (seconds)</label>
+                                <div class="current-value"><?= e(config('security.lockout_time', '900')) ?> seconds (<?= round(config('security.lockout_time', 900) / 60) ?> minutes)</div>
+                                <input type="number" name="lockout_duration" value="<?= e(config('security.lockout_time', '900')) ?>" placeholder="900" min="300" max="7200">
+                                <div class="help-text">How long accounts are locked after max failed attempts (300-7200 seconds)</div>
                             </div>
                         </div>
                     </div>
