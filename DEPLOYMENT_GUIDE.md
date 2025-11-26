@@ -4,13 +4,22 @@ This guide provides step-by-step instructions for deploying the email notificati
 
 ## 📋 Overview
 
-This deployment adds comprehensive email notifications for:
+This deployment adds comprehensive email notifications and a new 50% cancellation fee policy:
 - **Booking Creation** - Customer, owner, and admin notifications
 - **Booking Confirmation** - Customer payment notifications
-- **Booking Cancellation** - Refund processing and notifications
+- **Booking Cancellation** - **NEW 50% flat cancellation fee policy** with refund processing
+- **Customer Cancellation Form** - **NEW self-service cancellation request form**
 - **Vehicle Approval/Rejection** - Owner notifications with guidance
 - **Contact Form Submissions** - Admin and customer notifications
 - **Payment Processing** - Enhanced payment confirmations with action buttons
+
+### 🆕 NEW: 50% Cancellation Fee Policy
+
+**IMPORTANT POLICY CHANGE:**
+- **Previous:** Tiered refunds (100% >48hrs, 50% 24-48hrs, 0% <24hrs)
+- **Current:** **Flat 50% cancellation fee applies to ALL cancellations regardless of timing**
+- Customers now receive 50% refund on all paid booking cancellations
+- Admin approval required for all cancellation requests
 
 ## 🗂️ Files to Upload
 
@@ -32,11 +41,12 @@ app/helpers.php
 ```
 app/controllers/AdminController.php
 app/controllers/BookingController.php
+app/controllers/CustomerController.php
 app/controllers/OwnerController.php
 app/controllers/PaymentController.php
 app/controllers/PublicController.php
 ```
-**Purpose:** Email notification logic for all major actions
+**Purpose:** Email notification logic for all major actions + customer cancellation form handling
 
 #### 4. Routing File
 ```
@@ -44,11 +54,21 @@ public/index.php
 ```
 **Purpose:** New routes for token-based actions and vehicle rejection
 
-#### 5. Database Migration
+#### 5. View Files (NEW)
+```
+app/views/customer/cancel-booking.php
+```
+**Purpose:** Customer-facing booking cancellation form with 50% fee disclosure
+
+#### 6. Database Migrations
 ```
 database/migrations/create_action_tokens_table.sql
+database/migrations/add_cancellation_fee_to_bookings.sql
 ```
-**Purpose:** Creates the `action_tokens` table for one-click email actions
+**Purpose:**
+- Creates the `action_tokens` table for one-click email actions
+- Adds `cancellation_fee` column to bookings table
+- Adds `initiated_by_customer` flag to pending_changes table
 
 ---
 
@@ -102,14 +122,23 @@ In the **Remote** pane (right side):
 **Local:** Navigate to `C:\EliteCarHire\app\controllers\`
 **Remote:** Navigate to `/public_html/app/controllers/`
 
-Upload the following files (select all 5 at once with Ctrl+Click):
+Upload the following files (select all 6 at once with Ctrl+Click):
 - `AdminController.php`
 - `BookingController.php`
+- `CustomerController.php` **← NEW**
 - `OwnerController.php`
 - `PaymentController.php`
 - `PublicController.php`
 
 Right-click and choose **"Upload"**, then **"Overwrite All"**
+
+### Step 6b: Upload View Files (NEW)
+
+**Local:** Navigate to `C:\EliteCarHire\app\views\customer\`
+**Remote:** Navigate to `/public_html/app/views/customer/`
+
+1. Select `cancel-booking.php`
+2. Upload (this is a new file)
 
 ### Step 7: Upload Routing File
 
@@ -119,7 +148,7 @@ Right-click and choose **"Upload"**, then **"Overwrite All"**
 1. Select `index.php`
 2. Upload (overwrite existing file)
 
-### Step 8: Upload Database Migration File
+### Step 8: Upload Database Migration Files
 
 **Local:** Navigate to `C:\EliteCarHire\database\migrations\`
 **Remote:** Navigate to `/public_html/database/migrations/`
@@ -128,8 +157,10 @@ Right-click and choose **"Upload"**, then **"Overwrite All"**
    - Right-click in the remote pane
    - Select **"Make Dir"**
    - Enter `migrations` and click OK
-2. Select `create_action_tokens_table.sql`
-3. Upload to the migrations folder
+2. Select both migration files (Ctrl+Click):
+   - `create_action_tokens_table.sql`
+   - `add_cancellation_fee_to_bookings.sql` **← NEW**
+3. Upload both files to the migrations folder
 
 ---
 
@@ -148,17 +179,29 @@ Right-click and choose **"Upload"**, then **"Overwrite All"**
 3. **Select Your Database**
    - Click on your database name (usually `cyberlog_elitecarhire` or similar)
 
-4. **Run the Migration**
+4. **Run the First Migration** (`create_action_tokens_table.sql`)
    - Click the **"SQL"** tab at the top
    - Open the file `create_action_tokens_table.sql` in Notepad
    - Copy all the SQL code
    - Paste it into the SQL query box
    - Click **"Go"**
+   - You should see a green checkmark
 
-5. **Verify Success**
-   - You should see a green checkmark and "MySQL returned an empty result set"
+5. **Run the Second Migration** (`add_cancellation_fee_to_bookings.sql`)
+   - Click the **"SQL"** tab again
+   - Open the file `add_cancellation_fee_to_bookings.sql` in Notepad
+   - Copy all the SQL code
+   - Paste it into the SQL query box (clear previous query first)
+   - Click **"Go"**
+   - You should see success messages for each ALTER TABLE statement
+
+6. **Verify Success**
    - Click **"Structure"** tab
-   - Scroll down and verify the `action_tokens` table exists
+   - Verify the `action_tokens` table exists
+   - Click on `bookings` table
+   - Verify `cancellation_fee` column exists
+   - Click on `pending_changes` table
+   - Verify `initiated_by_customer` column exists
 
 ### Option B: Using MySQL Command Line
 
@@ -265,6 +308,40 @@ If you want to use external SMTP (like Gmail, SendGrid, etc.):
    - Success message appears
    - Customer receives confirmation email
 
+### Test 7: Customer Cancellation Form (NEW)
+
+1. Login as a customer with an active booking
+2. Go to **My Bookings**
+3. Click **"Cancel Booking"** on a paid booking
+4. Complete the cancellation form:
+   - Select a cancellation reason
+   - Enter detailed explanation (minimum 10 characters)
+   - Check the policy acknowledgment box
+   - Click **"Submit Cancellation Request"**
+5. Verify:
+   - Form shows 50% refund calculation correctly
+   - Cancellation policy is clearly displayed
+   - Confirmation message appears after submission
+   - Customer receives "Cancellation Request Received" email with:
+     - 50% fee breakdown
+     - Expected refund amount
+     - Timeline (5-7 business days)
+   - Admin receives notification
+
+### Test 8: Admin Cancellation Approval (NEW)
+
+1. Login as admin
+2. Go to **Pending Changes**
+3. Find the customer's cancellation request
+4. Click **"Approve"**
+5. Verify:
+   - Booking status changes to "cancelled"
+   - Customer receives "Booking Cancelled" email with:
+     - Original amount, 50% fee, 50% refund breakdown
+     - Cancellation policy reminder
+   - Owner receives cancellation notification
+   - Admin receives copy at `cancellations@elitecarhire.au`
+
 ---
 
 ## 🔍 Troubleshooting
@@ -328,13 +405,16 @@ After uploading, you can verify files uploaded correctly by checking their sizes
 |------|-----------------|
 | `config/app.php` | ~4 KB |
 | `app/helpers.php` | ~15 KB |
-| `app/controllers/AdminController.php` | ~85 KB |
+| `app/controllers/AdminController.php` | ~95 KB |
 | `app/controllers/BookingController.php` | ~25 KB |
-| `app/controllers/OwnerController.php` | ~48 KB |
+| `app/controllers/CustomerController.php` | ~14 KB |
+| `app/controllers/OwnerController.php` | ~52 KB |
 | `app/controllers/PaymentController.php` | ~22 KB |
 | `app/controllers/PublicController.php` | ~12 KB |
+| `app/views/customer/cancel-booking.php` | ~12 KB |
 | `public/index.php` | ~12 KB |
 | `database/migrations/create_action_tokens_table.sql` | ~1 KB |
+| `database/migrations/add_cancellation_fee_to_bookings.sql` | ~1 KB |
 
 If sizes don't match, re-upload that file.
 
@@ -368,12 +448,27 @@ Once all tests pass, your email notification system is fully deployed and operat
 - ✅ Booking confirmation notifications (1 email)
 - ✅ Payment processing notifications (2 emails)
 - ✅ Contact form notifications (2 emails)
-- ✅ Booking cancellation notifications (3 emails with refund logic)
+- ✅ **Booking cancellation with 50% flat fee policy** (4 emails: request + 3 confirmations)
+- ✅ **Customer self-service cancellation form** (NEW)
 - ✅ Vehicle approval/rejection notifications (2 emails per action)
 - ✅ One-click email action buttons (secure token-based)
 - ✅ Role-specific email addresses (8 addresses)
 
-**Total:** 15+ email templates with professional HTML design and action buttons!
+**Total:** 18+ email templates with professional HTML design and action buttons!
+
+### 📋 Policy Change Summary
+
+**Old Cancellation Policy (Tiered):**
+- >48 hours before booking: 100% refund
+- 24-48 hours: 50% refund
+- <24 hours: No refund
+
+**New Cancellation Policy (Flat Fee):**
+- **All cancellations: 50% cancellation fee + 50% refund**
+- Regardless of timing
+- Applies to all paid bookings
+- Customers must acknowledge policy before canceling
+- Admin approval required for all cancellations
 
 ---
 
