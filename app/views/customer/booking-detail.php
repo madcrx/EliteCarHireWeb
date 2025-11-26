@@ -9,7 +9,7 @@
             <!-- Left Column - Vehicle & Booking Info -->
             <div>
                 <?php if (!empty($images)): ?>
-                    <img src="<?= e($images[0]['image_path']) ?>" alt="Vehicle Image"
+                    <img src="/<?= e($images[0]['image_path']) ?>" alt="Vehicle Image"
                          style="width: 100%; border-radius: 8px; margin-bottom: 1rem;">
                 <?php endif; ?>
 
