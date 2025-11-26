@@ -889,37 +889,26 @@ class AdminController {
 
                 if ($booking) {
                     // Calculate refund if payment was made
+                    // NEW POLICY: 50% cancellation fee applies to all cancellations regardless of timing
                     $refundAmount = 0;
                     $refundStatus = 'not_applicable';
+                    $cancellationFee = 0;
 
                     if ($booking['payment_status'] === 'paid') {
-                        // Calculate refund based on cancellation timing
-                        $bookingDateTime = strtotime($booking['booking_date'] . ' ' . $booking['start_time']);
-                        $hoursUntilBooking = ($bookingDateTime - time()) / 3600;
-
-                        if ($hoursUntilBooking > 48) {
-                            // Full refund if cancelled more than 48 hours in advance
-                            $refundAmount = $booking['total_amount'];
-                            $refundStatus = 'full_refund';
-                        } elseif ($hoursUntilBooking > 24) {
-                            // 50% refund if cancelled 24-48 hours in advance
-                            $refundAmount = $booking['total_amount'] * 0.5;
-                            $refundStatus = 'partial_refund';
-                        } else {
-                            // No refund if cancelled less than 24 hours in advance
-                            $refundAmount = 0;
-                            $refundStatus = 'no_refund';
-                        }
+                        // 50% cancellation fee applies to all paid bookings
+                        $cancellationFee = $booking['total_amount'] * 0.5;
+                        $refundAmount = $booking['total_amount'] * 0.5;
+                        $refundStatus = 'partial_refund';
                     }
 
                     // Update booking status
                     db()->execute(
-                        "UPDATE bookings SET status = 'cancelled', cancellation_reason = ?, cancelled_at = NOW(), refund_amount = ?, refund_status = ? WHERE id = ?",
-                        [$newData['cancellation_reason'] ?? $change['reason'], $refundAmount, $refundStatus, $change['entity_id']]
+                        "UPDATE bookings SET status = 'cancelled', cancellation_reason = ?, cancelled_at = NOW(), refund_amount = ?, refund_status = ?, cancellation_fee = ? WHERE id = ?",
+                        [$newData['cancellation_reason'] ?? $change['reason'], $refundAmount, $refundStatus, $cancellationFee, $change['entity_id']]
                     );
 
                     // Send cancellation emails
-                    $this->sendCancellationEmails($booking, $change['reason'], $refundAmount, $refundStatus);
+                    $this->sendCancellationEmails($booking, $change['reason'], $refundAmount, $refundStatus, $cancellationFee);
                 }
             }
 
@@ -934,39 +923,42 @@ class AdminController {
         redirect('/admin/pending-changes');
     }
 
-    private function sendCancellationEmails($booking, $reason, $refundAmount, $refundStatus) {
+    private function sendCancellationEmails($booking, $reason, $refundAmount, $refundStatus, $cancellationFee) {
         $vehicleName = "{$booking['year']} {$booking['make']} {$booking['model']}";
 
         // Send email to customer
-        $this->sendCustomerCancellationEmail($booking, $vehicleName, $reason, $refundAmount, $refundStatus);
+        $this->sendCustomerCancellationEmail($booking, $vehicleName, $reason, $refundAmount, $refundStatus, $cancellationFee);
 
         // Send email to owner
         $this->sendOwnerCancellationEmail($booking, $vehicleName, $reason);
 
         // Send email to admin
-        $this->sendAdminCancellationEmail($booking, $vehicleName, $reason, $refundAmount, $refundStatus);
+        $this->sendAdminCancellationEmail($booking, $vehicleName, $reason, $refundAmount, $refundStatus, $cancellationFee);
     }
 
-    private function sendCustomerCancellationEmail($booking, $vehicleName, $reason, $refundAmount, $refundStatus) {
+    private function sendCustomerCancellationEmail($booking, $vehicleName, $reason, $refundAmount, $refundStatus, $cancellationFee) {
         $viewUrl = generateLoginUrl("/customer/bookings");
         $viewButton = getEmailButton($viewUrl, 'View My Bookings', 'primary');
 
-        // Build refund message
+        // Build refund message based on new 50% cancellation fee policy
         $refundMessage = '';
-        if ($refundStatus === 'full_refund') {
+        if ($refundStatus === 'partial_refund' && $refundAmount > 0) {
             $refundMessage = "
-            <div style='background: #e8f5e9; padding: 15px; border-left: 4px solid #4caf50; margin: 20px 0;'>
-                <p style='margin: 0;'><strong>✓ Full Refund:</strong> \$" . number_format($refundAmount, 2) . " AUD will be refunded to your original payment method within 5-7 business days.</p>
+            <div style='background: #fff3cd; padding: 20px; border-left: 4px solid #f39c12; margin: 20px 0;'>
+                <h3 style='margin-top: 0; color: #f39c12;'>💰 Refund Information</h3>
+                <p><strong>Original Booking Amount:</strong> \$" . number_format($booking['total_amount'], 2) . " AUD</p>
+                <p><strong>Cancellation Fee (50%):</strong> \$" . number_format($cancellationFee, 2) . " AUD</p>
+                <p><strong>Refund Amount (50%):</strong> <span style='color: #4caf50; font-weight: bold;'>\$" . number_format($refundAmount, 2) . " AUD</span></p>
+                <p style='margin: 10px 0 0 0; font-size: 14px;'><em>Your refund will be processed to your original payment method within 5-7 business days.</em></p>
+            </div>
+
+            <div style='background: #e3f2fd; padding: 15px; border-left: 4px solid #2196f3; margin: 20px 0;'>
+                <p style='margin: 0;'><strong>📋 Cancellation Policy:</strong> A 50% cancellation fee applies to all booking cancellations, regardless of when the cancellation is made. The remaining 50% is refunded to your original payment method.</p>
             </div>";
-        } elseif ($refundStatus === 'partial_refund') {
+        } elseif ($refundStatus === 'not_applicable') {
             $refundMessage = "
-            <div style='background: #fff3cd; padding: 15px; border-left: 4px solid #f39c12; margin: 20px 0;'>
-                <p style='margin: 0;'><strong>⚠ Partial Refund:</strong> \$" . number_format($refundAmount, 2) . " AUD (50%) will be refunded to your original payment method within 5-7 business days.</p>
-            </div>";
-        } elseif ($refundStatus === 'no_refund') {
-            $refundMessage = "
-            <div style='background: #ffebee; padding: 15px; border-left: 4px solid #e74c3c; margin: 20px 0;'>
-                <p style='margin: 0;'><strong>No Refund:</strong> As per our cancellation policy, bookings cancelled less than 24 hours in advance are not eligible for a refund.</p>
+            <div style='background: #f5f5f5; padding: 15px; border-left: 4px solid #9e9e9e; margin: 20px 0;'>
+                <p style='margin: 0;'><strong>No Payment:</strong> This booking was not paid, so no refund is applicable.</p>
             </div>";
         }
 
@@ -1058,7 +1050,7 @@ class AdminController {
         sendEmail($booking['owner_email'], "Booking Cancelled - {$vehicleName}", $body);
     }
 
-    private function sendAdminCancellationEmail($booking, $vehicleName, $reason, $refundAmount, $refundStatus) {
+    private function sendAdminCancellationEmail($booking, $vehicleName, $reason, $refundAmount, $refundStatus, $cancellationFee) {
         $viewUrl = generateLoginUrl("/admin/bookings");
         $viewButton = getEmailButton($viewUrl, 'View All Bookings', 'primary');
 
@@ -1079,7 +1071,8 @@ class AdminController {
                 <p><strong>Total Amount:</strong> \$" . number_format($booking['total_amount'], 2) . " AUD</p>
                 <p><strong>Payment Status:</strong> {$booking['payment_status']}</p>
                 <p><strong>Refund Status:</strong> {$refundStatus}</p>
-                " . ($refundAmount > 0 ? "<p><strong>Refund Amount:</strong> \$" . number_format($refundAmount, 2) . " AUD</p>" : "") . "
+                " . ($cancellationFee > 0 ? "<p><strong>Cancellation Fee (50%):</strong> \$" . number_format($cancellationFee, 2) . " AUD</p>" : "") . "
+                " . ($refundAmount > 0 ? "<p><strong>Refund Amount (50%):</strong> \$" . number_format($refundAmount, 2) . " AUD</p>" : "") . "
             </div>
 
             <div style='background: #fff; padding: 15px; border: 1px solid #ddd; margin: 20px 0;'>
