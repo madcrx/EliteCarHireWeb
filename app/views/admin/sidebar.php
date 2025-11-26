@@ -348,6 +348,11 @@ $isActive = function($path) use ($currentPath) {
                     <span>Notification Settings</span>
                     <small>Email Notifications</small>
                 </a>
+                <a href="/admin/system-config" class="nav-item <?= $isActive('/admin/system-config') ?>">
+                    <i class="fas fa-server"></i>
+                    <span>System Configuration</span>
+                    <small>Database, SMTP, API Keys</small>
+                </a>
             </div>
         </div>
 

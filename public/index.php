@@ -102,6 +102,12 @@ $router->post('/admin/settings/booking/save', 'AdminController@saveSettingsBooki
 $router->get('/admin/settings/notifications', 'AdminController@settingsNotifications');
 $router->post('/admin/settings/notifications/save', 'AdminController@saveSettingsNotifications');
 
+// Admin - System Configuration routes
+$router->get('/admin/system-config', 'AdminController@systemConfig');
+$router->post('/admin/system-config/save', 'AdminController@saveSystemConfig');
+$router->post('/admin/system-config/test-database', 'AdminController@testDatabaseConnection');
+$router->post('/admin/system-config/test-email', 'AdminController@testEmailConnection');
+
 // Admin - Logs routes
 $router->get('/admin/logs/payment', 'AdminController@logsPayment');
 $router->get('/admin/logs/email', 'AdminController@logsEmail');

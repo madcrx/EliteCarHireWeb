@@ -1649,4 +1649,226 @@ class AdminController {
 
         json(['success' => true, 'message' => 'Cache cleared successfully', 'cleared' => $cleared]);
     }
+
+    // ===== System Configuration =====
+
+    public function systemConfig() {
+        $pageTitle = 'System Configuration';
+        view('admin/system-config', compact('pageTitle'));
+    }
+
+    public function saveSystemConfig() {
+        requireAuth('admin');
+
+        // Verify CSRF token
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token. Please try again.');
+            redirect('/admin/system-config');
+        }
+
+        // Build configuration array from POST data
+        $config = [];
+
+        // Database Configuration
+        if (!empty($_POST['db_host'])) {
+            $config['database']['host'] = $_POST['db_host'];
+        }
+        if (!empty($_POST['db_port'])) {
+            $config['database']['port'] = (int)$_POST['db_port'];
+        }
+        if (!empty($_POST['db_name'])) {
+            $config['database']['name'] = $_POST['db_name'];
+        }
+        if (!empty($_POST['db_user'])) {
+            $config['database']['username'] = $_POST['db_user'];
+        }
+        if (!empty($_POST['db_password'])) {
+            $config['database']['password'] = $_POST['db_password'];
+        }
+        if (!empty($_POST['db_charset'])) {
+            $config['database']['charset'] = $_POST['db_charset'];
+        }
+
+        // Email Configuration
+        if (isset($_POST['smtp_enabled'])) {
+            $config['email']['smtp_enabled'] = $_POST['smtp_enabled'] === '1';
+        }
+        if (!empty($_POST['smtp_host'])) {
+            $config['email']['smtp_host'] = $_POST['smtp_host'];
+        }
+        if (!empty($_POST['smtp_port'])) {
+            $config['email']['smtp_port'] = (int)$_POST['smtp_port'];
+        }
+        if (!empty($_POST['smtp_username'])) {
+            $config['email']['smtp_username'] = $_POST['smtp_username'];
+        }
+        if (!empty($_POST['smtp_password'])) {
+            $config['email']['smtp_password'] = $_POST['smtp_password'];
+        }
+        if (!empty($_POST['smtp_encryption'])) {
+            $config['email']['smtp_encryption'] = $_POST['smtp_encryption'];
+        }
+        if (!empty($_POST['from_email'])) {
+            $config['email']['from_email'] = $_POST['from_email'];
+        }
+        if (!empty($_POST['from_name'])) {
+            $config['email']['from_name'] = $_POST['from_name'];
+        }
+
+        // Payment Configuration
+        if (!empty($_POST['stripe_mode'])) {
+            $config['payment']['stripe_mode'] = $_POST['stripe_mode'];
+        }
+        if (!empty($_POST['stripe_test_pk'])) {
+            $config['payment']['stripe_test_publishable_key'] = $_POST['stripe_test_pk'];
+        }
+        if (!empty($_POST['stripe_test_sk'])) {
+            $config['payment']['stripe_test_secret_key'] = $_POST['stripe_test_sk'];
+        }
+        if (!empty($_POST['stripe_live_pk'])) {
+            $config['payment']['stripe_live_publishable_key'] = $_POST['stripe_live_pk'];
+        }
+        if (!empty($_POST['stripe_live_sk'])) {
+            $config['payment']['stripe_live_secret_key'] = $_POST['stripe_live_sk'];
+        }
+        if (!empty($_POST['currency'])) {
+            $config['payment']['currency'] = $_POST['currency'];
+        }
+
+        // Application Configuration
+        if (!empty($_POST['app_name'])) {
+            $config['app']['name'] = $_POST['app_name'];
+        }
+        if (!empty($_POST['app_url'])) {
+            $config['app']['url'] = rtrim($_POST['app_url'], '/');
+        }
+        if (!empty($_POST['app_env'])) {
+            $config['app']['environment'] = $_POST['app_env'];
+        }
+        if (isset($_POST['app_debug'])) {
+            $config['app']['debug'] = $_POST['app_debug'] === '1';
+        }
+        if (!empty($_POST['app_timezone'])) {
+            $config['app']['timezone'] = $_POST['app_timezone'];
+        }
+        if (isset($_POST['commission_rate'])) {
+            $config['app']['commission_rate'] = (float)$_POST['commission_rate'];
+        }
+
+        // Security Configuration
+        if (!empty($_POST['session_secret'])) {
+            $config['security']['session_secret'] = $_POST['session_secret'];
+        }
+        if (!empty($_POST['session_lifetime'])) {
+            $config['security']['session_lifetime'] = (int)$_POST['session_lifetime'];
+        }
+        if (isset($_POST['csrf_enabled'])) {
+            $config['security']['csrf_protection'] = $_POST['csrf_enabled'] === '1';
+        }
+        if (!empty($_POST['max_login_attempts'])) {
+            $config['security']['max_login_attempts'] = (int)$_POST['max_login_attempts'];
+        }
+        if (!empty($_POST['lockout_duration'])) {
+            $config['security']['lockout_duration'] = (int)$_POST['lockout_duration'];
+        }
+
+        // Write configuration to custom.php file
+        $configFile = __DIR__ . '/../../config/custom.php';
+        $configContent = "<?php\n\nreturn " . var_export($config, true) . ";\n";
+
+        if (file_put_contents($configFile, $configContent)) {
+            logAudit('update_system_config', 'system', 0, ['sections' => array_keys($config)]);
+            flash('success', 'System configuration updated successfully. Some changes may require a server restart.');
+        } else {
+            flash('error', 'Failed to save configuration file. Please check file permissions.');
+        }
+
+        redirect('/admin/system-config');
+    }
+
+    public function testDatabaseConnection() {
+        header('Content-Type: application/json');
+
+        // Get database credentials from POST
+        $host = $_POST['host'] ?? config('database.host');
+        $port = $_POST['port'] ?? config('database.port', 3306);
+        $database = $_POST['database'] ?? config('database.name');
+        $username = $_POST['username'] ?? config('database.username');
+        $password = $_POST['password'] ?? config('database.password');
+
+        try {
+            $dsn = "mysql:host={$host};port={$port};dbname={$database};charset=utf8mb4";
+            $pdo = new \PDO($dsn, $username, $password, [
+                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
+                \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
+                \PDO::ATTR_TIMEOUT => 5
+            ]);
+
+            // Test query
+            $pdo->query("SELECT 1");
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'Database connection successful!'
+            ]);
+        } catch (\PDOException $e) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Connection failed: ' . $e->getMessage()
+            ]);
+        }
+        exit;
+    }
+
+    public function testEmailConnection() {
+        header('Content-Type: application/json');
+
+        // Get email from POST or use admin email
+        $testEmail = $_POST['test_email'] ?? authUser()['email'];
+
+        if (empty($testEmail)) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'No email address provided'
+            ]);
+            exit;
+        }
+
+        // Send test email
+        $subject = 'Elite Car Hire - Email Configuration Test';
+        $body = '
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #C5A253;">✓ Email Test Successful</h2>
+            <p>This is a test email from Elite Car Hire system configuration.</p>
+            <p>If you received this email, your SMTP configuration is working correctly.</p>
+            <p style="margin-top: 30px;">
+                <strong>Sent at:</strong> ' . date('Y-m-d H:i:s') . '<br>
+                <strong>Server:</strong> ' . ($_SERVER['SERVER_NAME'] ?? 'Unknown') . '
+            </p>
+        </div>
+        ';
+
+        try {
+            $result = sendEmail($testEmail, $subject, $body);
+
+            if ($result) {
+                echo json_encode([
+                    'success' => true,
+                    'message' => "Test email sent successfully to {$testEmail}"
+                ]);
+            } else {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Failed to send test email. Check email configuration and logs.'
+                ]);
+            }
+        } catch (\Exception $e) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ]);
+        }
+        exit;
+    }
 }
