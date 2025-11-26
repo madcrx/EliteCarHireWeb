@@ -202,7 +202,7 @@
             </div>
 
             <form method="POST" action="/admin/system-config/save">
-                <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+                <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
 
                 <!-- Database Configuration -->
                 <div id="tab-database" class="tab-content active">
