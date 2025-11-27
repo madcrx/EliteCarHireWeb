@@ -343,3 +343,89 @@ function getEmailButton($url, $text, $color = 'primary') {
     </table>
     ";
 }
+
+/**
+ * Track an email for reminder sending
+ *
+ * @param string $emailType Type of email (booking_request, vehicle_approval, etc.)
+ * @param string $entityType Entity type (booking, vehicle, pending_change, contact_submission)
+ * @param int $entityId ID of the related entity
+ * @param string $recipientEmail Email address of recipient
+ * @param string $subject Email subject line
+ * @return int|false The reminder ID or false on failure
+ */
+function trackEmailForReminder($emailType, $entityType, $entityId, $recipientEmail, $subject) {
+    try {
+        db()->execute(
+            "INSERT INTO email_reminders (email_type, entity_type, entity_id, recipient_email, subject, sent_at)
+             VALUES (?, ?, ?, ?, ?, NOW())",
+            [$emailType, $entityType, $entityId, $recipientEmail, $subject]
+        );
+        return db()->lastInsertId();
+    } catch (Exception $e) {
+        error_log("Failed to track email for reminder: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Mark an email reminder as responded to
+ *
+ * @param string $entityType Entity type
+ * @param int $entityId Entity ID
+ * @return bool Success status
+ */
+function markEmailReminderResponded($entityType, $entityId) {
+    try {
+        db()->execute(
+            "UPDATE email_reminders
+             SET response_received = 1, response_received_at = NOW()
+             WHERE entity_type = ? AND entity_id = ? AND response_received = 0",
+            [$entityType, $entityId]
+        );
+        return true;
+    } catch (Exception $e) {
+        error_log("Failed to mark email reminder as responded: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Get emails that need reminders (sent >12 hours ago, no response, no reminder sent yet)
+ *
+ * @return array Array of email reminders needing to be sent
+ */
+function getEmailsNeedingReminders() {
+    try {
+        return db()->fetchAll(
+            "SELECT * FROM email_reminders
+             WHERE response_received = 0
+             AND reminder_sent_at IS NULL
+             AND sent_at < DATE_SUB(NOW(), INTERVAL 12 HOUR)
+             ORDER BY sent_at ASC"
+        );
+    } catch (Exception $e) {
+        error_log("Failed to get emails needing reminders: " . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Mark a reminder as sent
+ *
+ * @param int $reminderId Reminder ID
+ * @return bool Success status
+ */
+function markReminderSent($reminderId) {
+    try {
+        db()->execute(
+            "UPDATE email_reminders SET reminder_sent_at = NOW() WHERE id = ?",
+            [$reminderId]
+        );
+        return true;
+    } catch (Exception $e) {
+        error_log("Failed to mark reminder as sent: " . $e->getMessage());
+        return false;
+    }
+}
+

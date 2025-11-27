@@ -177,9 +177,54 @@ class OwnerController {
             }
         }
 
+        // Send notification email to admin
+        $this->sendVehicleSubmissionNotification($vehicleId, $ownerId, $data);
+
         logAudit('create_vehicle', 'vehicles', $vehicleId);
         flash('success', 'Vehicle listing submitted for approval');
         redirect('/owner/listings');
+    }
+
+    private function sendVehicleSubmissionNotification($vehicleId, $ownerId, $vehicleData) {
+        $owner = db()->fetch("SELECT * FROM users WHERE id = ?", [$ownerId]);
+        $vehicleName = "{$vehicleData['year']} {$vehicleData['make']} {$vehicleData['model']}";
+
+        $reviewUrl = generateLoginUrl("/admin/vehicles");
+        $reviewButton = getEmailButton($reviewUrl, 'Review Vehicle', 'primary');
+
+        $body = "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+            <h2 style='color: #C5A253;'>🚗 New Vehicle Submitted for Approval</h2>
+            <p>A new vehicle listing has been submitted and requires your review.</p>
+
+            <div style='background: #f5f5f5; padding: 20px; border-left: 4px solid #C5A253; margin: 20px 0;'>
+                <h3 style='margin-top: 0;'>Vehicle Details</h3>
+                <p><strong>Vehicle:</strong> {$vehicleName}</p>
+                <p><strong>Category:</strong> " . ucwords(str_replace('_', ' ', $vehicleData['category'])) . "</p>
+                <p><strong>Price:</strong> $" . number_format($vehicleData['hourly_rate'], 2) . "/hour</p>
+                <p><strong>Max Passengers:</strong> {$vehicleData['max_passengers']}</p>
+            </div>
+
+            <div style='background: #fff; padding: 15px; border: 1px solid #ddd; margin: 20px 0;'>
+                <h3 style='margin-top: 0;'>Owner Information</h3>
+                <p><strong>Name:</strong> {$owner['first_name']} {$owner['last_name']}</p>
+                <p><strong>Email:</strong> <a href='mailto:{$owner['email']}'>{$owner['email']}</a></p>
+            </div>
+
+            <p><strong>Please review and approve or reject this vehicle listing.</strong></p>
+
+            {$reviewButton}
+
+            <p style='margin-top: 30px;'>- Elite Car Hire System</p>
+        </div>
+        ";
+
+        $vehiclesEmail = config('email.vehicle_approvals', 'vehicles@elitecarhire.au');
+        $subject = "New Vehicle Submission - {$vehicleName}";
+        sendEmail($vehiclesEmail, $subject, $body);
+
+        // Track this email for reminder sending
+        trackEmailForReminder('vehicle_approval', 'vehicle', $vehicleId, $vehiclesEmail, $subject);
     }
 
     public function editListing($id) {
@@ -415,6 +460,9 @@ class OwnerController {
             [$bookingId]
         );
 
+        // Mark the booking request email as responded
+        markEmailReminderResponded('booking', $bookingId);
+
         // Get full booking and vehicle details for email
         $fullBooking = db()->fetch(
             "SELECT b.*, v.year, v.make, v.model, v.hourly_rate,
@@ -521,6 +569,9 @@ class OwnerController {
              WHERE id = ?",
             [$bookingId]
         );
+
+        // Mark the booking request email as responded
+        markEmailReminderResponded('booking', $bookingId);
 
         // Get full booking and vehicle details for email
         $fullBooking = db()->fetch(

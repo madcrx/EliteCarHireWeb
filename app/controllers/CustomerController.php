@@ -223,6 +223,9 @@ class CustomerController {
         // Send confirmation email to customer
         $this->sendCancellationRequestConfirmationEmail($booking, $fullReason, $customerId);
 
+        // Send notification email to admin
+        $this->sendCancellationRequestNotificationToAdmin($changeId, $booking, $fullReason);
+
         logAudit('request_booking_cancellation_customer', 'bookings', $id, [
             'booking_reference' => $booking['booking_reference'],
             'reason' => $reason
@@ -305,5 +308,60 @@ class CustomerController {
         ";
 
         sendEmail($customer['email'], "Cancellation Request Received - {$booking['booking_reference']}", $body);
+    }
+
+    private function sendCancellationRequestNotificationToAdmin($changeId, $booking, $reason) {
+        $vehicleName = "{$booking['year']} {$booking['make']} {$booking['model']}";
+        $reviewUrl = generateLoginUrl("/admin/pending-changes");
+        $reviewButton = getEmailButton($reviewUrl, 'Review Request', 'primary');
+
+        $refundInfo = '';
+        if ($booking['payment_status'] === 'paid') {
+            $cancellationFee = $booking['total_amount'] * 0.5;
+            $refundAmount = $booking['total_amount'] * 0.5;
+            $refundInfo = "
+            <div style='background: #fff3cd; padding: 15px; border-left: 4px solid #f39c12; margin: 20px 0;'>
+                <p><strong>💰 Refund Details:</strong></p>
+                <p><strong>Cancellation Fee (50%):</strong> $" . number_format($cancellationFee, 2) . " AUD</p>
+                <p><strong>Refund Amount (50%):</strong> $" . number_format($refundAmount, 2) . " AUD</p>
+            </div>";
+        }
+
+        $body = "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+            <h2 style='color: #f39c12;'>📋 New Cancellation Request</h2>
+            <p>A customer has requested to cancel their booking and requires your review.</p>
+
+            <div style='background: #f5f5f5; padding: 20px; border-left: 4px solid #f39c12; margin: 20px 0;'>
+                <h3 style='margin-top: 0;'>Booking Details</h3>
+                <p><strong>Booking Reference:</strong> {$booking['booking_reference']}</p>
+                <p><strong>Vehicle:</strong> {$vehicleName}</p>
+                <p><strong>Date:</strong> {$booking['booking_date']}</p>
+                <p><strong>Time:</strong> {$booking['start_time']} - {$booking['end_time']}</p>
+                <p><strong>Total Amount:</strong> $" . number_format($booking['total_amount'], 2) . " AUD</p>
+                <p><strong>Payment Status:</strong> {$booking['payment_status']}</p>
+            </div>
+
+            {$refundInfo}
+
+            <div style='background: #fff; padding: 15px; border: 1px solid #ddd; margin: 20px 0;'>
+                <h3 style='margin-top: 0;'>Cancellation Reason:</h3>
+                <p style='white-space: pre-wrap;'>" . htmlspecialchars($reason) . "</p>
+            </div>
+
+            <p><strong>Please review and approve or reject this cancellation request.</strong></p>
+
+            {$reviewButton}
+
+            <p style='margin-top: 30px;'>- Elite Car Hire System</p>
+        </div>
+        ";
+
+        $cancellationsEmail = config('email.cancellations', 'cancellations@elitecarhire.au');
+        $subject = "Cancellation Request - {$booking['booking_reference']}";
+        sendEmail($cancellationsEmail, $subject, $body);
+
+        // Track this email for reminder sending
+        trackEmailForReminder('cancellation_request', 'pending_change', $changeId, $cancellationsEmail, $subject);
     }
 }

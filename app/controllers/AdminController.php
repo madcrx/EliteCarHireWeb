@@ -268,6 +268,9 @@ class AdminController {
         logAudit('approve_vehicle', 'vehicles', $id);
         createNotification($vehicle['owner_id'], 'approval', 'Vehicle Approved', 'Your vehicle listing has been approved!');
 
+        // Mark the vehicle approval request email as responded
+        markEmailReminderResponded('vehicle', $id);
+
         // Send approval email
         $this->sendVehicleApprovalEmail($vehicle);
 
@@ -296,6 +299,9 @@ class AdminController {
         db()->execute("UPDATE vehicles SET status = 'rejected', rejection_reason = ? WHERE id = ?", [$reason, $id]);
         logAudit('reject_vehicle', 'vehicles', $id, null, ['reason' => $reason]);
         createNotification($vehicle['owner_id'], 'rejection', 'Vehicle Rejected', 'Your vehicle listing has been rejected.');
+
+        // Mark the vehicle approval request email as responded
+        markEmailReminderResponded('vehicle', $id);
 
         // Send rejection email
         $this->sendVehicleRejectionEmail($vehicle, $reason);
@@ -915,6 +921,9 @@ class AdminController {
             db()->execute("UPDATE pending_changes SET status = 'approved', reviewed_by = ?, reviewed_at = NOW() WHERE id = ?",
                          [$_SESSION['user_id'], $id]);
 
+            // Mark the cancellation request email as responded
+            markEmailReminderResponded('pending_change', $id);
+
             createNotification($change['owner_id'], 'approval', 'Change Approved', 'Your submitted change has been approved.');
             logAudit('approve_pending_change', 'pending_changes', $id);
             flash('success', 'Change approved successfully');
@@ -1134,6 +1143,9 @@ class AdminController {
         // Update submission with reply
         db()->execute("UPDATE contact_submissions SET response_text = ?, responded_at = NOW(), responded_by = ?, status = 'responded' WHERE id = ?",
                      [$reply, $_SESSION['user_id'], $id]);
+
+        // Mark the contact form email as responded
+        markEmailReminderResponded('contact_submission', $id);
 
         // Send email to user
         $emailBody = "

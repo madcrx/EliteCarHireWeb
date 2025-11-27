@@ -176,7 +176,11 @@ class PublicController {
         ";
 
         $inquiriesEmail = config('email.contact_inquiries', 'inquiries@elitecarhire.au');
-        sendEmail($inquiriesEmail, "New Contact Inquiry: {$subject}", $body);
+        $emailSubject = "New Contact Inquiry: {$subject}";
+        sendEmail($inquiriesEmail, $emailSubject, $body);
+
+        // Track this email for reminder sending
+        trackEmailForReminder('contact_form', 'contact_submission', $submissionId, $inquiriesEmail, $emailSubject);
     }
 
     private function sendContactAutoReply($name, $email, $subject) {

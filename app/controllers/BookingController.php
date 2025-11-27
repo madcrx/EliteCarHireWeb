@@ -165,7 +165,11 @@ class BookingController {
         </div>
         ";
 
-        sendEmail($owner['email'], "New Booking Request - {$vehicleName}", $body);
+        $subject = "New Booking Request - {$vehicleName}";
+        sendEmail($owner['email'], $subject, $body);
+
+        // Track this email for reminder sending
+        trackEmailForReminder('booking_request', 'booking', $bookingId, $owner['email'], $subject);
     }
 
     private function sendAdminNewBookingEmail($customer, $owner, $vehicle, $reference, $date, $amount, $bookingId) {
