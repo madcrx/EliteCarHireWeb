@@ -194,7 +194,6 @@ class PublicController {
 
             <p>Our team typically responds within 24 hours during business days (Monday - Friday, 9 AM - 5 PM AEST).</p>
 
-            <p>If your inquiry is urgent, please call us at <strong>0406 907 849</strong>.</p>
 
             <p style='margin-top: 30px;'>Best regards,<br>
             <strong>Elite Car Hire Team</strong><br>

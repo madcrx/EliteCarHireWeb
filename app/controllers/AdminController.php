@@ -341,7 +341,7 @@ class AdminController {
                 </ul>
             </div>
 
-            <p>If you have any questions, please contact us at vehicles@elitecarhire.au or call 0406 907 849.</p>
+            <p>If you have any questions, please contact us at vehicles@elitecarhire.au</p>
 
             <p style='margin-top: 30px;'>Best regards,<br>
             <strong>Elite Car Hire Team</strong><br>
@@ -406,7 +406,7 @@ class AdminController {
 
             {$viewButton}
 
-            <p>If you have any questions about this decision or need clarification on the requirements, please contact us at vehicles@elitecarhire.au or call 0406 907 849.</p>
+            <p>If you have any questions about this decision or need clarification on the requirements, please contact us at vehicles@elitecarhire.au</p>
 
             <p style='margin-top: 30px;'>Best regards,<br>
             <strong>Elite Car Hire Team</strong><br>
@@ -990,7 +990,7 @@ class AdminController {
 
             <p>We're sorry this booking didn't work out. We hope to serve you again in the future.</p>
 
-            <p>If you have any questions about this cancellation, please contact us at support@elitecarhire.au or call 0406 907 849.</p>
+            <p>If you have any questions about this cancellation, please contact us at support@elitecarhire.au</p>
 
             <p style='margin-top: 30px;'>Best regards,<br>
             <strong>Elite Car Hire Team</strong><br>
@@ -1039,7 +1039,7 @@ class AdminController {
 
             {$viewButton}
 
-            <p>If you have any questions about this cancellation, please contact us at support@elitecarhire.au or call 0406 907 849.</p>
+            <p>If you have any questions about this cancellation, please contact us at support@elitecarhire.au</p>
 
             <p style='margin-top: 30px;'>Best regards,<br>
             <strong>Elite Car Hire Team</strong><br>
@@ -1144,7 +1144,6 @@ class AdminController {
                 " . nl2br(e($reply)) . "
             </div>
             <p>If you have any further questions, please don't hesitate to contact us.</p>
-            <p>Best regards,<br>Elite Car Hire Team<br>Phone: 0406 907 849<br>Email: support@elitecarhire.au</p>
         ";
 
         sendEmail($submission['email'], 'Re: ' . ($submission['subject'] ?? 'Your inquiry'), $emailBody);

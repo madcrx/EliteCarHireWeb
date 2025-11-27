@@ -323,7 +323,7 @@ class StripeWebhookController {
 
             <p><a href='" . url('/customer/bookings/' . $booking['id']) . "' style='display: inline-block; background: #C5A253; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; margin-top: 10px;'>Retry Payment</a></p>
 
-            <p>If you continue to experience issues, please contact us at support@elitecarhire.au or call 0406 907 849.</p>
+            <p>If you continue to experience issues, please contact us at support@elitecarhire.au</p>
 
             <p style='margin-top: 30px;'>Best regards,<br>
             <strong>Elite Car Hire Team</strong></p>

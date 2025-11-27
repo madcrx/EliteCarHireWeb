@@ -117,7 +117,7 @@ class BookingController {
 
             {$viewButton}
 
-            <p>If you have any questions, please contact us at support@elitecarhire.au or call 0406 907 849.</p>
+            <p>If you have any questions, please contact us at support@elitecarhire.au</p>
 
             <p style='margin-top: 30px;'>Best regards,<br>
             <strong>Elite Car Hire Team</strong><br>

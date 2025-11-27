@@ -71,7 +71,6 @@ try {
                 <div>
                     <h3>Elite Car Hire</h3>
                     <p>Melbourne's premier luxury vehicle hire service</p>
-                    <p><i class="fas fa-phone"></i> 0406 907 849</p>
                     <p><i class="fas fa-envelope"></i> support@elitecarhire.au</p>
                 </div>
                 <div>

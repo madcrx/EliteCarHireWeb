@@ -3,17 +3,11 @@
     <h1 style="text-align: center; color: var(--primary-gold); margin-bottom: 3rem;">Contact Us</h1>
     
     <div class="card">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
-            <div>
-                <h3><i class="fas fa-phone"></i> Phone</h3>
-                <p>0406 907 849</p>
-            </div>
-            <div>
-                <h3><i class="fas fa-envelope"></i> Email</h3>
-                <p>support@elitecarhire.au</p>
-            </div>
+        <div style="margin-bottom: 2rem;">
+            <h3><i class="fas fa-envelope"></i> Email</h3>
+            <p>support@elitecarhire.au</p>
         </div>
-        
+
         <h2>Send us a message</h2>
         <form method="POST" action="/contact/submit">
             <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">

@@ -83,17 +83,18 @@
             position: relative;
         }
         .password-field input {
-            padding-right: 40px;
+            width: calc(100% - 45px);
+            display: inline-block;
         }
         .toggle-password {
             position: absolute;
-            right: 10px;
-            top: 50%;
-            transform: translateY(-50%);
+            right: 0px;
+            bottom: 30px;
             cursor: pointer;
             background: none;
             border: none;
             font-size: 18px;
+            padding: 10px;
         }
         .btn-save {
             background: #4caf50;
