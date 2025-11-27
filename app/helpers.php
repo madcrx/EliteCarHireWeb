@@ -356,14 +356,21 @@ function getEmailButton($url, $text, $color = 'primary') {
  */
 function trackEmailForReminder($emailType, $entityType, $entityId, $recipientEmail, $subject) {
     try {
-        db()->execute(
+        // Silently fail if table doesn't exist (migration not run yet)
+        @db()->execute(
             "INSERT INTO email_reminders (email_type, entity_type, entity_id, recipient_email, subject, sent_at)
              VALUES (?, ?, ?, ?, ?, NOW())",
             [$emailType, $entityType, $entityId, $recipientEmail, $subject]
         );
-        return db()->lastInsertId();
+        return @db()->lastInsertId();
     } catch (Exception $e) {
-        error_log("Failed to track email for reminder: " . $e->getMessage());
+        // Don't log if it's just a missing table error
+        if (strpos($e->getMessage(), 'email_reminders') === false) {
+            error_log("Failed to track email for reminder: " . $e->getMessage());
+        }
+        return false;
+    } catch (Error $e) {
+        // Handle fatal errors gracefully
         return false;
     }
 }
@@ -377,7 +384,8 @@ function trackEmailForReminder($emailType, $entityType, $entityId, $recipientEma
  */
 function markEmailReminderResponded($entityType, $entityId) {
     try {
-        db()->execute(
+        // Silently fail if table doesn't exist (migration not run yet)
+        @db()->execute(
             "UPDATE email_reminders
              SET response_received = 1, response_received_at = NOW()
              WHERE entity_type = ? AND entity_id = ? AND response_received = 0",
@@ -385,7 +393,13 @@ function markEmailReminderResponded($entityType, $entityId) {
         );
         return true;
     } catch (Exception $e) {
-        error_log("Failed to mark email reminder as responded: " . $e->getMessage());
+        // Don't log if it's just a missing table error
+        if (strpos($e->getMessage(), 'email_reminders') === false) {
+            error_log("Failed to mark email reminder as responded: " . $e->getMessage());
+        }
+        return false;
+    } catch (Error $e) {
+        // Handle fatal errors gracefully
         return false;
     }
 }
@@ -397,7 +411,8 @@ function markEmailReminderResponded($entityType, $entityId) {
  */
 function getEmailsNeedingReminders() {
     try {
-        return db()->fetchAll(
+        // Silently fail if table doesn't exist (migration not run yet)
+        return @db()->fetchAll(
             "SELECT * FROM email_reminders
              WHERE response_received = 0
              AND reminder_sent_at IS NULL
@@ -405,7 +420,13 @@ function getEmailsNeedingReminders() {
              ORDER BY sent_at ASC"
         );
     } catch (Exception $e) {
-        error_log("Failed to get emails needing reminders: " . $e->getMessage());
+        // Don't log if it's just a missing table error
+        if (strpos($e->getMessage(), 'email_reminders') === false) {
+            error_log("Failed to get emails needing reminders: " . $e->getMessage());
+        }
+        return [];
+    } catch (Error $e) {
+        // Handle fatal errors gracefully
         return [];
     }
 }
@@ -418,13 +439,20 @@ function getEmailsNeedingReminders() {
  */
 function markReminderSent($reminderId) {
     try {
-        db()->execute(
+        // Silently fail if table doesn't exist (migration not run yet)
+        @db()->execute(
             "UPDATE email_reminders SET reminder_sent_at = NOW() WHERE id = ?",
             [$reminderId]
         );
         return true;
     } catch (Exception $e) {
-        error_log("Failed to mark reminder as sent: " . $e->getMessage());
+        // Don't log if it's just a missing table error
+        if (strpos($e->getMessage(), 'email_reminders') === false) {
+            error_log("Failed to mark reminder as sent: " . $e->getMessage());
+        }
+        return false;
+    } catch (Error $e) {
+        // Handle fatal errors gracefully
         return false;
     }
 }
