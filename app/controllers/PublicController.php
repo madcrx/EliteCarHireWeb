@@ -31,34 +31,20 @@ class PublicController {
 
         // Filter by date availability
         if (!empty($startDate) && !empty($endDate)) {
-            // Exclude vehicles that are booked during the requested period
+            // Only exclude vehicles that have confirmed bookings that overlap with the search period
+            // This checks if any part of the booking overlaps with the search range
             $sql .= " AND v.id NOT IN (
                         SELECT vehicle_id FROM bookings
                         WHERE status IN ('confirmed', 'in_progress')
-                        AND ((booking_date <= ? AND DATE_ADD(booking_date, INTERVAL duration_hours HOUR) >= ?)
-                             OR (booking_date <= ? AND DATE_ADD(booking_date, INTERVAL duration_hours HOUR) >= ?)
-                             OR (booking_date >= ? AND DATE_ADD(booking_date, INTERVAL duration_hours HOUR) <= ?))
+                        AND booking_date <= ?
+                        AND DATE_ADD(booking_date, INTERVAL duration_hours HOUR) >= ?
                     )";
             $params[] = $endDate;
             $params[] = $startDate;
-            $params[] = $startDate;
-            $params[] = $startDate;
-            $params[] = $startDate;
-            $params[] = $endDate;
 
-            // Exclude vehicles with blocked dates during the requested period
-            $sql .= " AND v.id NOT IN (
-                        SELECT vehicle_id FROM vehicle_blocked_dates
-                        WHERE ((start_date <= ? AND end_date >= ?)
-                               OR (start_date <= ? AND end_date >= ?)
-                               OR (start_date >= ? AND end_date <= ?))
-                    )";
-            $params[] = $endDate;
-            $params[] = $startDate;
-            $params[] = $endDate;
-            $params[] = $endDate;
-            $params[] = $startDate;
-            $params[] = $endDate;
+            // Note: We don't exclude vehicles with owner-blocked dates in the search results.
+            // Blocked dates are shown on the vehicle detail page calendar, allowing users
+            // to see partial availability and decide if it meets their needs.
         }
 
         $sql .= " ORDER BY v.created_at DESC";
