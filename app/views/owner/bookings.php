@@ -133,11 +133,15 @@
                                     </td>
                                     <td>
                                         <?php if ($booking['status'] === 'pending'): ?>
+                                            <button class="btn btn-primary" style="padding: 5px 15px; margin-bottom: 5px;"
+                                                    onclick="showEditPriceModal(<?= $booking['id'] ?>, '<?= e($booking['booking_reference']) ?>', <?= $booking['base_amount'] ?>, <?= $booking['additional_charges'] ?? 0 ?>, <?= $booking['total_amount'] ?>)">
+                                                <i class="fas fa-edit"></i> Edit Price
+                                            </button>
                                             <form method="POST" action="/owner/bookings/confirm" style="display: inline;">
                                                 <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
                                                 <input type="hidden" name="booking_id" value="<?= $booking['id'] ?>">
                                                 <button type="submit" class="btn btn-success" style="padding: 5px 15px;"
-                                                        onclick="return confirm('Confirm this booking?')">
+                                                        onclick="return confirm('Confirm this booking? Customer will receive payment link for $<?= number_format($booking['total_amount'], 2) ?>')">
                                                     <i class="fas fa-check"></i> Confirm
                                                 </button>
                                             </form>
@@ -168,6 +172,51 @@
                 </ul>
             </div>
         <?php endif; ?>
+    </div>
+</div>
+
+<!-- Edit Price Modal -->
+<div id="editPriceModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: white; padding: 2rem; border-radius: var(--border-radius); max-width: 500px; width: 90%;">
+        <h2 style="margin-top: 0;"><i class="fas fa-edit"></i> Edit Booking Price</h2>
+        <p style="color: var(--dark-gray); margin-bottom: 1.5rem;">
+            Adjust the booking price for <strong id="editPriceBookingRef"></strong>
+        </p>
+
+        <form method="POST" action="/owner/bookings/update-price" id="editPriceForm">
+            <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
+            <input type="hidden" name="booking_id" id="editPriceBookingId">
+
+            <div class="form-group">
+                <label>Base Amount (Read-only)</label>
+                <input type="text" id="editPriceBaseAmount" readonly style="background: #f8f9fa; cursor: not-allowed;">
+            </div>
+
+            <div class="form-group">
+                <label for="additional_charges">Additional Charges (Extra Travel, etc.)</label>
+                <input type="number" name="additional_charges" id="editPriceAdditionalCharges"
+                       step="0.01" min="0" value="0"
+                       oninput="updateTotalAmount()"
+                       placeholder="0.00">
+                <small style="color: var(--dark-gray); display: block; margin-top: 0.5rem;">
+                    Add any extra charges for excess travel or other additional services
+                </small>
+            </div>
+
+            <div class="form-group">
+                <label>Total Amount</label>
+                <input type="text" id="editPriceTotalAmount" readonly style="background: #e7f3e7; font-weight: bold; font-size: 1.2rem; color: var(--success); cursor: not-allowed;">
+            </div>
+
+            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary" onclick="closeEditPriceModal()">
+                    Cancel
+                </button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Update Price
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -528,7 +577,37 @@ function changeMonth(delta) {
     renderCalendar();
 }
 
+// Edit Price Modal Functions
+let currentBaseAmount = 0;
+
+function showEditPriceModal(bookingId, bookingRef, baseAmount, additionalCharges, totalAmount) {
+    currentBaseAmount = parseFloat(baseAmount);
+    document.getElementById('editPriceBookingId').value = bookingId;
+    document.getElementById('editPriceBookingRef').textContent = bookingRef;
+    document.getElementById('editPriceBaseAmount').value = '$' + baseAmount.toFixed(2);
+    document.getElementById('editPriceAdditionalCharges').value = parseFloat(additionalCharges).toFixed(2);
+    document.getElementById('editPriceTotalAmount').value = '$' + totalAmount.toFixed(2);
+    document.getElementById('editPriceModal').style.display = 'flex';
+}
+
+function closeEditPriceModal() {
+    document.getElementById('editPriceModal').style.display = 'none';
+    document.getElementById('editPriceForm').reset();
+}
+
+function updateTotalAmount() {
+    const additionalCharges = parseFloat(document.getElementById('editPriceAdditionalCharges').value) || 0;
+    const totalAmount = currentBaseAmount + additionalCharges;
+    document.getElementById('editPriceTotalAmount').value = '$' + totalAmount.toFixed(2);
+}
+
 // Close modals on outside click
+document.getElementById('editPriceModal')?.addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeEditPriceModal();
+    }
+});
+
 document.getElementById('cancelModal')?.addEventListener('click', function(e) {
     if (e.target === this) {
         closeCancelModal();

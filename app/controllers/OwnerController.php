@@ -357,6 +357,58 @@ class OwnerController {
         view('owner/bookings', compact('bookings', 'status', 'view', 'blockedDates', 'statusCounts'));
     }
 
+    public function updateBookingPrice() {
+        requireAuth('owner');
+
+        // Verify CSRF token
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token. Please try again.');
+            redirect('/owner/bookings');
+        }
+
+        $bookingId = $_POST['booking_id'] ?? '';
+        $additionalCharges = floatval($_POST['additional_charges'] ?? 0);
+        $ownerId = $_SESSION['user_id'];
+
+        // Verify booking belongs to owner
+        $booking = db()->fetch(
+            "SELECT b.*, v.make, v.model
+             FROM bookings b
+             JOIN vehicles v ON b.vehicle_id = v.id
+             WHERE b.id = ? AND b.owner_id = ?",
+            [$bookingId, $ownerId]
+        );
+
+        if (!$booking) {
+            flash('error', 'Booking not found or access denied');
+            redirect('/owner/bookings');
+        }
+
+        if ($booking['status'] !== 'pending') {
+            flash('error', 'Only pending bookings can have their price edited');
+            redirect('/owner/bookings');
+        }
+
+        // Calculate new total amount
+        $newTotalAmount = $booking['base_amount'] + $additionalCharges;
+
+        // Update booking with new charges
+        db()->execute(
+            "UPDATE bookings SET additional_charges = ?, total_amount = ?, updated_at = NOW()
+             WHERE id = ?",
+            [$additionalCharges, $newTotalAmount, $bookingId]
+        );
+
+        logAudit('update_booking_price', 'bookings', $bookingId, [
+            'additional_charges' => $additionalCharges,
+            'new_total' => $newTotalAmount
+        ]);
+
+        flash('success', 'Booking price updated successfully! New total: $' . number_format($newTotalAmount, 2));
+        redirect('/owner/bookings');
+    }
+
     public function confirmBooking() {
         requireAuth('owner');
 
