@@ -99,7 +99,27 @@
                                 <label>Pickup Location</label>
                                 <input type="text" name="pickup_location" placeholder="Melbourne, VIC" required>
                             </div>
-                            
+
+                            <div class="form-group">
+                                <label>Destination 1 <small style="color: var(--dark-gray);">(Optional)</small></label>
+                                <input type="text" name="destination_1" placeholder="First destination (optional)">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Destination 2 <small style="color: var(--dark-gray);">(Optional)</small></label>
+                                <input type="text" name="destination_2" placeholder="Second destination (optional)">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Destination 3 <small style="color: var(--dark-gray);">(Optional)</small></label>
+                                <input type="text" name="destination_3" placeholder="Third destination (optional)">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Drop Off Location <small style="color: var(--dark-gray);">(Optional)</small></label>
+                                <input type="text" name="drop_off_location" placeholder="Final drop-off location (optional)">
+                            </div>
+
                             <div class="form-group">
                                 <label>Event Type</label>
                                 <select name="event_type">
