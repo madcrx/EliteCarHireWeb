@@ -1,8 +1,9 @@
 <?php ob_start(); ?>
 <style>
+/* Match Bookings Calendar styling */
 .calendar-container {
     background: white;
-    border-radius: var(--border-radius);
+    border: 1px solid #ccc;
     overflow: hidden;
 }
 
@@ -10,9 +11,8 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1.5rem;
-    background: var(--primary-gold);
-    color: white;
+    padding: 1rem 1.5rem;
+    background: #d9d9d9;
 }
 
 .calendar-nav {
@@ -22,37 +22,40 @@
 }
 
 .calendar-nav button {
-    background: rgba(255,255,255,0.2);
+    background: transparent;
     border: none;
-    color: white;
+    color: #666;
+    font-size: 1.5rem;
     padding: 0.5rem 1rem;
-    border-radius: var(--border-radius);
     cursor: pointer;
-    transition: all 0.3s;
+    transition: color 0.2s;
 }
 
 .calendar-nav button:hover {
-    background: rgba(255,255,255,0.3);
+    color: #333;
 }
 
 .calendar-month {
     font-size: 1.5rem;
-    font-weight: bold;
+    font-weight: 600;
+    color: #666;
+    margin: 0;
 }
 
 .calendar-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 1px;
-    background: var(--medium-gray);
+    width: 100%;
+    min-width: 700px;
 }
 
 .calendar-day-header {
-    background: var(--light-gray);
+    background: #f0f0f0;
+    color: #666;
     padding: 1rem;
     text-align: center;
-    font-weight: bold;
-    color: var(--dark-gray);
+    font-weight: 600;
+    border-bottom: 1px solid #ccc;
 }
 
 .calendar-day {
@@ -62,10 +65,11 @@
     position: relative;
     cursor: pointer;
     transition: background 0.2s;
+    border: 1px solid #e0e0e0;
 }
 
 .calendar-day:hover {
-    background: var(--light-gray);
+    background: #f8f8f8;
 }
 
 .calendar-day.other-month {
@@ -77,8 +81,9 @@
 }
 
 .calendar-day-number {
-    font-weight: bold;
+    font-weight: 600;
     margin-bottom: 0.5rem;
+    color: #666;
 }
 
 .calendar-day-blocks {
