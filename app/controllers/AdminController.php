@@ -565,6 +565,8 @@ class AdminController {
             redirect('/admin/settings');
         }
 
+        $logoTitle = $_POST['logo_title'] ?? 'Company Logo';
+
         // Check if file was uploaded
         if (!isset($_FILES['logo_file']) || $_FILES['logo_file']['error'] !== UPLOAD_ERR_OK) {
             flash('error', 'No file uploaded or upload error occurred');
@@ -593,20 +595,11 @@ class AdminController {
             mkdir($uploadDir, 0755, true);
         }
 
-        // Generate filename
+        // Generate unique filename
         $extension = pathinfo($_FILES['logo_file']['name'], PATHINFO_EXTENSION);
-        $filename = 'company-logo.' . $extension;
+        $filename = 'logo-' . time() . '-' . uniqid() . '.' . $extension;
         $uploadPath = $uploadDir . $filename;
         $webPath = '/storage/uploads/logo/' . $filename;
-
-        // Delete old logo if exists
-        $currentLogo = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'company_logo'");
-        if ($currentLogo && $currentLogo['setting_value']) {
-            $oldPath = __DIR__ . '/../../..' . $currentLogo['setting_value'];
-            if (file_exists($oldPath)) {
-                @unlink($oldPath);
-            }
-        }
 
         // Move uploaded file
         if (!move_uploaded_file($_FILES['logo_file']['tmp_name'], $uploadPath)) {
@@ -614,21 +607,32 @@ class AdminController {
             redirect('/admin/settings');
         }
 
-        // Update database
-        $existing = db()->fetch("SELECT id FROM settings WHERE setting_key = 'company_logo'");
-        if ($existing) {
-            db()->execute("UPDATE settings SET setting_value = ?, updated_at = NOW() WHERE setting_key = 'company_logo'", [$webPath]);
-        } else {
-            db()->execute("INSERT INTO settings (setting_key, setting_value, created_at, updated_at) VALUES ('company_logo', ?, NOW(), NOW())", [$webPath]);
+        // Insert into site_images table
+        $imageKey = 'logo-' . time();
+        db()->execute("INSERT INTO site_images (image_key, title, image_path, image_type, uploaded_by)
+                       VALUES (?, ?, ?, 'logo', ?)",
+                     [$imageKey, $logoTitle, $webPath, $_SESSION['user_id']]);
+
+        $logoId = db()->lastInsertId();
+
+        // If this is the first logo, set it as active
+        $logoCount = db()->fetch("SELECT COUNT(*) as count FROM site_images WHERE image_type = 'logo'");
+        if ($logoCount['count'] == 1) {
+            $existing = db()->fetch("SELECT id FROM settings WHERE setting_key = 'active_logo_id'");
+            if ($existing) {
+                db()->execute("UPDATE settings SET setting_value = ? WHERE setting_key = 'active_logo_id'", [$logoId]);
+            } else {
+                db()->execute("INSERT INTO settings (setting_key, setting_value) VALUES ('active_logo_id', ?)", [$logoId]);
+            }
         }
 
-        logAudit('upload_company_logo', 'settings', null, ['logo_path' => $webPath]);
+        logAudit('upload_company_logo', 'site_images', $logoId, ['title' => $logoTitle, 'path' => $webPath]);
 
         flash('success', 'Company logo uploaded successfully');
         redirect('/admin/settings');
     }
 
-    public function removeLogo() {
+    public function setActiveLogo() {
         requireAuth('admin');
 
         // Verify CSRF token
@@ -638,26 +642,80 @@ class AdminController {
             redirect('/admin/settings');
         }
 
-        // Get current logo
-        $currentLogo = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'company_logo'");
-        if ($currentLogo && $currentLogo['setting_value']) {
-            // Delete file
-            $oldPath = __DIR__ . '/../../..' . $currentLogo['setting_value'];
-            if (file_exists($oldPath)) {
-                @unlink($oldPath);
-            }
+        $logoId = $_POST['logo_id'] ?? 0;
 
-            // Remove from database
-            db()->execute("DELETE FROM settings WHERE setting_key = 'company_logo'");
-
-            logAudit('remove_company_logo', 'settings', null);
-
-            flash('success', 'Company logo removed successfully');
-        } else {
-            flash('error', 'No logo to remove');
+        // Verify logo exists
+        $logo = db()->fetch("SELECT id FROM site_images WHERE id = ? AND image_type = 'logo'", [$logoId]);
+        if (!$logo) {
+            flash('error', 'Logo not found');
+            redirect('/admin/settings');
         }
 
+        // Update active logo setting
+        $existing = db()->fetch("SELECT id FROM settings WHERE setting_key = 'active_logo_id'");
+        if ($existing) {
+            db()->execute("UPDATE settings SET setting_value = ? WHERE setting_key = 'active_logo_id'", [$logoId]);
+        } else {
+            db()->execute("INSERT INTO settings (setting_key, setting_value) VALUES ('active_logo_id', ?)", [$logoId]);
+        }
+
+        logAudit('set_active_logo', 'settings', null, ['logo_id' => $logoId]);
+
+        flash('success', 'Active logo updated successfully');
         redirect('/admin/settings');
+    }
+
+    public function deleteLogo() {
+        requireAuth('admin');
+
+        // Verify CSRF token
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token. Please try again.');
+            redirect('/admin/settings');
+        }
+
+        $logoId = $_POST['logo_id'] ?? 0;
+
+        // Get logo
+        $logo = db()->fetch("SELECT * FROM site_images WHERE id = ? AND image_type = 'logo'", [$logoId]);
+        if (!$logo) {
+            flash('error', 'Logo not found');
+            redirect('/admin/settings');
+        }
+
+        // Check if this is the active logo
+        $activeLogo = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'active_logo_id'");
+        $isActive = ($activeLogo && $activeLogo['setting_value'] == $logoId);
+
+        // Delete file
+        $filePath = __DIR__ . '/../../..' . $logo['image_path'];
+        if (file_exists($filePath)) {
+            @unlink($filePath);
+        }
+
+        // Delete from database
+        db()->execute("DELETE FROM site_images WHERE id = ?", [$logoId]);
+
+        // If this was the active logo, set another one as active or clear the setting
+        if ($isActive) {
+            $newLogo = db()->fetch("SELECT id FROM site_images WHERE image_type = 'logo' ORDER BY created_at DESC LIMIT 1");
+            if ($newLogo) {
+                db()->execute("UPDATE settings SET setting_value = ? WHERE setting_key = 'active_logo_id'", [$newLogo['id']]);
+            } else {
+                db()->execute("DELETE FROM settings WHERE setting_key = 'active_logo_id'");
+            }
+        }
+
+        logAudit('delete_company_logo', 'site_images', $logoId, ['image_path' => $logo['image_path']]);
+
+        flash('success', 'Logo deleted successfully');
+        redirect('/admin/settings');
+    }
+
+    public function removeLogo() {
+        // Kept for backward compatibility - redirects to deleteLogo
+        $this->deleteLogo();
     }
 
     public function pendingChanges() {

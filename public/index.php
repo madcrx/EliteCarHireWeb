@@ -64,6 +64,8 @@ $router->post('/admin/cms/save', 'AdminController@saveCms');
 $router->get('/admin/settings', 'AdminController@settings');
 $router->post('/admin/settings/save', 'AdminController@saveSettings');
 $router->post('/admin/settings/upload-logo', 'AdminController@uploadLogo');
+$router->post('/admin/settings/set-active-logo', 'AdminController@setActiveLogo');
+$router->post('/admin/settings/delete-logo', 'AdminController@deleteLogo');
 $router->post('/admin/settings/remove-logo', 'AdminController@removeLogo');
 $router->get('/admin/pending-changes', 'AdminController@pendingChanges');
 $router->post('/admin/pending-changes/{id}/approve', 'AdminController@approvePendingChange');

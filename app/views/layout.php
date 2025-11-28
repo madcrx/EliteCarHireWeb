@@ -1,8 +1,13 @@
 <?php
-// Get company logo if set
+// Get active company logo from site_images table
 try {
-    $companyLogo = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'company_logo'");
-    $logoPath = $companyLogo['setting_value'] ?? null;
+    $activeLogoId = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'active_logo_id'");
+    if ($activeLogoId && $activeLogoId['setting_value']) {
+        $logoData = db()->fetch("SELECT image_path FROM site_images WHERE id = ? AND image_type = 'logo'", [$activeLogoId['setting_value']]);
+        $logoPath = $logoData['image_path'] ?? null;
+    } else {
+        $logoPath = null;
+    }
 } catch (\PDOException $e) {
     $logoPath = null;
 }

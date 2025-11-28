@@ -51,29 +51,66 @@
         </form>
 
         <div class="card" style="margin-top: 2rem;">
-            <h3><i class="fas fa-image"></i> Company Logo</h3>
+            <h3><i class="fas fa-image"></i> Company Logos</h3>
             <p style="color: var(--dark-gray); margin-bottom: 1.5rem;">
-                Upload a company logo to replace the "Elite Car Hire" text in the header. Recommended size: 200x60px, PNG with transparent background.
+                Upload multiple company logos and select which one to display. Recommended size: 200x60px, PNG with transparent background.
             </p>
 
             <?php
-            $currentLogo = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'company_logo'");
-            $logoPath = $currentLogo['setting_value'] ?? null;
+            // Get all uploaded logos from site_images table
+            $allLogos = db()->fetchAll("SELECT * FROM site_images WHERE image_type = 'logo' ORDER BY created_at DESC");
+            // Get active logo ID from settings
+            $activeLogo = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'active_logo_id'");
+            $activeLogoId = $activeLogo['setting_value'] ?? null;
             ?>
 
-            <?php if ($logoPath && file_exists(__DIR__ . '/../../..' . $logoPath)): ?>
+            <?php if (!empty($allLogos)): ?>
                 <div style="margin-bottom: 1.5rem; padding: 1rem; background: var(--light-gray); border-radius: var(--border-radius);">
-                    <p style="margin-bottom: 0.5rem;"><strong>Current Logo:</strong></p>
-                    <img src="<?= e($logoPath) ?>" alt="Company Logo" style="max-height: 60px; background: white; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                    <p style="margin-bottom: 1rem;"><strong>Uploaded Logos:</strong></p>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem;">
+                        <?php foreach ($allLogos as $logo): ?>
+                            <div style="padding: 1rem; background: white; border: <?= $logo['id'] == $activeLogoId ? '3px solid var(--primary-gold)' : '1px solid #ddd' ?>; border-radius: var(--border-radius); text-align: center;">
+                                <img src="<?= e($logo['image_path']) ?>" alt="<?= e($logo['title']) ?>"
+                                     style="max-height: 60px; max-width: 100%; margin-bottom: 0.5rem;">
+                                <p style="font-size: 0.85rem; margin: 0.5rem 0; color: var(--dark-gray);">
+                                    <?= e($logo['title']) ?>
+                                </p>
+                                <?php if ($logo['id'] == $activeLogoId): ?>
+                                    <span class="badge badge-success" style="display: block; margin-bottom: 0.5rem;">Active</span>
+                                <?php else: ?>
+                                    <form method="POST" action="/admin/settings/set-active-logo" style="display: inline;">
+                                        <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
+                                        <input type="hidden" name="logo_id" value="<?= $logo['id'] ?>">
+                                        <button type="submit" class="btn btn-primary" style="padding: 5px 10px; font-size: 0.8rem; width: 100%;">
+                                            Set as Active
+                                        </button>
+                                    </form>
+                                <?php endif; ?>
+                                <form method="POST" action="/admin/settings/delete-logo" style="display: inline; margin-top: 0.5rem;">
+                                    <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
+                                    <input type="hidden" name="logo_id" value="<?= $logo['id'] ?>">
+                                    <button type="submit" class="btn" style="padding: 5px 10px; font-size: 0.8rem; background: var(--danger); color: white; width: 100%; margin-top: 0.5rem;"
+                                            onclick="return confirm('Delete this logo?')">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </button>
+                                </form>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
                 </div>
             <?php else: ?>
                 <div style="margin-bottom: 1.5rem; padding: 1rem; background: var(--light-gray); border-radius: var(--border-radius);">
-                    <p style="color: var(--dark-gray);"><i class="fas fa-info-circle"></i> No logo uploaded. Using default "Elite Car Hire" text in header.</p>
+                    <p style="color: var(--dark-gray);"><i class="fas fa-info-circle"></i> No logos uploaded yet. Using default "Elite Car Hire" text in header.</p>
                 </div>
             <?php endif; ?>
 
             <form method="POST" action="/admin/settings/upload-logo" enctype="multipart/form-data">
                 <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
+
+                <div class="form-group">
+                    <label for="logo_title">Logo Name/Title</label>
+                    <input type="text" name="logo_title" id="logo_title" required placeholder="e.g., Main Logo, Dark Version, Light Version">
+                </div>
 
                 <div class="form-group">
                     <label for="logo_file">Select Logo Image</label>
@@ -83,24 +120,10 @@
                     </small>
                 </div>
 
-                <div style="display: flex; gap: 1rem;">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-upload"></i> Upload Logo
-                    </button>
-
-                    <?php if ($logoPath): ?>
-                        <button type="button" onclick="if(confirm('Remove logo and return to text header?')) { document.getElementById('removeLogo').submit(); }" class="btn" style="background: var(--dark-gray); color: white;">
-                            <i class="fas fa-trash"></i> Remove Logo
-                        </button>
-                    <?php endif; ?>
-                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-upload"></i> Upload New Logo
+                </button>
             </form>
-
-            <?php if ($logoPath): ?>
-                <form id="removeLogo" method="POST" action="/admin/settings/remove-logo" style="display: none;">
-                    <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
-                </form>
-            <?php endif; ?>
         </div>
 
         <div class="card" style="margin-top: 2rem;">
