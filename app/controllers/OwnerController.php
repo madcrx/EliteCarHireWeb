@@ -143,16 +143,17 @@ class OwnerController {
             'year' => $_POST['year'] ?? '',
             'color' => $_POST['color'] ?? '',
             'category' => $_POST['category'] ?? '',
+            'state' => $_POST['state'] ?? 'VIC',
             'description' => $_POST['description'] ?? '',
             'hourly_rate' => $_POST['hourly_rate'] ?? 0,
             'max_passengers' => $_POST['max_passengers'] ?? 4,
         ];
 
-        $sql = "INSERT INTO vehicles (owner_id, make, model, year, color, category, description, hourly_rate, max_passengers, status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')";
+        $sql = "INSERT INTO vehicles (owner_id, make, model, year, color, category, state, description, hourly_rate, max_passengers, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')";
 
         db()->execute($sql, [$ownerId, $data['make'], $data['model'], $data['year'], $data['color'],
-                            $data['category'], $data['description'], $data['hourly_rate'], $data['max_passengers']]);
+                            $data['category'], $data['state'], $data['description'], $data['hourly_rate'], $data['max_passengers']]);
 
         $vehicleId = db()->lastInsertId();
 
@@ -221,6 +222,7 @@ class OwnerController {
         $year = $_POST['year'] ?? '';
         $color = $_POST['color'] ?? '';
         $category = $_POST['category'] ?? '';
+        $state = $_POST['state'] ?? 'VIC';
         $description = $_POST['description'] ?? '';
         $hourlyRate = $_POST['hourly_rate'] ?? 0;
         $maxPassengers = $_POST['max_passengers'] ?? 4;
@@ -233,10 +235,10 @@ class OwnerController {
         }
 
         // Update vehicle
-        db()->execute("UPDATE vehicles SET make = ?, model = ?, year = ?, color = ?, category = ?,
+        db()->execute("UPDATE vehicles SET make = ?, model = ?, year = ?, color = ?, category = ?, state = ?,
                       description = ?, hourly_rate = ?, max_passengers = ?, registration_number = ?, updated_at = NOW()
                       WHERE id = ? AND owner_id = ?",
-                     [$make, $model, $year, $color, $category, $description, $hourlyRate, $maxPassengers, $registrationNumber, $id, $ownerId]);
+                     [$make, $model, $year, $color, $category, $state, $description, $hourlyRate, $maxPassengers, $registrationNumber, $id, $ownerId]);
 
         logAudit('update_vehicle', 'vehicles', $id, [
             'make' => $make,

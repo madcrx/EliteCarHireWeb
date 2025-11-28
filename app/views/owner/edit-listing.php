@@ -47,6 +47,21 @@
                     </div>
 
                     <div class="form-group">
+                        <label for="state">State/Territory *</label>
+                        <select name="state" id="state" required>
+                            <option value="">-- Select State --</option>
+                            <option value="NSW" <?= ($vehicle['state'] ?? '') === 'NSW' ? 'selected' : '' ?>>New South Wales (NSW)</option>
+                            <option value="VIC" <?= ($vehicle['state'] ?? 'VIC') === 'VIC' ? 'selected' : '' ?>>Victoria (VIC)</option>
+                            <option value="QLD" <?= ($vehicle['state'] ?? '') === 'QLD' ? 'selected' : '' ?>>Queensland (QLD)</option>
+                            <option value="SA" <?= ($vehicle['state'] ?? '') === 'SA' ? 'selected' : '' ?>>South Australia (SA)</option>
+                            <option value="WA" <?= ($vehicle['state'] ?? '') === 'WA' ? 'selected' : '' ?>>Western Australia (WA)</option>
+                            <option value="TAS" <?= ($vehicle['state'] ?? '') === 'TAS' ? 'selected' : '' ?>>Tasmania (TAS)</option>
+                            <option value="NT" <?= ($vehicle['state'] ?? '') === 'NT' ? 'selected' : '' ?>>Northern Territory (NT)</option>
+                            <option value="ACT" <?= ($vehicle['state'] ?? '') === 'ACT' ? 'selected' : '' ?>>Australian Capital Territory (ACT)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
                         <label for="max_passengers">Max Passengers</label>
                         <input type="number" name="max_passengers" id="max_passengers" value="<?= e($vehicle['max_passengers'] ?? 4) ?>" min="1" max="12">
                     </div>

@@ -47,6 +47,21 @@
                     </div>
 
                     <div class="form-group">
+                        <label for="state">State/Territory *</label>
+                        <select name="state" id="state" required>
+                            <option value="">-- Select State --</option>
+                            <option value="NSW">New South Wales (NSW)</option>
+                            <option value="VIC">Victoria (VIC)</option>
+                            <option value="QLD">Queensland (QLD)</option>
+                            <option value="SA">South Australia (SA)</option>
+                            <option value="WA">Western Australia (WA)</option>
+                            <option value="TAS">Tasmania (TAS)</option>
+                            <option value="NT">Northern Territory (NT)</option>
+                            <option value="ACT">Australian Capital Territory (ACT)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
                         <label for="max_passengers">Max Passengers</label>
                         <input type="number" name="max_passengers" id="max_passengers" min="1" max="12" value="4">
                     </div>
