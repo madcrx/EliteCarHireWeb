@@ -505,6 +505,163 @@ class OwnerController {
             [$booking['customer_id'], $notificationTitle, $notificationMessage]
         );
 
+        // Send email notification to customer
+        if ($additionalCharges > 0) {
+            // Email for additional charges requiring approval
+            $emailSubject = "Booking Update - Approval Required (Ref: {$booking['booking_reference']})";
+            $emailBody = "
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='UTF-8'>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); color: #FFD700; padding: 30px 20px; text-align: center; border-radius: 8px 8px 0 0; }
+        .content { background: #ffffff; padding: 30px; border: 1px solid #dee2e6; border-top: none; }
+        .alert { background: #fff3cd; border-left: 4px solid #ff9800; padding: 15px; margin: 20px 0; }
+        .price-breakdown { background: #f8f9fa; padding: 20px; border-radius: 4px; margin: 20px 0; }
+        .price-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #dee2e6; }
+        .price-total { font-size: 1.3em; font-weight: bold; color: #28a745; padding-top: 15px; }
+        .reason-box { background: #e7f3ff; border-left: 4px solid #0066cc; padding: 15px; margin: 20px 0; }
+        .button { display: inline-block; padding: 12px 30px; background: #ff9800; color: white; text-decoration: none; border-radius: 4px; margin: 10px 5px; }
+        .button-secondary { background: #dc3545; }
+        .footer { background: #f8f9fa; padding: 20px; text-align: center; font-size: 0.9em; color: #666; border-radius: 0 0 8px 8px; }
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='header'>
+            <h1 style='margin: 0; color: #FFD700;'>⚠️ Booking Update Required</h1>
+            <p style='margin: 10px 0 0 0; color: #ffffff;'>Elite Car Hire</p>
+        </div>
+
+        <div class='content'>
+            <div class='alert'>
+                <strong>Action Required:</strong> The owner has updated your booking with additional charges. Please review and approve to proceed.
+            </div>
+
+            <p>Dear {$booking['first_name']} {$booking['last_name']},</p>
+
+            <p>Your booking has been reviewed by the vehicle owner, and additional charges have been added to your booking.</p>
+
+            <p><strong>Booking Details:</strong></p>
+            <ul>
+                <li><strong>Reference:</strong> {$booking['booking_reference']}</li>
+                <li><strong>Vehicle:</strong> {$vehicleName}</li>
+                <li><strong>Date:</strong> " . date('l, F j, Y', strtotime($booking['booking_date'])) . "</li>
+            </ul>
+
+            <div class='price-breakdown'>
+                <h3 style='margin-top: 0;'>Price Breakdown</h3>
+                <div class='price-row'>
+                    <span>Original Booking Amount:</span>
+                    <strong>$" . number_format($booking['base_amount'], 2) . "</strong>
+                </div>
+                <div class='price-row' style='color: #ff9800;'>
+                    <span><strong>Additional Charges:</strong></span>
+                    <strong>+ $" . number_format($additionalCharges, 2) . "</strong>
+                </div>
+                <div class='price-row price-total'>
+                    <span>New Total Amount:</span>
+                    <span>$" . number_format($finalTotalAmount, 2) . "</span>
+                </div>
+            </div>
+
+            <div class='reason-box'>
+                <h4 style='margin-top: 0;'>Reason for Additional Charges:</h4>
+                <p style='margin: 0; white-space: pre-wrap;'>{$additionalChargesReason}</p>
+            </div>
+
+            <p><strong>What You Need to Do:</strong></p>
+            <ol>
+                <li>Log in to your Elite Car Hire account</li>
+                <li>Go to \"My Bookings\"</li>
+                <li>Click on \"Needs Approval\" to view this booking</li>
+                <li>Review the additional charges and reason</li>
+                <li>Choose to approve or reject the changes</li>
+            </ol>
+
+            <div style='text-align: center; margin: 30px 0;'>
+                <a href='" . config('app.url') . "/customer/bookings?status=awaiting_approval' class='button'>Review Booking Now</a>
+            </div>
+
+            <p style='font-size: 0.9em; color: #666;'>
+                <strong>Note:</strong> If you approve the changes, you'll proceed to payment for the updated total.
+                If you reject the changes, the booking will be cancelled.
+            </p>
+        </div>
+
+        <div class='footer'>
+            <p>This is an automated message from Elite Car Hire.</p>
+            <p>Please do not reply to this email.</p>
+            <p>If you have any questions, please contact us through your account dashboard.</p>
+        </div>
+    </div>
+</body>
+</html>";
+
+            sendEmail($booking['email'], $emailSubject, $emailBody);
+        } else {
+            // Email for direct confirmation (no additional charges)
+            $emailSubject = "Booking Confirmed - Payment Required (Ref: {$booking['booking_reference']})";
+            $emailBody = "
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='UTF-8'>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); color: #FFD700; padding: 30px 20px; text-align: center; border-radius: 8px 8px 0 0; }
+        .content { background: #ffffff; padding: 30px; border: 1px solid #dee2e6; border-top: none; }
+        .success { background: #d4edda; border-left: 4px solid #28a745; padding: 15px; margin: 20px 0; color: #155724; }
+        .button { display: inline-block; padding: 12px 30px; background: #28a745; color: white; text-decoration: none; border-radius: 4px; margin: 10px 5px; }
+        .footer { background: #f8f9fa; padding: 20px; text-align: center; font-size: 0.9em; color: #666; border-radius: 0 0 8px 8px; }
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='header'>
+            <h1 style='margin: 0; color: #FFD700;'>✓ Booking Confirmed</h1>
+            <p style='margin: 10px 0 0 0; color: #ffffff;'>Elite Car Hire</p>
+        </div>
+
+        <div class='content'>
+            <div class='success'>
+                <strong>Great News!</strong> Your booking has been confirmed by the vehicle owner.
+            </div>
+
+            <p>Dear {$booking['first_name']} {$booking['last_name']},</p>
+
+            <p>Your booking for <strong>{$vehicleName}</strong> has been confirmed!</p>
+
+            <p><strong>Booking Details:</strong></p>
+            <ul>
+                <li><strong>Reference:</strong> {$booking['booking_reference']}</li>
+                <li><strong>Vehicle:</strong> {$vehicleName}</li>
+                <li><strong>Date:</strong> " . date('l, F j, Y', strtotime($booking['booking_date'])) . "</li>
+                <li><strong>Total Amount:</strong> $" . number_format($finalTotalAmount, 2) . "</li>
+            </ul>
+
+            <p><strong>Next Step:</strong> Please proceed with payment to secure your booking.</p>
+
+            <div style='text-align: center; margin: 30px 0;'>
+                <a href='" . config('app.url') . "/customer/bookings' class='button'>Make Payment Now</a>
+            </div>
+        </div>
+
+        <div class='footer'>
+            <p>This is an automated message from Elite Car Hire.</p>
+            <p>Please do not reply to this email.</p>
+        </div>
+    </div>
+</body>
+</html>";
+
+            sendEmail($booking['email'], $emailSubject, $emailBody);
+        }
+
         // Prepare success message for owner
         $successMessage = '';
         if ($additionalCharges > 0) {
