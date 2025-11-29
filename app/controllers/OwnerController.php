@@ -420,11 +420,12 @@ class OwnerController {
         }
 
         $bookingId = $_POST['booking_id'] ?? '';
+        $additionalCharges = floatval($_POST['additional_charges'] ?? 0);
         $ownerId = $_SESSION['user_id'];
 
         // Verify booking belongs to owner
         $booking = db()->fetch(
-            "SELECT b.*, v.make, v.model, u.first_name, u.last_name
+            "SELECT b.*, v.make, v.model, u.first_name, u.last_name, u.email
              FROM bookings b
              JOIN vehicles v ON b.vehicle_id = v.id
              JOIN users u ON b.customer_id = u.id
@@ -442,12 +443,25 @@ class OwnerController {
             redirect('/owner/bookings');
         }
 
-        // Update booking status
+        // Calculate final total amount (base + any additional charges)
+        $finalTotalAmount = $booking['base_amount'] + $additionalCharges;
+
+        // Update booking with final price and confirm status
         db()->execute(
-            "UPDATE bookings SET status = 'confirmed', updated_at = NOW()
+            "UPDATE bookings SET
+                additional_charges = ?,
+                total_amount = ?,
+                status = 'confirmed',
+                updated_at = NOW()
              WHERE id = ?",
-            [$bookingId]
+            [$additionalCharges, $finalTotalAmount, $bookingId]
         );
+
+        // Log the confirmation
+        logAudit('confirm_booking', 'bookings', $bookingId, [
+            'additional_charges' => $additionalCharges,
+            'final_total' => $finalTotalAmount
+        ]);
 
         // Create notification for customer
         if (file_exists(__DIR__ . '/../helpers/notifications.php')) {
@@ -468,6 +482,16 @@ class OwnerController {
             }
         }
 
+        // Prepare success message with price information
+        $priceMessage = '';
+        if ($additionalCharges > 0) {
+            $priceMessage = ' Additional charges of $' . number_format($additionalCharges, 2) . ' added for excess travel. New total: $' . number_format($finalTotalAmount, 2) . '.';
+        }
+
+        // Send payment request/notification to customer
+        // TODO: Integrate with payment gateway (Stripe) to send payment link to customer
+        // For now, we'll send a notification with the updated amount
+
         // If payment is already made and booking time has started, transition to in_progress
         if ($booking['payment_status'] === 'paid') {
             if (file_exists(__DIR__ . '/../helpers/booking_automation.php')) {
@@ -475,27 +499,35 @@ class OwnerController {
                     require_once __DIR__ . '/../helpers/booking_automation.php';
                     if (function_exists('canTransitionToInProgress') && canTransitionToInProgress($bookingId)) {
                         transitionBookingToInProgress($bookingId);
-                        flash('success', 'Booking confirmed and started!');
+                        flash('success', 'Booking confirmed and started!' . $priceMessage);
                     } else {
-                        flash('success', 'Booking confirmed successfully! It will automatically start when the booking time begins.');
+                        flash('success', 'Booking confirmed successfully!' . $priceMessage . ' It will automatically start when the booking time begins.');
                     }
                 } catch (\Exception $e) {
                     error_log("Booking automation error in confirmBooking: " . $e->getMessage());
-                    flash('success', 'Booking confirmed successfully! It will automatically start when the booking time begins.');
+                    flash('success', 'Booking confirmed successfully!' . $priceMessage . ' It will automatically start when the booking time begins.');
                 } catch (\Error $e) {
                     error_log("Booking automation fatal error in confirmBooking: " . $e->getMessage());
-                    flash('success', 'Booking confirmed successfully! It will automatically start when the booking time begins.');
+                    flash('success', 'Booking confirmed successfully!' . $priceMessage . ' It will automatically start when the booking time begins.');
                 }
             } else {
-                flash('success', 'Booking confirmed successfully! It will automatically start when the booking time begins.');
+                flash('success', 'Booking confirmed successfully!' . $priceMessage . ' It will automatically start when the booking time begins.');
             }
         } else {
-            flash('success', 'Booking confirmed successfully! Waiting for customer payment.');
-        }
+            // Customer needs to pay - send them the updated total
+            flash('success', 'Booking confirmed!' . $priceMessage . ' Customer has been notified and will receive payment request for $' . number_format($finalTotalAmount, 2) . '.');
 
-        logAudit('confirm_booking', 'bookings', $bookingId, [
-            'booking_reference' => $booking['booking_reference']
-        ]);
+            // Create in-app notification for customer about payment
+            db()->execute(
+                "INSERT INTO notifications (user_id, title, message, type, created_at)
+                 VALUES (?, ?, ?, 'booking', NOW())",
+                [
+                    $booking['customer_id'],
+                    'Booking Confirmed - Payment Required',
+                    'Your booking for ' . $booking['make'] . ' ' . $booking['model'] . ' has been confirmed! Total amount: $' . number_format($finalTotalAmount, 2) . '. Please proceed with payment to secure your booking.'
+                ]
+            );
+        }
 
         redirect('/owner/bookings');
     }

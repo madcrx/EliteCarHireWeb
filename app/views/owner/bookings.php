@@ -91,18 +91,10 @@
                                     </td>
                                     <td>
                                         <?php if ($booking['status'] === 'pending'): ?>
-                                            <button class="btn btn-primary" style="padding: 5px 15px; margin-bottom: 5px;"
-                                                    onclick="showEditPriceModal(<?= $booking['id'] ?>, '<?= e($booking['booking_reference']) ?>', <?= $booking['base_amount'] ?>, <?= $booking['additional_charges'] ?? 0 ?>, <?= $booking['total_amount'] ?>)">
-                                                <i class="fas fa-edit"></i> Edit Price
+                                            <button class="btn btn-success" style="padding: 5px 15px; margin-bottom: 5px;"
+                                                    onclick="showConfirmBookingModal(<?= $booking['id'] ?>, '<?= e($booking['booking_reference']) ?>', <?= $booking['base_amount'] ?>, <?= $booking['additional_charges'] ?? 0 ?>, <?= $booking['total_amount'] ?>, '<?= e($booking['make'] . ' ' . $booking['model']) ?>')">
+                                                <i class="fas fa-check"></i> Confirm Booking
                                             </button>
-                                            <form method="POST" action="/owner/bookings/confirm" style="display: inline;">
-                                                <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
-                                                <input type="hidden" name="booking_id" value="<?= $booking['id'] ?>">
-                                                <button type="submit" class="btn btn-success" style="padding: 5px 15px;"
-                                                        onclick="return confirm('Confirm this booking? Customer will receive payment link for $<?= number_format($booking['total_amount'], 2) ?>')">
-                                                    <i class="fas fa-check"></i> Confirm
-                                                </button>
-                                            </form>
                                         <?php endif; ?>
 
                                         <?php if (in_array($booking['status'], ['pending', 'confirmed', 'in_progress'])): ?>
@@ -214,6 +206,77 @@
                 </button>
                 <button type="submit" class="btn btn-primary">
                     <i class="fas fa-save"></i> Update Price
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Confirm Booking Modal -->
+<div id="confirmBookingModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: white; padding: 2rem; border-radius: var(--border-radius); max-width: 600px; width: 90%;">
+        <h2 style="margin-top: 0;"><i class="fas fa-check-circle"></i> Confirm Booking</h2>
+        <p style="color: var(--dark-gray); margin-bottom: 1rem;">
+            Booking: <strong id="confirmBookingRef"></strong><br>
+            Vehicle: <strong id="confirmVehicleName"></strong>
+        </p>
+
+        <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 1rem; margin-bottom: 1.5rem;">
+            <strong>Important:</strong> You can add extra charges for excess travel before confirming. The updated total will be sent to the customer for payment.
+        </div>
+
+        <form method="POST" action="/owner/bookings/confirm" id="confirmBookingForm">
+            <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
+            <input type="hidden" name="booking_id" id="confirmBookingId">
+
+            <div class="form-group">
+                <label>Base Amount (Read-only)</label>
+                <div style="background: #f8f9fa; padding: 0.75rem; border-radius: 4px; border: 1px solid #dee2e6; font-size: 1.1rem; font-weight: 500;">
+                    $<span id="confirmBaseAmount"></span>
+                </div>
+                <small style="color: var(--dark-gray); display: block; margin-top: 0.5rem;">
+                    Original booking amount based on duration and vehicle rate
+                </small>
+            </div>
+
+            <div class="form-group">
+                <label for="confirm_additional_charges">Additional Charges for Excess Travel (Optional)</label>
+                <input type="number" name="additional_charges" id="confirm_additional_charges"
+                       step="0.01" min="0" value="0"
+                       oninput="updateConfirmTotalAmount()"
+                       placeholder="0.00"
+                       style="font-size: 1.1rem;">
+                <small style="color: var(--dark-gray); display: block; margin-top: 0.5rem;">
+                    Add any extra charges for excess travel or additional services
+                </small>
+            </div>
+
+            <div class="form-group">
+                <label>Final Total Amount</label>
+                <div style="background: #d4edda; padding: 1rem; border-radius: 4px; border: 2px solid #28a745; font-size: 1.4rem; font-weight: bold; color: #155724;">
+                    $<span id="confirmTotalAmount"></span>
+                </div>
+                <small style="color: var(--success); display: block; margin-top: 0.5rem; font-weight: 500;">
+                    This is the amount the customer will be charged
+                </small>
+            </div>
+
+            <div style="background: #e7f3ff; border-left: 4px solid #0066cc; padding: 1rem; margin-bottom: 1.5rem;">
+                <strong>What happens next:</strong>
+                <ul style="margin: 0.5rem 0 0 1.5rem; padding: 0;">
+                    <li>Booking status changes to "Confirmed"</li>
+                    <li>Customer receives notification with final amount</li>
+                    <li>Customer will be prompted to complete payment</li>
+                    <li>Booking becomes active once payment is received</li>
+                </ul>
+            </div>
+
+            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary" onclick="closeConfirmBookingModal()">
+                    Cancel
+                </button>
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-check"></i> Confirm Booking & Notify Customer
                 </button>
             </div>
         </form>
@@ -601,10 +664,45 @@ function updateTotalAmount() {
     document.getElementById('editPriceTotalAmount').value = '$' + totalAmount.toFixed(2);
 }
 
+// Confirm Booking Modal Functions
+let confirmBaseAmount = 0;
+
+function showConfirmBookingModal(bookingId, bookingRef, baseAmount, additionalCharges, totalAmount, vehicleName) {
+    confirmBaseAmount = parseFloat(baseAmount);
+    document.getElementById('confirmBookingId').value = bookingId;
+    document.getElementById('confirmBookingRef').textContent = bookingRef;
+    document.getElementById('confirmVehicleName').textContent = vehicleName;
+    document.getElementById('confirmBaseAmount').textContent = baseAmount.toFixed(2);
+    document.getElementById('confirm_additional_charges').value = parseFloat(additionalCharges).toFixed(2);
+
+    // Calculate and show initial total
+    const initialTotal = parseFloat(baseAmount) + parseFloat(additionalCharges);
+    document.getElementById('confirmTotalAmount').textContent = initialTotal.toFixed(2);
+
+    document.getElementById('confirmBookingModal').style.display = 'flex';
+}
+
+function closeConfirmBookingModal() {
+    document.getElementById('confirmBookingModal').style.display = 'none';
+    document.getElementById('confirmBookingForm').reset();
+}
+
+function updateConfirmTotalAmount() {
+    const additionalCharges = parseFloat(document.getElementById('confirm_additional_charges').value) || 0;
+    const totalAmount = confirmBaseAmount + additionalCharges;
+    document.getElementById('confirmTotalAmount').textContent = totalAmount.toFixed(2);
+}
+
 // Close modals on outside click
 document.getElementById('editPriceModal')?.addEventListener('click', function(e) {
     if (e.target === this) {
         closeEditPriceModal();
+    }
+});
+
+document.getElementById('confirmBookingModal')?.addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeConfirmBookingModal();
     }
 });
 
