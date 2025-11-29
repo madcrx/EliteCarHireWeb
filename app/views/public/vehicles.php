@@ -113,6 +113,9 @@
                 <div class="vehicle-card-body">
                     <h3><?= e($vehicle['make']) ?> <?= e($vehicle['model']) ?></h3>
                     <p><?= e($vehicle['year']) ?> • <?= ucwords(str_replace('_', ' ', $vehicle['category'])) ?></p>
+                    <p style="color: var(--dark-gray); font-size: 0.9rem; margin: 0.5rem 0;">
+                        <i class="fas fa-map-marker-alt"></i> <?= e($vehicle['state'] ?? 'VIC') ?>
+                    </p>
                     <p style="color: var(--primary-gold); font-size: 1.3rem; font-weight: bold; margin: 1rem 0;">
                         <?= formatMoney($vehicle['hourly_rate']) ?>/hour
                     </p>
