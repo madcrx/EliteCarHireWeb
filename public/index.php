@@ -76,6 +76,24 @@ $router->post('/admin/contact-submissions/{id}/delete', 'AdminController@deleteC
 $router->get('/admin/images', 'ImageController@index');
 $router->post('/admin/images/upload', 'ImageController@upload');
 $router->post('/admin/images/revert', 'ImageController@revertToDefault');
+$router->get('/admin/clear-cache', 'AdminController@clearCache');
+
+// Admin stub pages - features under development
+$router->get('/admin/email-settings', 'AdminController@emailSettings');
+$router->get('/admin/email-queue', 'AdminController@emailQueue');
+$router->get('/admin/reports/revenue', 'AdminController@revenueReports');
+$router->get('/admin/reports/bookings', 'AdminController@bookingAnalytics');
+$router->get('/admin/reports/vehicles', 'AdminController@vehiclePerformance');
+$router->get('/admin/reports/users', 'AdminController@userStatistics');
+$router->get('/admin/settings/payment', 'AdminController@paymentSettings');
+$router->get('/admin/settings/email', 'AdminController@emailConfiguration');
+$router->get('/admin/settings/commission', 'AdminController@commissionRates');
+$router->get('/admin/settings/booking', 'AdminController@bookingSettings');
+$router->get('/admin/settings/notifications', 'AdminController@notificationSettings');
+$router->get('/admin/settings/system', 'AdminController@systemConfiguration');
+$router->get('/admin/logs/payments', 'AdminController@paymentLogs');
+$router->get('/admin/logs/emails', 'AdminController@emailLogs');
+$router->get('/admin/logs/login', 'AdminController@loginHistory');
 
 // Owner routes
 $router->get('/owner/dashboard', 'OwnerController@dashboard');

@@ -872,4 +872,92 @@ class AdminController {
         flash('success', 'Contact submission deleted successfully');
         redirect('/admin/contact-submissions');
     }
+
+    public function clearCache() {
+        requireAuth('admin');
+
+        $cleared = [];
+
+        // Clear OPcache if available
+        if (function_exists('opcache_reset')) {
+            opcache_reset();
+            $cleared[] = 'OPcache cleared';
+        }
+
+        // Clear file stat cache
+        clearstatcache(true);
+        $cleared[] = 'File stat cache cleared';
+
+        // Clear realpath cache
+        if (function_exists('clearstatcache')) {
+            clearstatcache(true);
+            $cleared[] = 'Realpath cache cleared';
+        }
+
+        logAudit('clear_cache', 'system', null, ['caches' => $cleared]);
+
+        flash('success', 'System cache cleared successfully: ' . implode(', ', $cleared));
+        redirect('/admin/dashboard');
+    }
+
+    // Stub pages for features under development
+    public function emailSettings() {
+        view('admin/email-settings');
+    }
+
+    public function emailQueue() {
+        view('admin/email-queue');
+    }
+
+    public function revenueReports() {
+        view('admin/reports/revenue');
+    }
+
+    public function bookingAnalytics() {
+        view('admin/reports/bookings');
+    }
+
+    public function vehiclePerformance() {
+        view('admin/reports/vehicles');
+    }
+
+    public function userStatistics() {
+        view('admin/reports/users');
+    }
+
+    public function paymentSettings() {
+        view('admin/settings/payment');
+    }
+
+    public function emailConfiguration() {
+        view('admin/settings/email');
+    }
+
+    public function commissionRates() {
+        view('admin/settings/commission');
+    }
+
+    public function bookingSettings() {
+        view('admin/settings/booking');
+    }
+
+    public function notificationSettings() {
+        view('admin/settings/notifications');
+    }
+
+    public function systemConfiguration() {
+        view('admin/settings/system');
+    }
+
+    public function paymentLogs() {
+        view('admin/logs/payments');
+    }
+
+    public function emailLogs() {
+        view('admin/logs/emails');
+    }
+
+    public function loginHistory() {
+        view('admin/logs/login');
+    }
 }

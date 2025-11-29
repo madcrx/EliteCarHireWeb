@@ -4,6 +4,11 @@
     <div class="main-content">
         <div class="dashboard-header">
             <h1>Admin Dashboard</h1>
+            <div style="display: flex; gap: 1rem; align-items: center;">
+                <a href="/admin/clear-cache" class="btn btn-secondary" onclick="return confirm('Clear system cache? This will reset OPcache and file caches.')">
+                    <i class="fas fa-sync-alt"></i> Clear Cache
+                </a>
+            </div>
         </div>
         
         <div class="stats-grid">
