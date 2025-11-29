@@ -13,7 +13,7 @@ ini_set('display_errors', 1);
 
 require_once __DIR__ . '/../app/Database.php';
 require_once __DIR__ . '/../app/helpers.php';
-require_once __DIR__ . '/../helpers/email_sender.php';
+require_once __DIR__ . '/../app/helpers/email_sender.php';
 
 ?>
 <!DOCTYPE html>
