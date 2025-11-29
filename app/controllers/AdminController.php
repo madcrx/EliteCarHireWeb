@@ -900,31 +900,6 @@ class AdminController {
         redirect('/admin/dashboard');
     }
 
-    // Stub pages for features under development
-    public function emailSettings() {
-        view('admin/email-settings');
-    }
-
-    public function emailQueue() {
-        view('admin/email-queue');
-    }
-
-    public function revenueReports() {
-        view('admin/reports/revenue');
-    }
-
-    public function bookingAnalytics() {
-        view('admin/reports/bookings');
-    }
-
-    public function vehiclePerformance() {
-        view('admin/reports/vehicles');
-    }
-
-    public function userStatistics() {
-        view('admin/reports/users');
-    }
-
     public function paymentSettings() {
         // Load payment-related settings
         $stripeTestKey = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'stripe_test_secret_key'")['setting_value'] ?? '';
@@ -1207,15 +1182,4 @@ class AdminController {
         redirect('/admin/settings/system');
     }
 
-    public function paymentLogs() {
-        view('admin/logs/payments');
-    }
-
-    public function emailLogs() {
-        view('admin/logs/emails');
-    }
-
-    public function loginHistory() {
-        view('admin/logs/login');
-    }
 }
