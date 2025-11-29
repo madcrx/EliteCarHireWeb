@@ -12,21 +12,21 @@ $activeDisputes = db()->fetch("SELECT COUNT(*) as count FROM disputes WHERE stat
         <li><a href="/admin/dashboard" class="<?= $_SERVER['REQUEST_URI'] === '/admin/dashboard' ? 'active' : '' ?>"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
         <li><a href="/admin/analytics"><i class="fas fa-chart-line"></i> Analytics</a></li>
         <li>
-            <a href="/admin/users"><i class="fas fa-users"></i> User Management
+            <a href="/admin/users"><i class="fas fa-users"></i> All Users
                 <?php if ($pendingUsers > 0): ?>
                     <span class="notification-badge"><?= $pendingUsers ?></span>
                 <?php endif; ?>
             </a>
         </li>
         <li>
-            <a href="/admin/vehicles"><i class="fas fa-car"></i> Vehicle Listings
+            <a href="/admin/vehicles"><i class="fas fa-car"></i> All Vehicles
                 <?php if ($pendingVehicles > 0): ?>
                     <span class="notification-badge"><?= $pendingVehicles ?></span>
                 <?php endif; ?>
             </a>
         </li>
         <li>
-            <a href="/admin/bookings"><i class="fas fa-calendar-check"></i> Bookings
+            <a href="/admin/bookings"><i class="fas fa-calendar-check"></i> All Bookings
                 <?php if ($pendingBookings > 0): ?>
                     <span class="notification-badge"><?= $pendingBookings ?></span>
                 <?php endif; ?>
@@ -55,9 +55,8 @@ $activeDisputes = db()->fetch("SELECT COUNT(*) as count FROM disputes WHERE stat
                 <?php endif; ?>
             </a>
         </li>
-        <li><a href="/admin/security"><i class="fas fa-shield-alt"></i> Security Alerts</a></li>
+        <li><a href="/admin/security"><i class="fas fa-shield-alt"></i> Security</a></li>
         <li><a href="/admin/audit-logs"><i class="fas fa-file-alt"></i> Audit Logs</a></li>
-        <li><a href="/admin/cms"><i class="fas fa-edit"></i> Content Management</a></li>
         <li><a href="/admin/settings"><i class="fas fa-cog"></i> Settings</a></li>
     </ul>
 </div>
