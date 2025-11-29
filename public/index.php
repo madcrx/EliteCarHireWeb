@@ -49,9 +49,13 @@ $router->post('/admin/users/{id}/change-status', 'AdminController@changeUserStat
 $router->post('/admin/users/{id}/delete', 'AdminController@deleteUser');
 $router->get('/admin/vehicles', 'AdminController@vehicles');
 $router->get('/admin/vehicles/{id}/approve', 'AdminController@approveVehicle');
+$router->post('/admin/vehicles/{id}/reject', 'AdminController@rejectVehicle');
 $router->get('/admin/vehicles/{id}/edit', 'AdminController@editVehicle');
 $router->post('/admin/vehicles/{id}/update', 'AdminController@updateVehicle');
 $router->post('/admin/vehicles/{id}/delete', 'AdminController@deleteVehicle');
+$router->post('/admin/vehicles/{id}/images/upload', 'AdminController@uploadVehicleImages');
+$router->post('/admin/vehicles/{id}/images/{imageId}/set-primary', 'AdminController@setVehicleImagePrimary');
+$router->post('/admin/vehicles/{id}/images/{imageId}/delete', 'AdminController@deleteVehicleImage');
 $router->get('/admin/bookings', 'AdminController@bookings');
 $router->get('/admin/payments', 'AdminController@payments');
 $router->get('/admin/payouts', 'AdminController@payouts');
@@ -75,6 +79,43 @@ $router->get('/admin/images', 'ImageController@index');
 $router->post('/admin/images/upload', 'ImageController@upload');
 $router->post('/admin/images/revert', 'ImageController@revertToDefault');
 
+// Admin - Communication routes
+$router->get('/admin/email-settings', 'AdminController@emailSettings');
+$router->post('/admin/email-settings/save', 'AdminController@saveEmailSettings');
+$router->get('/admin/email-queue', 'AdminController@emailQueue');
+
+// Admin - Analytics routes
+$router->get('/admin/analytics/revenue', 'AdminController@analyticsRevenue');
+$router->get('/admin/analytics/bookings', 'AdminController@analyticsBookings');
+$router->get('/admin/analytics/vehicles', 'AdminController@analyticsVehicles');
+$router->get('/admin/analytics/users', 'AdminController@analyticsUsers');
+
+// Admin - Settings routes
+$router->get('/admin/settings/payment', 'AdminController@settingsPayment');
+$router->post('/admin/settings/payment/save', 'AdminController@saveSettingsPayment');
+$router->get('/admin/settings/email', 'AdminController@settingsEmail');
+$router->post('/admin/settings/email/save', 'AdminController@saveSettingsEmail');
+$router->get('/admin/settings/commission', 'AdminController@settingsCommission');
+$router->post('/admin/settings/commission/save', 'AdminController@saveSettingsCommission');
+$router->get('/admin/settings/booking', 'AdminController@settingsBooking');
+$router->post('/admin/settings/booking/save', 'AdminController@saveSettingsBooking');
+$router->get('/admin/settings/notifications', 'AdminController@settingsNotifications');
+$router->post('/admin/settings/notifications/save', 'AdminController@saveSettingsNotifications');
+
+// Admin - System Configuration routes
+$router->get('/admin/system-config', 'AdminController@systemConfig');
+$router->post('/admin/system-config/save', 'AdminController@saveSystemConfig');
+$router->post('/admin/system-config/test-database', 'AdminController@testDatabaseConnection');
+$router->post('/admin/system-config/test-email', 'AdminController@testEmailConnection');
+
+// Admin - Logs routes
+$router->get('/admin/logs/payment', 'AdminController@logsPayment');
+$router->get('/admin/logs/email', 'AdminController@logsEmail');
+$router->get('/admin/logs/login', 'AdminController@logsLogin');
+
+// Admin - API routes
+$router->post('/admin/api/clear-cache', 'AdminController@clearCache');
+
 // Owner routes
 $router->get('/owner/dashboard', 'OwnerController@dashboard');
 $router->get('/owner/listings', 'OwnerController@listings');
@@ -83,6 +124,7 @@ $router->post('/owner/listings/add', 'OwnerController@saveListing');
 $router->get('/owner/listings/{id}/edit', 'OwnerController@editListing');
 $router->post('/owner/listings/{id}/edit', 'OwnerController@updateListing');
 $router->get('/owner/bookings', 'OwnerController@bookings');
+$router->get('/owner/bookings/confirm-action', 'OwnerController@confirmBookingAction');
 $router->post('/owner/bookings/confirm', 'OwnerController@confirmBooking');
 $router->post('/owner/bookings/cancel', 'OwnerController@cancelBooking');
 $router->get('/owner/calendar', 'OwnerController@calendar');
@@ -99,6 +141,8 @@ $router->get('/customer/dashboard', 'CustomerController@dashboard');
 $router->get('/customer/hires', 'CustomerController@hires');
 $router->get('/customer/bookings', 'CustomerController@bookings');
 $router->get('/customer/bookings/{id}', 'CustomerController@viewBooking');
+$router->get('/customer/bookings/{id}/cancel', 'CustomerController@showCancelForm');
+$router->post('/customer/bookings/{id}/cancel', 'CustomerController@submitCancellation');
 $router->get('/customer/profile', 'CustomerController@profile');
 $router->post('/customer/profile/update', 'CustomerController@updateProfile');
 
@@ -117,9 +161,14 @@ $router->get('/support', 'PublicController@support');
 
 // API routes for AJAX
 $router->post('/api/payment/process', 'PaymentController@process');
+$router->post('/api/payment/create-intent', 'PaymentController@createIntent');
+$router->post('/api/payment/refund', 'PaymentController@refund');
 $router->get('/api/calendar/events', 'CalendarController@getEvents');
 $router->get('/api/analytics/data', 'AnalyticsController@getData');
 $router->post('/api/notifications/mark-read', 'NotificationController@markAsRead');
+
+// Stripe webhook
+$router->post('/webhooks/stripe', 'StripeWebhookController@handle');
 
 // Dispatch the request
 $router->dispatch();

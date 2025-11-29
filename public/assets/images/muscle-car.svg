@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
+  <!-- Muscle Car Placeholder -->
+  <defs>
+    <linearGradient id="bgGradient2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a1a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2d2d2d;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="goldGradient2" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#d4af37;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#f4d03f;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#d4af37;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="carBody" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#c0392b;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#e74c3c;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="600" fill="url(#bgGradient2)"/>
+
+  <!-- Racing Stripes -->
+  <rect x="380" y="0" width="20" height="600" fill="url(#goldGradient2)" opacity="0.2"/>
+  <rect x="400" y="0" width="20" height="600" fill="url(#goldGradient2)" opacity="0.2"/>
+
+  <!-- Classic Muscle Car Silhouette -->
+  <g transform="translate(80, 200)">
+    <!-- Car Body - Lower, Wider Profile -->
+    <path d="M 40 130 L 80 95 L 150 80 L 200 75 L 400 75 L 480 80 L 550 95 L 600 130 L 600 160 L 580 160 L 565 140 L 520 140 L 505 160 L 145 160 L 130 140 L 85 140 L 70 160 L 40 160 Z"
+          fill="url(#carBody)" stroke="url(#goldGradient2)" stroke-width="3"/>
+
+    <!-- Hood Scoop -->
+    <rect x="350" y="70" width="60" height="8" fill="#000" opacity="0.6" rx="2"/>
+
+    <!-- Windows - Lower Profile -->
+    <path d="M 110 95 L 150 85 L 200 82 L 200 115 L 110 115 Z" fill="#1a1a1a" opacity="0.9"/>
+    <path d="M 220 82 L 420 82 L 420 115 L 220 115 Z" fill="#1a1a1a" opacity="0.9"/>
+
+    <!-- Wheels - Larger -->
+    <circle cx="145" cy="160" r="30" fill="#1a1a1a" stroke="url(#goldGradient2)" stroke-width="4"/>
+    <circle cx="145" cy="160" r="18" fill="#333"/>
+    <circle cx="145" cy="160" r="10" fill="url(#goldGradient2)"/>
+
+    <circle cx="505" cy="160" r="30" fill="#1a1a1a" stroke="url(#goldGradient2)" stroke-width="4"/>
+    <circle cx="505" cy="160" r="18" fill="#333"/>
+    <circle cx="505" cy="160" r="10" fill="url(#goldGradient2)"/>
+
+    <!-- Headlights -->
+    <ellipse cx="575" cy="105" rx="15" ry="20" fill="#ffd700" opacity="0.8"/>
+
+    <!-- Side Stripes -->
+    <line x1="180" y1="120" x2="480" y2="120" stroke="url(#goldGradient2)" stroke-width="4"/>
+  </g>
+
+  <!-- Text -->
+  <text x="400" y="480" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="url(#goldGradient2)" text-anchor="middle">
+    CLASSIC MUSCLE CAR
+  </text>
+  <text x="400" y="520" font-family="Arial, sans-serif" font-size="18" fill="#999" text-anchor="middle">
+    American Power & Style
+  </text>
+</svg>

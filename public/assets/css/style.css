@@ -30,6 +30,36 @@ body {
     padding: 0 20px;
 }
 
+/* Hero Section */
+.hero {
+    background: linear-gradient(135deg, rgba(0,0,0,0.7), rgba(0,0,0,0.5)),
+                url('/assets/images/hero-bg.svg') center/cover;
+    color: var(--white);
+    text-align: center;
+    padding: 8rem 0 6rem;
+    position: relative;
+}
+
+.hero h1 {
+    font-size: 3.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: var(--white);
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+.hero p {
+    font-size: 1.5rem;
+    margin-bottom: 2rem;
+    color: var(--light-gray);
+}
+
+.hero .btn {
+    font-size: 1.2rem;
+    padding: 15px 40px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+}
+
 /* Navigation */
 .navbar {
     background: var(--dark-gray);
@@ -252,10 +282,26 @@ table tbody tr:hover {
     transform: translateY(-5px);
 }
 
-.vehicle-card img {
+.vehicle-card img,
+.vehicle-card svg {
     width: 100%;
     height: 200px;
     object-fit: cover;
+    display: block;
+}
+
+.vehicle-card .vehicle-placeholder {
+    width: 100%;
+    height: 200px;
+    background: var(--light-gray);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.vehicle-card .vehicle-placeholder i {
+    font-size: 4rem;
+    color: var(--medium-gray);
 }
 
 .vehicle-card-body {
@@ -394,8 +440,9 @@ table tbody tr:hover {
 
 /* Calendar Styles */
 .booking-calendar {
-    width: 100%;
+    width: 48%;
     overflow-x: auto;
+    margin: 0 auto;
 }
 
 .calendar-grid {
@@ -404,13 +451,13 @@ table tbody tr:hover {
     gap: 1px;
     background: var(--medium-gray);
     border: 1px solid var(--medium-gray);
-    min-width: 700px;
+    min-width: 630px;
 }
 
 .calendar-day-header {
     background: var(--primary-gold);
     color: var(--white);
-    padding: 0.75rem;
+    padding: 0.9rem;
     text-align: center;
     font-weight: 600;
     font-size: 0.9rem;
@@ -418,8 +465,8 @@ table tbody tr:hover {
 
 .calendar-day {
     background: var(--white);
-    min-height: 120px;
-    padding: 0.5rem;
+    min-height: 108px;
+    padding: 0.45rem;
     position: relative;
     transition: background-color 0.2s;
 }
@@ -440,7 +487,7 @@ table tbody tr:hover {
 .day-number {
     font-weight: 600;
     color: var(--dark-gray);
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.45rem;
     font-size: 0.9rem;
 }
 
@@ -451,7 +498,7 @@ table tbody tr:hover {
 }
 
 .booking-item {
-    padding: 0.35rem 0.5rem;
+    padding: 0.35rem 0.45rem;
     border-radius: 4px;
     cursor: pointer;
     font-size: 0.75rem;
@@ -576,6 +623,8 @@ table tbody tr:hover {
 .bookings-calendar-container {
     border: 1px solid #ccc;
     background: white;
+    width: 48%;
+    margin: 0 auto;
 }
 
 #calendar {
@@ -588,7 +637,7 @@ table tbody tr:hover {
     justify-content: space-between;
     align-items: center;
     background: #d9d9d9;
-    padding: 1rem 1.5rem;
+    padding: 0.9rem 1.35rem;
 }
 
 .bookings-calendar-month {
@@ -604,7 +653,7 @@ table tbody tr:hover {
     font-size: 1.5rem;
     color: #666;
     cursor: pointer;
-    padding: 0.5rem 1rem;
+    padding: 0.45rem 0.9rem;
     transition: color 0.2s;
 }
 
@@ -616,13 +665,13 @@ table tbody tr:hover {
     display: grid !important;
     grid-template-columns: repeat(7, 1fr) !important;
     width: 100%;
-    min-width: 700px;
+    min-width: 630px;
 }
 
 .calendar-day-header-bookings {
     background: #f0f0f0;
     color: #666;
-    padding: 1rem;
+    padding: 0.9rem;
     text-align: center;
     font-weight: 700;
     font-size: 1rem;
@@ -632,9 +681,9 @@ table tbody tr:hover {
 
 .calendar-day-bookings {
     background: white;
-    min-height: 100px;
+    min-height: 90px;
     aspect-ratio: 1;
-    padding: 0.5rem;
+    padding: 0.45rem;
     position: relative;
     display: flex;
     flex-direction: column;
@@ -780,6 +829,27 @@ table tbody tr:hover {
 
 /* Responsive */
 @media (max-width: 768px) {
+    .hero {
+        padding: 4rem 0 3rem;
+    }
+
+    .hero h1 {
+        font-size: 2rem;
+    }
+
+    .hero p {
+        font-size: 1.1rem;
+    }
+
+    .hero .btn {
+        font-size: 1rem;
+        padding: 12px 30px;
+    }
+
+    .vehicle-grid {
+        grid-template-columns: 1fr;
+    }
+
     .sidebar-layout {
         flex-direction: column;
     }

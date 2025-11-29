@@ -20,22 +20,28 @@ try {
     <nav class="navbar">
         <div class="container">
             <div class="nav-brand">
-                <?php if ($logoPath && file_exists(__DIR__ . '/../..' . $logoPath)): ?>
-                    <a href="/" style="display: inline-block;"><img src="<?= e($logoPath) ?>" alt="Elite Car Hire" style="max-height: 50px; vertical-align: middle;"></a>
+                <?php if ($logoPath): ?>
+                    <a href="/" style="display: inline-block;">
+                        <img src="<?= e($logoPath) ?>?v=<?= time() ?>"
+                             alt="Elite Car Hire"
+                             style="max-height: 50px; max-width: 200px; vertical-align: middle;"
+                             onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='inline-block';">
+                        <h1 style="display: none; margin: 0;"><span style="color: var(--primary-gold);">Elite Car Hire</span></h1>
+                    </a>
                 <?php else: ?>
                     <h1><a href="/" style="color: inherit; text-decoration: none;">Elite Car Hire</a></h1>
                 <?php endif; ?>
             </div>
             <div class="nav-links">
                 <?php if (auth()): ?>
+                    <a href="/">Home</a>
+                    <a href="/vehicles">Fleet</a>
                     <a href="/<?= $_SESSION['role'] ?>/dashboard">Dashboard</a>
-                    <a href="/logout">Logout</a>
                     <span class="user-name"><?= e($_SESSION['name']) ?></span>
+                    <a href="/logout">Logout</a>
                 <?php else: ?>
                     <a href="/">Home</a>
                     <a href="/vehicles">Fleet</a>
-                    <a href="/services">Services</a>
-                    <a href="/about">About</a>
                     <a href="/contact">Contact</a>
                     <a href="/login" class="btn btn-primary">Login</a>
                 <?php endif; ?>
@@ -65,15 +71,12 @@ try {
                 <div>
                     <h3>Elite Car Hire</h3>
                     <p>Melbourne's premier luxury vehicle hire service</p>
-                    <p><i class="fas fa-phone"></i> 0406 907 849</p>
                     <p><i class="fas fa-envelope"></i> support@elitecarhire.au</p>
                 </div>
                 <div>
                     <h3>Quick Links</h3>
                     <ul>
                         <li><a href="/vehicles">Our Fleet</a></li>
-                        <li><a href="/services">Services</a></li>
-                        <li><a href="/about">About Us</a></li>
                         <li><a href="/contact">Support</a></li>
                     </ul>
                 </div>

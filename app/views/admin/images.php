@@ -18,7 +18,7 @@
                 <div class="card">
                     <div style="display: grid; grid-template-columns: 200px 1fr; gap: 2rem;">
                         <div>
-                            <img src="<?= e($image['image_path']) ?>"
+                            <img src="/<?= e($image['image_path']) ?>"
                                  alt="<?= e($image['title']) ?>"
                                  style="width: 100%; height: auto; border-radius: var(--border-radius); border: 2px solid var(--medium-gray);"
                                  onerror="this.src='/assets/images/placeholder.png'">

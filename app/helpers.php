@@ -227,3 +227,233 @@ function timeAgo($timestamp) {
 
     return 'just now';
 }
+
+/**
+ * Generate a secure action token for email links
+ *
+ * @param int $userId User who can use this token
+ * @param string $actionType Type of action (e.g., 'confirm_booking', 'cancel_booking')
+ * @param string $entityType Entity type (e.g., 'booking', 'vehicle')
+ * @param int $entityId ID of the entity
+ * @param int $expiryHours Hours until token expires (default 72)
+ * @param array $metadata Optional additional data
+ * @return string The generated token
+ */
+function generateActionToken($userId, $actionType, $entityType, $entityId, $expiryHours = 72, $metadata = null) {
+    // Generate cryptographically secure random token
+    $token = bin2hex(random_bytes(32));
+
+    $expiresAt = date('Y-m-d H:i:s', strtotime("+{$expiryHours} hours"));
+
+    $metadataJson = $metadata ? json_encode($metadata) : null;
+
+    db()->execute(
+        "INSERT INTO action_tokens (token, user_id, action_type, entity_type, entity_id, metadata, expires_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)",
+        [$token, $userId, $actionType, $entityType, $entityId, $metadataJson, $expiresAt]
+    );
+
+    return $token;
+}
+
+/**
+ * Verify and consume an action token
+ *
+ * @param string $token The token to verify
+ * @return array|false Token data if valid, false otherwise
+ */
+function verifyActionToken($token) {
+    $tokenData = db()->fetch(
+        "SELECT * FROM action_tokens WHERE token = ? AND expires_at > NOW() AND used_at IS NULL",
+        [$token]
+    );
+
+    if (!$tokenData) {
+        return false;
+    }
+
+    // Mark token as used
+    db()->execute("UPDATE action_tokens SET used_at = NOW() WHERE id = ?", [$tokenData['id']]);
+
+    // Decode metadata if present
+    if ($tokenData['metadata']) {
+        $tokenData['metadata'] = json_decode($tokenData['metadata'], true);
+    }
+
+    return $tokenData;
+}
+
+/**
+ * Generate action URL with token
+ *
+ * @param string $actionType Action type
+ * @param string $path Base path
+ * @param int $userId User ID
+ * @param string $entityType Entity type
+ * @param int $entityId Entity ID
+ * @param int $expiryHours Expiry hours
+ * @return string Full URL with token
+ */
+function generateActionUrl($actionType, $path, $userId, $entityType, $entityId, $expiryHours = 72) {
+    $token = generateActionToken($userId, $actionType, $entityType, $entityId, $expiryHours);
+    $baseUrl = rtrim(config('app.url', 'http://localhost'), '/');
+    return "{$baseUrl}{$path}?token={$token}";
+}
+
+/**
+ * Generate login redirect URL
+ *
+ * @param string $redirectPath Where to redirect after login
+ * @return string Full URL
+ */
+function generateLoginUrl($redirectPath) {
+    $baseUrl = rtrim(config('app.url', 'http://localhost'), '/');
+    $encodedPath = urlencode($redirectPath);
+    return "{$baseUrl}/login?redirect={$encodedPath}";
+}
+
+/**
+ * Get email button HTML
+ *
+ * @param string $url Button URL
+ * @param string $text Button text
+ * @param string $color Button color (primary/success/danger/warning)
+ * @return string HTML for email button
+ */
+function getEmailButton($url, $text, $color = 'primary') {
+    $colors = [
+        'primary' => '#C5A253',
+        'success' => '#4caf50',
+        'danger' => '#e74c3c',
+        'warning' => '#f39c12',
+        'info' => '#3498db'
+    ];
+
+    $bgColor = $colors[$color] ?? $colors['primary'];
+
+    return "
+    <table border='0' cellpadding='0' cellspacing='0' style='margin: 20px 0;'>
+        <tr>
+            <td align='center' style='border-radius: 4px;' bgcolor='{$bgColor}'>
+                <a href='{$url}' target='_blank' style='font-size: 16px; font-family: Arial, sans-serif; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 4px; display: inline-block; font-weight: 600;'>
+                    {$text}
+                </a>
+            </td>
+        </tr>
+    </table>
+    ";
+}
+
+/**
+ * Track an email for reminder sending
+ *
+ * @param string $emailType Type of email (booking_request, vehicle_approval, etc.)
+ * @param string $entityType Entity type (booking, vehicle, pending_change, contact_submission)
+ * @param int $entityId ID of the related entity
+ * @param string $recipientEmail Email address of recipient
+ * @param string $subject Email subject line
+ * @return int|false The reminder ID or false on failure
+ */
+function trackEmailForReminder($emailType, $entityType, $entityId, $recipientEmail, $subject) {
+    try {
+        // Silently fail if table doesn't exist (migration not run yet)
+        @db()->execute(
+            "INSERT INTO email_reminders (email_type, entity_type, entity_id, recipient_email, subject, sent_at)
+             VALUES (?, ?, ?, ?, ?, NOW())",
+            [$emailType, $entityType, $entityId, $recipientEmail, $subject]
+        );
+        return @db()->lastInsertId();
+    } catch (Exception $e) {
+        // Don't log if it's just a missing table error
+        if (strpos($e->getMessage(), 'email_reminders') === false) {
+            error_log("Failed to track email for reminder: " . $e->getMessage());
+        }
+        return false;
+    } catch (Error $e) {
+        // Handle fatal errors gracefully
+        return false;
+    }
+}
+
+/**
+ * Mark an email reminder as responded to
+ *
+ * @param string $entityType Entity type
+ * @param int $entityId Entity ID
+ * @return bool Success status
+ */
+function markEmailReminderResponded($entityType, $entityId) {
+    try {
+        // Silently fail if table doesn't exist (migration not run yet)
+        @db()->execute(
+            "UPDATE email_reminders
+             SET response_received = 1, response_received_at = NOW()
+             WHERE entity_type = ? AND entity_id = ? AND response_received = 0",
+            [$entityType, $entityId]
+        );
+        return true;
+    } catch (Exception $e) {
+        // Don't log if it's just a missing table error
+        if (strpos($e->getMessage(), 'email_reminders') === false) {
+            error_log("Failed to mark email reminder as responded: " . $e->getMessage());
+        }
+        return false;
+    } catch (Error $e) {
+        // Handle fatal errors gracefully
+        return false;
+    }
+}
+
+/**
+ * Get emails that need reminders (sent >12 hours ago, no response, no reminder sent yet)
+ *
+ * @return array Array of email reminders needing to be sent
+ */
+function getEmailsNeedingReminders() {
+    try {
+        // Silently fail if table doesn't exist (migration not run yet)
+        return @db()->fetchAll(
+            "SELECT * FROM email_reminders
+             WHERE response_received = 0
+             AND reminder_sent_at IS NULL
+             AND sent_at < DATE_SUB(NOW(), INTERVAL 12 HOUR)
+             ORDER BY sent_at ASC"
+        );
+    } catch (Exception $e) {
+        // Don't log if it's just a missing table error
+        if (strpos($e->getMessage(), 'email_reminders') === false) {
+            error_log("Failed to get emails needing reminders: " . $e->getMessage());
+        }
+        return [];
+    } catch (Error $e) {
+        // Handle fatal errors gracefully
+        return [];
+    }
+}
+
+/**
+ * Mark a reminder as sent
+ *
+ * @param int $reminderId Reminder ID
+ * @return bool Success status
+ */
+function markReminderSent($reminderId) {
+    try {
+        // Silently fail if table doesn't exist (migration not run yet)
+        @db()->execute(
+            "UPDATE email_reminders SET reminder_sent_at = NOW() WHERE id = ?",
+            [$reminderId]
+        );
+        return true;
+    } catch (Exception $e) {
+        // Don't log if it's just a missing table error
+        if (strpos($e->getMessage(), 'email_reminders') === false) {
+            error_log("Failed to mark reminder as sent: " . $e->getMessage());
+        }
+        return false;
+    } catch (Error $e) {
+        // Handle fatal errors gracefully
+        return false;
+    }
+}
+

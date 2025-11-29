@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
+  <!-- Limousine Placeholder -->
+  <defs>
+    <linearGradient id="bgGradient6" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a1a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2d2d2d;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="goldGradient6" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#d4af37;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#f4d03f;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#d4af37;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="600" fill="url(#bgGradient6)"/>
+
+  <!-- Stars -->
+  <circle cx="150" cy="100" r="2" fill="url(#goldGradient6)" opacity="0.6"/>
+  <circle cx="650" cy="120" r="2" fill="url(#goldGradient6)" opacity="0.6"/>
+  <circle cx="200" cy="500" r="2" fill="url(#goldGradient6)" opacity="0.6"/>
+  <circle cx="700" cy="480" r="2" fill="url(#goldGradient6)" opacity="0.6"/>
+
+  <!-- Stretch Limousine - Extra Long -->
+  <g transform="translate(50, 210)">
+    <!-- Car Body - Very Long -->
+    <path d="M 30 110 L 70 80 L 150 65 L 250 60 L 550 60 L 630 65 L 680 80 L 710 110 L 710 150 L 690 150 L 680 135 L 640 135 L 630 150 L 120 150 L 110 135 L 70 135 L 60 150 L 30 150 Z"
+          fill="#000" stroke="url(#goldGradient6)" stroke-width="3"/>
+
+    <!-- Multiple Windows -->
+    <rect x="90" y="70" width="60" height="35" fill="#1a1a2a" opacity="0.8" rx="3"/>
+    <rect x="170" y="65" width="90" height="40" fill="#1a1a2a" opacity="0.8" rx="3"/>
+    <rect x="280" y="65" width="90" height="40" fill="#1a1a2a" opacity="0.8" rx="3"/>
+    <rect x="390" y="65" width="90" height="40" fill="#1a1a2a" opacity="0.8" rx="3"/>
+    <rect x="500" y="65" width="90" height="40" fill="#1a1a2a" opacity="0.8" rx="3"/>
+
+    <!-- Window Dividers -->
+    <line x1="165" y1="65" x2="165" y2="105" stroke="#000" stroke-width="3"/>
+    <line x1="265" y1="65" x2="265" y2="105" stroke="#000" stroke-width="3"/>
+    <line x1="375" y1="65" x2="375" y2="105" stroke="#000" stroke-width="3"/>
+    <line x1="485" y1="65" x2="485" y2="105" stroke="#000" stroke-width="3"/>
+    <line x1="595" y1="65" x2="595" y2="105" stroke="#000" stroke-width="3"/>
+
+    <!-- Chrome Strip -->
+    <line x1="80" y1="115" x2="690" y2="115" stroke="url(#goldGradient6)" stroke-width="3"/>
+
+    <!-- Wheels - 3 Wheels for Extra Length -->
+    <circle cx="120" cy="150" r="25" fill="#1a1a1a" stroke="url(#goldGradient6)" stroke-width="3"/>
+    <circle cx="120" cy="150" r="15" fill="url(#goldGradient6)"/>
+
+    <circle cx="370" cy="150" r="25" fill="#1a1a1a" stroke="url(#goldGradient6)" stroke-width="3"/>
+    <circle cx="370" cy="150" r="15" fill="url(#goldGradient6)"/>
+
+    <circle cx="630" cy="150" r="25" fill="#1a1a1a" stroke="url(#goldGradient6)" stroke-width="3"/>
+    <circle cx="630" cy="150" r="15" fill="url(#goldGradient6)"/>
+
+    <!-- Headlights & Taillights -->
+    <rect x="685" y="90" width="15" height="15" fill="#ffd700" opacity="0.8" rx="2"/>
+    <rect x="40" y="120" width="15" height="20" fill="#ff0000" opacity="0.6" rx="2"/>
+
+    <!-- Door Handles -->
+    <rect x="250" y="100" width="15" height="5" fill="url(#goldGradient6)" rx="2"/>
+    <rect x="380" y="100" width="15" height="5" fill="url(#goldGradient6)" rx="2"/>
+  </g>
+
+  <!-- Text -->
+  <text x="400" y="480" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="url(#goldGradient6)" text-anchor="middle">
+    STRETCH LIMOUSINE
+  </text>
+  <text x="400" y="520" font-family="Arial, sans-serif" font-size="18" fill="#999" text-anchor="middle">
+    Ultimate VIP Experience
+  </text>
+</svg>

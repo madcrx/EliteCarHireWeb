@@ -16,7 +16,7 @@
                 <?php if ($vehicle['primary_image']): ?>
                     <img src="/<?= e($vehicle['primary_image']) ?>" alt="<?= e($vehicle['make'] . ' ' . $vehicle['model']) ?>">
                 <?php else: ?>
-                    <img src="/assets/images/placeholder.jpg" alt="Vehicle">
+                    <img src="/assets/images/placeholder.svg" alt="Vehicle">
                 <?php endif; ?>
                 <div class="vehicle-card-body">
                     <h3><?= e($vehicle['make']) ?> <?= e($vehicle['model']) ?></h3>

@@ -250,12 +250,204 @@ class AdminController {
     }
     
     public function approveVehicle($id) {
-        $vehicle = db()->fetch("SELECT owner_id FROM vehicles WHERE id = ?", [$id]);
+        // Get full vehicle and owner details
+        $vehicle = db()->fetch(
+            "SELECT v.*, u.email as owner_email, u.first_name as owner_first_name, u.last_name as owner_last_name
+             FROM vehicles v
+             JOIN users u ON v.owner_id = u.id
+             WHERE v.id = ?",
+            [$id]
+        );
+
+        if (!$vehicle) {
+            flash('error', 'Vehicle not found');
+            redirect('/admin/vehicles');
+        }
+
         db()->execute("UPDATE vehicles SET status = 'approved' WHERE id = ?", [$id]);
         logAudit('approve_vehicle', 'vehicles', $id);
         createNotification($vehicle['owner_id'], 'approval', 'Vehicle Approved', 'Your vehicle listing has been approved!');
+
+        // Mark the vehicle approval request email as responded
+        markEmailReminderResponded('vehicle', $id);
+
+        // Send approval email
+        $this->sendVehicleApprovalEmail($vehicle);
+
         flash('success', 'Vehicle approved');
         redirect('/admin/vehicles');
+    }
+
+    public function rejectVehicle($id) {
+        // Get full vehicle and owner details
+        $vehicle = db()->fetch(
+            "SELECT v.*, u.email as owner_email, u.first_name as owner_first_name, u.last_name as owner_last_name
+             FROM vehicles v
+             JOIN users u ON v.owner_id = u.id
+             WHERE v.id = ?",
+            [$id]
+        );
+
+        if (!$vehicle) {
+            flash('error', 'Vehicle not found');
+            redirect('/admin/vehicles');
+        }
+
+        // Get rejection reason from POST
+        $reason = $_POST['rejection_reason'] ?? 'Your vehicle listing did not meet our approval criteria.';
+
+        db()->execute("UPDATE vehicles SET status = 'rejected', rejection_reason = ? WHERE id = ?", [$reason, $id]);
+        logAudit('reject_vehicle', 'vehicles', $id, null, ['reason' => $reason]);
+        createNotification($vehicle['owner_id'], 'rejection', 'Vehicle Rejected', 'Your vehicle listing has been rejected.');
+
+        // Mark the vehicle approval request email as responded
+        markEmailReminderResponded('vehicle', $id);
+
+        // Send rejection email
+        $this->sendVehicleRejectionEmail($vehicle, $reason);
+
+        flash('success', 'Vehicle rejected');
+        redirect('/admin/vehicles');
+    }
+
+    private function sendVehicleApprovalEmail($vehicle) {
+        $vehicleName = "{$vehicle['year']} {$vehicle['make']} {$vehicle['model']}";
+        $viewUrl = generateLoginUrl("/owner/listings");
+        $viewButton = getEmailButton($viewUrl, 'View My Listings', 'success');
+
+        $body = "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+            <h2 style='color: #4caf50;'>✓ Vehicle Listing Approved!</h2>
+            <p>Dear {$vehicle['owner_first_name']},</p>
+            <p>Great news! Your vehicle listing has been approved and is now live on Elite Car Hire.</p>
+
+            <div style='background: #e8f5e9; padding: 20px; border-left: 4px solid #4caf50; margin: 20px 0;'>
+                <h3 style='margin-top: 0; color: #2e7d32;'>Approved Vehicle</h3>
+                <p><strong>Vehicle:</strong> {$vehicleName}</p>
+                <p><strong>Color:</strong> {$vehicle['color']}</p>
+                <p><strong>Category:</strong> {$vehicle['category']}</p>
+                <p><strong>Hourly Rate:</strong> \$" . number_format($vehicle['hourly_rate'], 2) . " AUD</p>
+                <p><strong>Registration:</strong> " . ($vehicle['registration_number'] ?? 'Not provided') . "</p>
+                <p><strong>Status:</strong> <span style='color: #4caf50; font-weight: bold;'>APPROVED & LIVE</span></p>
+            </div>
+
+            <div style='background: #e3f2fd; padding: 15px; border-left: 4px solid #2196f3; margin: 20px 0;'>
+                <p style='margin: 0;'><strong>📢 Your vehicle is now visible to customers!</strong> You can start receiving booking requests immediately. Make sure your calendar is up to date with any blocked dates.</p>
+            </div>
+
+            {$viewButton}
+
+            <div style='margin-top: 20px; padding: 15px; background: #f9f9f9; border-radius: 4px;'>
+                <h3 style='margin-top: 0;'>Next Steps:</h3>
+                <ul style='margin: 10px 0; padding-left: 20px;'>
+                    <li>Review your vehicle details and make any updates if needed</li>
+                    <li>Block any dates when your vehicle is unavailable</li>
+                    <li>Respond promptly to booking requests</li>
+                    <li>Keep your vehicle well-maintained for customer satisfaction</li>
+                </ul>
+            </div>
+
+            <p>If you have any questions, please contact us at vehicles@elitecarhire.au</p>
+
+            <p style='margin-top: 30px;'>Best regards,<br>
+            <strong>Elite Car Hire Team</strong><br>
+            Melbourne, Australia</p>
+        </div>
+        ";
+
+        sendEmail($vehicle['owner_email'], "Vehicle Approved - {$vehicleName}", $body);
+
+        // Also notify admin at vehicles email
+        $vehiclesEmail = config('email.vehicle_approvals', 'vehicles@elitecarhire.au');
+        $adminBody = "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+            <h2 style='color: #4caf50;'>🚗 Vehicle Listing Approved</h2>
+            <p>A vehicle listing has been approved.</p>
+
+            <div style='background: #f5f5f5; padding: 20px; border-left: 4px solid #4caf50; margin: 20px 0;'>
+                <h3 style='margin-top: 0;'>Vehicle Details</h3>
+                <p><strong>Vehicle:</strong> {$vehicleName}</p>
+                <p><strong>Owner:</strong> {$vehicle['owner_first_name']} {$vehicle['owner_last_name']} ({$vehicle['owner_email']})</p>
+                <p><strong>Color:</strong> {$vehicle['color']}</p>
+                <p><strong>Category:</strong> {$vehicle['category']}</p>
+                <p><strong>Hourly Rate:</strong> \$" . number_format($vehicle['hourly_rate'], 2) . " AUD</p>
+                <p><strong>Registration:</strong> " . ($vehicle['registration_number'] ?? 'Not provided') . "</p>
+            </div>
+
+            <p style='margin-top: 30px;'>This is an automated notification from Elite Car Hire.</p>
+        </div>
+        ";
+
+        sendEmail($vehiclesEmail, "Vehicle Approved - {$vehicleName}", $adminBody);
+    }
+
+    private function sendVehicleRejectionEmail($vehicle, $reason) {
+        $vehicleName = "{$vehicle['year']} {$vehicle['make']} {$vehicle['model']}";
+        $viewUrl = generateLoginUrl("/owner/listings");
+        $viewButton = getEmailButton($viewUrl, 'View My Listings', 'primary');
+
+        $body = "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+            <h2 style='color: #e74c3c;'>Vehicle Listing Not Approved</h2>
+            <p>Dear {$vehicle['owner_first_name']},</p>
+            <p>Thank you for submitting your vehicle listing to Elite Car Hire. Unfortunately, we are unable to approve your listing at this time.</p>
+
+            <div style='background: #ffebee; padding: 20px; border-left: 4px solid #e74c3c; margin: 20px 0;'>
+                <h3 style='margin-top: 0;'>Vehicle Details</h3>
+                <p><strong>Vehicle:</strong> {$vehicleName}</p>
+                <p><strong>Color:</strong> {$vehicle['color']}</p>
+                <p><strong>Category:</strong> {$vehicle['category']}</p>
+                <p><strong>Hourly Rate:</strong> \$" . number_format($vehicle['hourly_rate'], 2) . " AUD</p>
+                <p><strong>Status:</strong> <span style='color: #e74c3c; font-weight: bold;'>REJECTED</span></p>
+            </div>
+
+            <div style='background: #fff; padding: 15px; border: 1px solid #ddd; margin: 20px 0;'>
+                <h3 style='margin-top: 0;'>Rejection Reason:</h3>
+                <p style='white-space: pre-wrap;'>" . htmlspecialchars($reason) . "</p>
+            </div>
+
+            <div style='background: #e3f2fd; padding: 15px; border-left: 4px solid #2196f3; margin: 20px 0;'>
+                <p style='margin: 0;'><strong>What you can do:</strong> You can update your listing to address the issues mentioned above and resubmit it for approval. Our team will review it again.</p>
+            </div>
+
+            {$viewButton}
+
+            <p>If you have any questions about this decision or need clarification on the requirements, please contact us at vehicles@elitecarhire.au</p>
+
+            <p style='margin-top: 30px;'>Best regards,<br>
+            <strong>Elite Car Hire Team</strong><br>
+            Melbourne, Australia</p>
+        </div>
+        ";
+
+        sendEmail($vehicle['owner_email'], "Vehicle Listing Status - {$vehicleName}", $body);
+
+        // Also notify admin at vehicles email
+        $vehiclesEmail = config('email.vehicle_approvals', 'vehicles@elitecarhire.au');
+        $adminBody = "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+            <h2 style='color: #e74c3c;'>🚗 Vehicle Listing Rejected</h2>
+            <p>A vehicle listing has been rejected.</p>
+
+            <div style='background: #f5f5f5; padding: 20px; border-left: 4px solid #e74c3c; margin: 20px 0;'>
+                <h3 style='margin-top: 0;'>Vehicle Details</h3>
+                <p><strong>Vehicle:</strong> {$vehicleName}</p>
+                <p><strong>Owner:</strong> {$vehicle['owner_first_name']} {$vehicle['owner_last_name']} ({$vehicle['owner_email']})</p>
+                <p><strong>Color:</strong> {$vehicle['color']}</p>
+                <p><strong>Category:</strong> {$vehicle['category']}</p>
+                <p><strong>Hourly Rate:</strong> \$" . number_format($vehicle['hourly_rate'], 2) . " AUD</p>
+            </div>
+
+            <div style='background: #fff; padding: 15px; border: 1px solid #ddd; margin: 20px 0;'>
+                <h3 style='margin-top: 0;'>Rejection Reason:</h3>
+                <p style='white-space: pre-wrap;'>" . htmlspecialchars($reason) . "</p>
+            </div>
+
+            <p style='margin-top: 30px;'>This is an automated notification from Elite Car Hire.</p>
+        </div>
+        ";
+
+        sendEmail($vehiclesEmail, "Vehicle Rejected - {$vehicleName}", $adminBody);
     }
 
     public function editVehicle($id) {
@@ -541,7 +733,7 @@ class AdminController {
                 db()->execute("UPDATE settings SET setting_value = ?, updated_at = NOW() WHERE setting_key = ?",
                              [$value, $key]);
             } else {
-                db()->execute("INSERT INTO settings (setting_key, setting_value, created_at, updated_at) VALUES (?, ?, NOW(), NOW())",
+                db()->execute("INSERT INTO settings (setting_key, setting_value) VALUES (?, ?)",
                              [$key, $value]);
             }
 
@@ -619,7 +811,7 @@ class AdminController {
         if ($existing) {
             db()->execute("UPDATE settings SET setting_value = ?, updated_at = NOW() WHERE setting_key = 'company_logo'", [$webPath]);
         } else {
-            db()->execute("INSERT INTO settings (setting_key, setting_value, created_at, updated_at) VALUES ('company_logo', ?, NOW(), NOW())", [$webPath]);
+            db()->execute("INSERT INTO settings (setting_key, setting_value) VALUES ('company_logo', ?)", [$webPath]);
         }
 
         logAudit('upload_company_logo', 'settings', null, ['logo_path' => $webPath]);
@@ -671,10 +863,10 @@ class AdminController {
     
     public function approvePendingChange($id) {
         $change = db()->fetch("SELECT * FROM pending_changes WHERE id = ?", [$id]);
-        
+
         if ($change && $change['status'] === 'pending') {
             $newData = json_decode($change['new_data'], true);
-            
+
             // Apply the change based on entity type
             if ($change['entity_type'] === 'vehicle') {
                 $fields = [];
@@ -684,20 +876,227 @@ class AdminController {
                     $values[] = $value;
                 }
                 $values[] = $change['entity_id'];
-                
+
                 $sql = "UPDATE vehicles SET " . implode(', ', $fields) . " WHERE id = ?";
                 db()->execute($sql, $values);
+            } elseif ($change['entity_type'] === 'booking' && $change['change_type'] === 'cancellation') {
+                // Get full booking details before cancellation
+                $booking = db()->fetch(
+                    "SELECT b.*, v.year, v.make, v.model, v.hourly_rate,
+                            c.email as customer_email, c.first_name as customer_first_name, c.last_name as customer_last_name,
+                            o.email as owner_email, o.first_name as owner_first_name, o.last_name as owner_last_name
+                     FROM bookings b
+                     JOIN vehicles v ON b.vehicle_id = v.id
+                     JOIN users c ON b.customer_id = c.id
+                     JOIN users o ON b.owner_id = o.id
+                     WHERE b.id = ?",
+                    [$change['entity_id']]
+                );
+
+                if ($booking) {
+                    // Calculate refund if payment was made
+                    // NEW POLICY: 50% cancellation fee applies to all cancellations regardless of timing
+                    $refundAmount = 0;
+                    $refundStatus = 'not_applicable';
+                    $cancellationFee = 0;
+
+                    if ($booking['payment_status'] === 'paid') {
+                        // 50% cancellation fee applies to all paid bookings
+                        $cancellationFee = $booking['total_amount'] * 0.5;
+                        $refundAmount = $booking['total_amount'] * 0.5;
+                        $refundStatus = 'partial_refund';
+                    }
+
+                    // Update booking status
+                    db()->execute(
+                        "UPDATE bookings SET status = 'cancelled', cancellation_reason = ?, cancelled_at = NOW(), refund_amount = ?, refund_status = ?, cancellation_fee = ? WHERE id = ?",
+                        [$newData['cancellation_reason'] ?? $change['reason'], $refundAmount, $refundStatus, $cancellationFee, $change['entity_id']]
+                    );
+
+                    // Send cancellation emails
+                    $this->sendCancellationEmails($booking, $change['reason'], $refundAmount, $refundStatus, $cancellationFee);
+                }
             }
-            
-            db()->execute("UPDATE pending_changes SET status = 'approved', reviewed_by = ?, reviewed_at = NOW() WHERE id = ?", 
+
+            db()->execute("UPDATE pending_changes SET status = 'approved', reviewed_by = ?, reviewed_at = NOW() WHERE id = ?",
                          [$_SESSION['user_id'], $id]);
-            
+
+            // Mark the cancellation request email as responded
+            markEmailReminderResponded('pending_change', $id);
+
             createNotification($change['owner_id'], 'approval', 'Change Approved', 'Your submitted change has been approved.');
             logAudit('approve_pending_change', 'pending_changes', $id);
             flash('success', 'Change approved successfully');
         }
-        
+
         redirect('/admin/pending-changes');
+    }
+
+    private function sendCancellationEmails($booking, $reason, $refundAmount, $refundStatus, $cancellationFee) {
+        $vehicleName = "{$booking['year']} {$booking['make']} {$booking['model']}";
+
+        // Send email to customer
+        $this->sendCustomerCancellationEmail($booking, $vehicleName, $reason, $refundAmount, $refundStatus, $cancellationFee);
+
+        // Send email to owner
+        $this->sendOwnerCancellationEmail($booking, $vehicleName, $reason);
+
+        // Send email to admin
+        $this->sendAdminCancellationEmail($booking, $vehicleName, $reason, $refundAmount, $refundStatus, $cancellationFee);
+    }
+
+    private function sendCustomerCancellationEmail($booking, $vehicleName, $reason, $refundAmount, $refundStatus, $cancellationFee) {
+        $viewUrl = generateLoginUrl("/customer/bookings");
+        $viewButton = getEmailButton($viewUrl, 'View My Bookings', 'primary');
+
+        // Build refund message based on new 50% cancellation fee policy
+        $refundMessage = '';
+        if ($refundStatus === 'partial_refund' && $refundAmount > 0) {
+            $refundMessage = "
+            <div style='background: #fff3cd; padding: 20px; border-left: 4px solid #f39c12; margin: 20px 0;'>
+                <h3 style='margin-top: 0; color: #f39c12;'>💰 Refund Information</h3>
+                <p><strong>Original Booking Amount:</strong> \$" . number_format($booking['total_amount'], 2) . " AUD</p>
+                <p><strong>Cancellation Fee (50%):</strong> \$" . number_format($cancellationFee, 2) . " AUD</p>
+                <p><strong>Refund Amount (50%):</strong> <span style='color: #4caf50; font-weight: bold;'>\$" . number_format($refundAmount, 2) . " AUD</span></p>
+                <p style='margin: 10px 0 0 0; font-size: 14px;'><em>Your refund will be processed to your original payment method within 5-7 business days.</em></p>
+            </div>
+
+            <div style='background: #e3f2fd; padding: 15px; border-left: 4px solid #2196f3; margin: 20px 0;'>
+                <p style='margin: 0;'><strong>📋 Cancellation Policy:</strong> A 50% cancellation fee applies to all booking cancellations, regardless of when the cancellation is made. The remaining 50% is refunded to your original payment method.</p>
+            </div>";
+        } elseif ($refundStatus === 'not_applicable') {
+            $refundMessage = "
+            <div style='background: #f5f5f5; padding: 15px; border-left: 4px solid #9e9e9e; margin: 20px 0;'>
+                <p style='margin: 0;'><strong>No Payment:</strong> This booking was not paid, so no refund is applicable.</p>
+            </div>";
+        }
+
+        $body = "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+            <h2 style='color: #e74c3c;'>Booking Cancelled</h2>
+            <p>Dear {$booking['customer_first_name']},</p>
+            <p>Your booking has been cancelled as requested.</p>
+
+            <div style='background: #f5f5f5; padding: 20px; border-left: 4px solid #e74c3c; margin: 20px 0;'>
+                <h3 style='margin-top: 0;'>Cancelled Booking Details</h3>
+                <p><strong>Booking Reference:</strong> {$booking['booking_reference']}</p>
+                <p><strong>Vehicle:</strong> {$vehicleName}</p>
+                <p><strong>Date:</strong> {$booking['booking_date']}</p>
+                <p><strong>Time:</strong> {$booking['start_time']} - {$booking['end_time']}</p>
+                <p><strong>Duration:</strong> {$booking['duration_hours']} hours</p>
+                <p><strong>Total Amount:</strong> \$" . number_format($booking['total_amount'], 2) . " AUD</p>
+                <p><strong>Status:</strong> <span style='color: #e74c3c; font-weight: bold;'>CANCELLED</span></p>
+            </div>
+
+            <div style='background: #fff; padding: 15px; border: 1px solid #ddd; margin: 20px 0;'>
+                <h3 style='margin-top: 0;'>Cancellation Reason:</h3>
+                <p style='white-space: pre-wrap;'>" . htmlspecialchars($reason) . "</p>
+            </div>
+
+            {$refundMessage}
+
+            {$viewButton}
+
+            <p>We're sorry this booking didn't work out. We hope to serve you again in the future.</p>
+
+            <p>If you have any questions about this cancellation, please contact us at support@elitecarhire.au</p>
+
+            <p style='margin-top: 30px;'>Best regards,<br>
+            <strong>Elite Car Hire Team</strong><br>
+            Melbourne, Australia</p>
+        </div>
+        ";
+
+        sendEmail($booking['customer_email'], "Booking Cancelled - {$booking['booking_reference']}", $body);
+    }
+
+    private function sendOwnerCancellationEmail($booking, $vehicleName, $reason) {
+        $viewUrl = generateLoginUrl("/owner/bookings");
+        $viewButton = getEmailButton($viewUrl, 'View My Bookings', 'primary');
+
+        $earningsLost = $booking['payment_status'] === 'paid'
+            ? $booking['total_amount'] - $booking['commission_amount']
+            : 0;
+
+        $body = "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+            <h2 style='color: #e74c3c;'>Booking Cancelled</h2>
+            <p>Dear {$booking['owner_first_name']},</p>
+            <p>A booking for your vehicle has been cancelled.</p>
+
+            <div style='background: #f5f5f5; padding: 20px; border-left: 4px solid #e74c3c; margin: 20px 0;'>
+                <h3 style='margin-top: 0;'>Cancelled Booking Details</h3>
+                <p><strong>Booking Reference:</strong> {$booking['booking_reference']}</p>
+                <p><strong>Vehicle:</strong> {$vehicleName}</p>
+                <p><strong>Customer:</strong> {$booking['customer_first_name']} {$booking['customer_last_name']}</p>
+                <p><strong>Date:</strong> {$booking['booking_date']}</p>
+                <p><strong>Time:</strong> {$booking['start_time']} - {$booking['end_time']}</p>
+                <p><strong>Duration:</strong> {$booking['duration_hours']} hours</p>
+                <p><strong>Payment Status:</strong> {$booking['payment_status']}</p>
+                " . ($earningsLost > 0 ? "<p><strong>Earnings Lost:</strong> \$" . number_format($earningsLost, 2) . " AUD</p>" : "") . "
+                <p><strong>Status:</strong> <span style='color: #e74c3c; font-weight: bold;'>CANCELLED</span></p>
+            </div>
+
+            <div style='background: #fff; padding: 15px; border: 1px solid #ddd; margin: 20px 0;'>
+                <h3 style='margin-top: 0;'>Cancellation Reason:</h3>
+                <p style='white-space: pre-wrap;'>" . htmlspecialchars($reason) . "</p>
+            </div>
+
+            <div style='background: #e8f5e9; padding: 15px; border-left: 4px solid #4caf50; margin: 20px 0;'>
+                <p style='margin: 0;'><strong>Good News:</strong> Your vehicle is now available for this time slot. It may receive new booking requests.</p>
+            </div>
+
+            {$viewButton}
+
+            <p>If you have any questions about this cancellation, please contact us at support@elitecarhire.au</p>
+
+            <p style='margin-top: 30px;'>Best regards,<br>
+            <strong>Elite Car Hire Team</strong><br>
+            Melbourne, Australia</p>
+        </div>
+        ";
+
+        sendEmail($booking['owner_email'], "Booking Cancelled - {$vehicleName}", $body);
+    }
+
+    private function sendAdminCancellationEmail($booking, $vehicleName, $reason, $refundAmount, $refundStatus, $cancellationFee) {
+        $viewUrl = generateLoginUrl("/admin/bookings");
+        $viewButton = getEmailButton($viewUrl, 'View All Bookings', 'primary');
+
+        $body = "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+            <h2 style='color: #e74c3c;'>📅 Booking Cancelled</h2>
+            <p>A booking cancellation has been processed.</p>
+
+            <div style='background: #f5f5f5; padding: 20px; border-left: 4px solid #e74c3c; margin: 20px 0;'>
+                <h3 style='margin-top: 0;'>Cancelled Booking Details</h3>
+                <p><strong>Booking Reference:</strong> {$booking['booking_reference']}</p>
+                <p><strong>Vehicle:</strong> {$vehicleName}</p>
+                <p><strong>Owner:</strong> {$booking['owner_first_name']} {$booking['owner_last_name']} ({$booking['owner_email']})</p>
+                <p><strong>Customer:</strong> {$booking['customer_first_name']} {$booking['customer_last_name']} ({$booking['customer_email']})</p>
+                <p><strong>Date:</strong> {$booking['booking_date']}</p>
+                <p><strong>Time:</strong> {$booking['start_time']} - {$booking['end_time']}</p>
+                <p><strong>Duration:</strong> {$booking['duration_hours']} hours</p>
+                <p><strong>Total Amount:</strong> \$" . number_format($booking['total_amount'], 2) . " AUD</p>
+                <p><strong>Payment Status:</strong> {$booking['payment_status']}</p>
+                <p><strong>Refund Status:</strong> {$refundStatus}</p>
+                " . ($cancellationFee > 0 ? "<p><strong>Cancellation Fee (50%):</strong> \$" . number_format($cancellationFee, 2) . " AUD</p>" : "") . "
+                " . ($refundAmount > 0 ? "<p><strong>Refund Amount (50%):</strong> \$" . number_format($refundAmount, 2) . " AUD</p>" : "") . "
+            </div>
+
+            <div style='background: #fff; padding: 15px; border: 1px solid #ddd; margin: 20px 0;'>
+                <h3 style='margin-top: 0;'>Cancellation Reason:</h3>
+                <p style='white-space: pre-wrap;'>" . htmlspecialchars($reason) . "</p>
+            </div>
+
+            {$viewButton}
+
+            <p style='margin-top: 30px;'>This is an automated notification from Elite Car Hire.</p>
+        </div>
+        ";
+
+        $cancellationsEmail = config('email.cancellations', 'cancellations@elitecarhire.au');
+        sendEmail($cancellationsEmail, "Booking Cancelled - {$booking['booking_reference']}", $body);
     }
     
     public function contactSubmissions() {
@@ -745,6 +1144,9 @@ class AdminController {
         db()->execute("UPDATE contact_submissions SET response_text = ?, responded_at = NOW(), responded_by = ?, status = 'responded' WHERE id = ?",
                      [$reply, $_SESSION['user_id'], $id]);
 
+        // Mark the contact form email as responded
+        markEmailReminderResponded('contact_submission', $id);
+
         // Send email to user
         $emailBody = "
             <h2>Reply to your inquiry</h2>
@@ -754,7 +1156,6 @@ class AdminController {
                 " . nl2br(e($reply)) . "
             </div>
             <p>If you have any further questions, please don't hesitate to contact us.</p>
-            <p>Best regards,<br>Elite Car Hire Team<br>Phone: 0406 907 849<br>Email: support@elitecarhire.au</p>
         ";
 
         sendEmail($submission['email'], 'Re: ' . ($submission['subject'] ?? 'Your inquiry'), $emailBody);
@@ -813,5 +1214,672 @@ class AdminController {
 
         flash('success', 'Contact submission deleted successfully');
         redirect('/admin/contact-submissions');
+    }
+
+    // Vehicle Image Management Methods
+
+    public function uploadVehicleImages($vehicleId) {
+        requireAuth('admin');
+
+        // Verify CSRF token
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token. Please try again.');
+            redirect('/admin/vehicles/' . $vehicleId . '/edit');
+        }
+
+        $vehicle = db()->fetch("SELECT * FROM vehicles WHERE id = ?", [$vehicleId]);
+        if (!$vehicle) {
+            flash('error', 'Vehicle not found');
+            redirect('/admin/vehicles');
+        }
+
+        // Check if images exist
+        $hasExistingImages = db()->fetch("SELECT COUNT(*) as count FROM vehicle_images WHERE vehicle_id = ?", [$vehicleId])['count'] > 0;
+
+        // Handle image uploads
+        if (empty($_FILES['images']['name'][0])) {
+            flash('error', 'No images selected');
+            redirect('/admin/vehicles/' . $vehicleId . '/edit');
+        }
+
+        $uploadedCount = 0;
+        $errors = [];
+
+        foreach ($_FILES['images']['name'] as $key => $name) {
+            if ($_FILES['images']['error'][$key] !== UPLOAD_ERR_OK) {
+                $errors[] = "Upload error for {$name}";
+                continue;
+            }
+
+            $file = [
+                'name' => $_FILES['images']['name'][$key],
+                'type' => $_FILES['images']['type'][$key],
+                'tmp_name' => $_FILES['images']['tmp_name'][$key],
+                'error' => $_FILES['images']['error'][$key],
+                'size' => $_FILES['images']['size'][$key],
+            ];
+
+            // Validate file type by MIME type
+            $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+            if (!in_array(strtolower($file['type']), $allowedTypes)) {
+                $errors[] = "{$name}: Invalid file type ({$file['type']})";
+                continue;
+            }
+
+            // Validate file size - use PHP's upload limit (currently 2MB)
+            $phpMaxSize = $this->parseSize(ini_get('upload_max_filesize'));
+            $configMaxSize = 5 * 1024 * 1024; // 5MB from config
+            $maxSize = min($phpMaxSize, $configMaxSize);
+
+            if ($file['size'] > $maxSize) {
+                $maxMB = round($maxSize / 1024 / 1024, 1);
+                $actualMB = round($file['size'] / 1024 / 1024, 2);
+                $errors[] = "{$name}: File too large ({$actualMB}MB, max {$maxMB}MB - server limit)";
+                continue;
+            }
+
+            $path = uploadFile($file, 'vehicles');
+            if ($path) {
+                // Set first image as primary if no existing images
+                $isPrimary = (!$hasExistingImages && $key === 0) ? 1 : 0;
+
+                db()->execute("INSERT INTO vehicle_images (vehicle_id, image_path, is_primary, display_order) VALUES (?, ?, ?, ?)",
+                             [$vehicleId, $path, $isPrimary, $key]);
+                $uploadedCount++;
+            } else {
+                $errors[] = "{$name}: Upload failed (check server permissions)";
+            }
+        }
+
+        if ($uploadedCount > 0) {
+            logAudit('upload_vehicle_images', 'vehicles', $vehicleId, ['count' => $uploadedCount]);
+            flash('success', $uploadedCount . ' image(s) uploaded successfully');
+
+            if (!empty($errors)) {
+                flash('warning', 'Some images failed: ' . implode(', ', $errors));
+            }
+        } else {
+            if (!empty($errors)) {
+                flash('error', 'Upload failed: ' . implode('; ', $errors));
+            } else {
+                flash('error', 'No valid images were uploaded. Please ensure files are JPG, PNG, or WebP format and under 5MB.');
+            }
+        }
+
+        redirect('/admin/vehicles/' . $vehicleId . '/edit');
+    }
+
+    public function setVehicleImagePrimary($vehicleId, $imageId) {
+        requireAuth('admin');
+
+        // Verify CSRF token
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token. Please try again.');
+            redirect('/admin/vehicles/' . $vehicleId . '/edit');
+        }
+
+        $vehicle = db()->fetch("SELECT * FROM vehicles WHERE id = ?", [$vehicleId]);
+        if (!$vehicle) {
+            flash('error', 'Vehicle not found');
+            redirect('/admin/vehicles');
+        }
+
+        $image = db()->fetch("SELECT * FROM vehicle_images WHERE id = ? AND vehicle_id = ?", [$imageId, $vehicleId]);
+        if (!$image) {
+            flash('error', 'Image not found');
+            redirect('/admin/vehicles/' . $vehicleId . '/edit');
+        }
+
+        // Remove primary status from all images for this vehicle
+        db()->execute("UPDATE vehicle_images SET is_primary = 0 WHERE vehicle_id = ?", [$vehicleId]);
+
+        // Set this image as primary
+        db()->execute("UPDATE vehicle_images SET is_primary = 1 WHERE id = ?", [$imageId]);
+
+        logAudit('set_primary_vehicle_image', 'vehicle_images', $imageId, ['vehicle_id' => $vehicleId]);
+
+        flash('success', 'Primary image updated successfully');
+        redirect('/admin/vehicles/' . $vehicleId . '/edit');
+    }
+
+    public function deleteVehicleImage($vehicleId, $imageId) {
+        requireAuth('admin');
+
+        // Verify CSRF token
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token. Please try again.');
+            redirect('/admin/vehicles/' . $vehicleId . '/edit');
+        }
+
+        $vehicle = db()->fetch("SELECT * FROM vehicles WHERE id = ?", [$vehicleId]);
+        if (!$vehicle) {
+            flash('error', 'Vehicle not found');
+            redirect('/admin/vehicles');
+        }
+
+        $image = db()->fetch("SELECT * FROM vehicle_images WHERE id = ? AND vehicle_id = ?", [$imageId, $vehicleId]);
+        if (!$image) {
+            flash('error', 'Image not found');
+            redirect('/admin/vehicles/' . $vehicleId . '/edit');
+        }
+
+        $wasPrimary = $image['is_primary'];
+
+        // Delete the image record
+        db()->execute("DELETE FROM vehicle_images WHERE id = ?", [$imageId]);
+
+        // Delete the physical file
+        $filePath = __DIR__ . '/../../' . $image['image_path'];
+        if (file_exists($filePath)) {
+            @unlink($filePath);
+        }
+
+        // If this was the primary image, set the first remaining image as primary
+        if ($wasPrimary) {
+            $firstImage = db()->fetch("SELECT id FROM vehicle_images WHERE vehicle_id = ? ORDER BY display_order LIMIT 1", [$vehicleId]);
+            if ($firstImage) {
+                db()->execute("UPDATE vehicle_images SET is_primary = 1 WHERE id = ?", [$firstImage['id']]);
+            }
+        }
+
+        logAudit('delete_vehicle_image', 'vehicle_images', $imageId, ['vehicle_id' => $vehicleId]);
+
+        flash('success', 'Image deleted successfully');
+        redirect('/admin/vehicles/' . $vehicleId . '/edit');
+    }
+
+    /**
+     * Parse PHP size values like "2M", "512K" to bytes
+     */
+    private function parseSize($size) {
+        $unit = strtoupper(substr($size, -1));
+        $value = (int) $size;
+
+        switch ($unit) {
+            case 'G':
+                $value *= 1024;
+            case 'M':
+                $value *= 1024;
+            case 'K':
+                $value *= 1024;
+        }
+
+        return $value;
+    }
+
+    // ===== Communication Management =====
+
+    public function emailSettings() {
+
+        $pageTitle = 'Email Settings - SMTP Configuration';
+        $emailConfig = [
+            'smtp_host' => getenv('SMTP_HOST') ?: '',
+            'smtp_port' => getenv('SMTP_PORT') ?: '587',
+            'smtp_user' => getenv('SMTP_USER') ?: '',
+            'smtp_encryption' => getenv('SMTP_ENCRYPTION') ?: 'tls',
+        ];
+
+        view('admin/email-settings', compact('pageTitle', 'emailConfig'));
+    }
+
+    public function saveEmailSettings() {
+        // TODO: Implement email settings save functionality
+        flash('info', 'Email settings functionality coming soon');
+        redirect('/admin/email-settings');
+    }
+
+    public function emailQueue() {
+
+        $pageTitle = 'Email Queue';
+        $status = $_GET['status'] ?? 'all';
+
+        $query = "SELECT * FROM email_queue WHERE 1=1";
+        $params = [];
+
+        if ($status !== 'all') {
+            $query .= " AND status = ?";
+            $params[] = $status;
+        }
+
+        $query .= " ORDER BY created_at DESC LIMIT 100";
+
+        $emails = db()->fetchAll($query, $params);
+
+        view('admin/email-queue', compact('pageTitle', 'emails', 'status'));
+    }
+
+    // ===== Analytics =====
+
+    public function analyticsRevenue() {
+
+        $pageTitle = 'Revenue Reports';
+
+        // Get revenue statistics
+        $totalRevenue = db()->fetch("SELECT SUM(amount) as total FROM payments WHERE status = 'completed'")['total'] ?? 0;
+        $monthlyRevenue = db()->fetch("SELECT SUM(amount) as total FROM payments WHERE status = 'completed' AND MONTH(created_at) = MONTH(CURRENT_DATE())")['total'] ?? 0;
+
+        view('admin/analytics-revenue', compact('pageTitle', 'totalRevenue', 'monthlyRevenue'));
+    }
+
+    public function analyticsBookings() {
+
+        $pageTitle = 'Booking Analytics';
+
+        // Get booking statistics
+        $totalBookings = db()->fetch("SELECT COUNT(*) as count FROM bookings")['count'] ?? 0;
+        $completedBookings = db()->fetch("SELECT COUNT(*) as count FROM bookings WHERE status = 'completed'")['count'] ?? 0;
+
+        view('admin/analytics-bookings', compact('pageTitle', 'totalBookings', 'completedBookings'));
+    }
+
+    public function analyticsVehicles() {
+
+        $pageTitle = 'Vehicle Performance';
+
+        // Get vehicle statistics
+        $topVehicles = db()->fetchAll("
+            SELECT v.*, COUNT(b.id) as booking_count
+            FROM vehicles v
+            LEFT JOIN bookings b ON v.id = b.vehicle_id
+            GROUP BY v.id
+            ORDER BY booking_count DESC
+            LIMIT 10
+        ");
+
+        view('admin/analytics-vehicles', compact('pageTitle', 'topVehicles'));
+    }
+
+    public function analyticsUsers() {
+
+        $pageTitle = 'User Statistics';
+
+        // Get user statistics
+        $totalUsers = db()->fetch("SELECT COUNT(*) as count FROM users")['count'] ?? 0;
+        $customerCount = db()->fetch("SELECT COUNT(*) as count FROM users WHERE role = 'customer'")['count'] ?? 0;
+        $ownerCount = db()->fetch("SELECT COUNT(*) as count FROM users WHERE role = 'owner'")['count'] ?? 0;
+
+        view('admin/analytics-users', compact('pageTitle', 'totalUsers', 'customerCount', 'ownerCount'));
+    }
+
+    // ===== Settings Management =====
+
+    public function settingsPayment() {
+
+        $pageTitle = 'Payment Settings - Stripe Configuration';
+
+        $stripeConfig = [
+            'publishable_key' => getenv('STRIPE_PUBLISHABLE_KEY') ?: '',
+            'has_secret_key' => !empty(getenv('STRIPE_SECRET_KEY')),
+            'webhook_configured' => !empty(getenv('STRIPE_WEBHOOK_SECRET')),
+        ];
+
+        view('admin/settings-payment', compact('pageTitle', 'stripeConfig'));
+    }
+
+    public function saveSettingsPayment() {
+        // TODO: Implement payment settings save functionality
+        flash('info', 'Payment settings functionality coming soon');
+        redirect('/admin/settings/payment');
+    }
+
+    public function settingsEmail() {
+
+        $pageTitle = 'Email Configuration - SMTP & Templates';
+        view('admin/settings-email', compact('pageTitle'));
+    }
+
+    public function saveSettingsEmail() {
+        // TODO: Implement email settings save functionality
+        flash('info', 'Email configuration functionality coming soon');
+        redirect('/admin/settings/email');
+    }
+
+    public function settingsCommission() {
+
+        $pageTitle = 'Commission Rates - Platform Fees';
+
+        $currentRate = config('payment.commission_rate', 15.00);
+
+        view('admin/settings-commission', compact('pageTitle', 'currentRate'));
+    }
+
+    public function saveSettingsCommission() {
+        // TODO: Implement commission settings save functionality
+        flash('info', 'Commission settings functionality coming soon');
+        redirect('/admin/settings/commission');
+    }
+
+    public function settingsBooking() {
+
+        $pageTitle = 'Booking Settings - Rules & Policies';
+        view('admin/settings-booking', compact('pageTitle'));
+    }
+
+    public function saveSettingsBooking() {
+        // TODO: Implement booking settings save functionality
+        flash('info', 'Booking settings functionality coming soon');
+        redirect('/admin/settings/booking');
+    }
+
+    public function settingsNotifications() {
+
+        $pageTitle = 'Notification Settings - Email Notifications';
+        view('admin/settings-notifications', compact('pageTitle'));
+    }
+
+    public function saveSettingsNotifications() {
+        // TODO: Implement notification settings save functionality
+        flash('info', 'Notification settings functionality coming soon');
+        redirect('/admin/settings/notifications');
+    }
+
+    // ===== Logs Management =====
+
+    public function logsPayment() {
+
+        $pageTitle = 'Payment Logs';
+
+        // Get recent payment transactions
+        $paymentLogs = db()->fetchAll("
+            SELECT p.*, b.booking_reference, u.email as customer_email
+            FROM payments p
+            LEFT JOIN bookings b ON p.booking_id = b.id
+            LEFT JOIN users u ON b.customer_id = u.id
+            ORDER BY p.created_at DESC
+            LIMIT 100
+        ");
+
+        view('admin/logs-payment', compact('pageTitle', 'paymentLogs'));
+    }
+
+    public function logsEmail() {
+
+        $pageTitle = 'Email Logs';
+
+        // Get recent email activity
+        $emailLogs = db()->fetchAll("
+            SELECT * FROM email_queue
+            ORDER BY created_at DESC
+            LIMIT 100
+        ");
+
+        view('admin/logs-email', compact('pageTitle', 'emailLogs'));
+    }
+
+    public function logsLogin() {
+
+        $pageTitle = 'Login History';
+
+        // Get recent login attempts from audit logs
+        $loginLogs = db()->fetchAll("
+            SELECT a.*, u.email, u.first_name, u.last_name
+            FROM audit_logs a
+            LEFT JOIN users u ON a.user_id = u.id
+            WHERE a.action IN ('login', 'logout', 'login_failed')
+            ORDER BY a.created_at DESC
+            LIMIT 100
+        ");
+
+        view('admin/logs-login', compact('pageTitle', 'loginLogs'));
+    }
+
+    // ===== API Methods =====
+
+    public function clearCache() {
+
+        // Clear various cache types
+        $cleared = [];
+
+        // Clear session cache (if using file-based sessions)
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            $cleared[] = 'session';
+        }
+
+        // Clear opcode cache if available
+        if (function_exists('opcache_reset')) {
+            opcache_reset();
+            $cleared[] = 'opcache';
+        }
+
+        // Clear temp files
+        $tempDir = __DIR__ . '/../../storage/cache';
+        if (is_dir($tempDir)) {
+            $files = glob($tempDir . '/*');
+            foreach ($files as $file) {
+                if (is_file($file)) {
+                    @unlink($file);
+                }
+            }
+            $cleared[] = 'temp_files';
+        }
+
+        logAudit('clear_cache', 'system', 0, ['cleared' => $cleared]);
+
+        json(['success' => true, 'message' => 'Cache cleared successfully', 'cleared' => $cleared]);
+    }
+
+    // ===== System Configuration =====
+
+    public function systemConfig() {
+        $pageTitle = 'System Configuration';
+        view('admin/system-config', compact('pageTitle'));
+    }
+
+    public function saveSystemConfig() {
+        requireAuth('admin');
+
+        // Verify CSRF token
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token. Please try again.');
+            redirect('/admin/system-config');
+        }
+
+        // Build configuration array from POST data
+        $config = [];
+
+        // Database Configuration
+        if (!empty($_POST['db_host'])) {
+            $config['database']['host'] = $_POST['db_host'];
+        }
+        if (!empty($_POST['db_port'])) {
+            $config['database']['port'] = (int)$_POST['db_port'];
+        }
+        if (!empty($_POST['db_name'])) {
+            $config['database']['name'] = $_POST['db_name'];
+        }
+        if (!empty($_POST['db_user'])) {
+            $config['database']['username'] = $_POST['db_user'];
+        }
+        if (!empty($_POST['db_password'])) {
+            $config['database']['password'] = $_POST['db_password'];
+        }
+        if (!empty($_POST['db_charset'])) {
+            $config['database']['charset'] = $_POST['db_charset'];
+        }
+
+        // Email Configuration
+        if (isset($_POST['smtp_enabled'])) {
+            $config['email']['smtp_enabled'] = $_POST['smtp_enabled'] === '1';
+        }
+        if (!empty($_POST['smtp_host'])) {
+            $config['email']['smtp_host'] = $_POST['smtp_host'];
+        }
+        if (!empty($_POST['smtp_port'])) {
+            $config['email']['smtp_port'] = (int)$_POST['smtp_port'];
+        }
+        if (!empty($_POST['smtp_username'])) {
+            $config['email']['smtp_username'] = $_POST['smtp_username'];
+        }
+        if (!empty($_POST['smtp_password'])) {
+            $config['email']['smtp_password'] = $_POST['smtp_password'];
+        }
+        if (!empty($_POST['smtp_encryption'])) {
+            $config['email']['smtp_encryption'] = $_POST['smtp_encryption'];
+        }
+        if (!empty($_POST['from_email'])) {
+            $config['email']['from_email'] = $_POST['from_email'];
+        }
+        if (!empty($_POST['from_name'])) {
+            $config['email']['from_name'] = $_POST['from_name'];
+        }
+
+        // Payment Configuration
+        if (!empty($_POST['stripe_mode'])) {
+            $config['payment']['stripe_mode'] = $_POST['stripe_mode'];
+        }
+        if (!empty($_POST['stripe_test_pk'])) {
+            $config['payment']['stripe_test_publishable_key'] = $_POST['stripe_test_pk'];
+        }
+        if (!empty($_POST['stripe_test_sk'])) {
+            $config['payment']['stripe_test_secret_key'] = $_POST['stripe_test_sk'];
+        }
+        if (!empty($_POST['stripe_live_pk'])) {
+            $config['payment']['stripe_live_publishable_key'] = $_POST['stripe_live_pk'];
+        }
+        if (!empty($_POST['stripe_live_sk'])) {
+            $config['payment']['stripe_live_secret_key'] = $_POST['stripe_live_sk'];
+        }
+        if (!empty($_POST['currency'])) {
+            $config['payment']['currency'] = $_POST['currency'];
+        }
+
+        // Application Configuration
+        if (!empty($_POST['app_name'])) {
+            $config['app']['name'] = $_POST['app_name'];
+        }
+        if (!empty($_POST['app_url'])) {
+            $config['app']['url'] = rtrim($_POST['app_url'], '/');
+        }
+        if (!empty($_POST['app_env'])) {
+            $config['app']['environment'] = $_POST['app_env'];
+        }
+        if (isset($_POST['app_debug'])) {
+            $config['app']['debug'] = $_POST['app_debug'] === '1';
+        }
+        if (!empty($_POST['app_timezone'])) {
+            $config['app']['timezone'] = $_POST['app_timezone'];
+        }
+        if (isset($_POST['commission_rate'])) {
+            $config['app']['commission_rate'] = (float)$_POST['commission_rate'];
+        }
+
+        // Security Configuration
+        if (!empty($_POST['session_secret'])) {
+            $config['security']['session_secret'] = $_POST['session_secret'];
+        }
+        if (!empty($_POST['session_lifetime'])) {
+            $config['security']['session_lifetime'] = (int)$_POST['session_lifetime'];
+        }
+        if (isset($_POST['csrf_enabled'])) {
+            $config['security']['csrf_protection'] = $_POST['csrf_enabled'] === '1';
+        }
+        if (!empty($_POST['max_login_attempts'])) {
+            $config['security']['max_login_attempts'] = (int)$_POST['max_login_attempts'];
+        }
+        if (!empty($_POST['lockout_duration'])) {
+            $config['security']['lockout_duration'] = (int)$_POST['lockout_duration'];
+        }
+
+        // Write configuration to custom.php file
+        $configFile = __DIR__ . '/../../config/custom.php';
+        $configContent = "<?php\n\nreturn " . var_export($config, true) . ";\n";
+
+        if (file_put_contents($configFile, $configContent)) {
+            logAudit('update_system_config', 'system', 0, ['sections' => array_keys($config)]);
+            flash('success', 'System configuration updated successfully. Some changes may require a server restart.');
+        } else {
+            flash('error', 'Failed to save configuration file. Please check file permissions.');
+        }
+
+        redirect('/admin/system-config');
+    }
+
+    public function testDatabaseConnection() {
+        header('Content-Type: application/json');
+
+        // Get database credentials from POST
+        $host = $_POST['host'] ?? config('database.host');
+        $port = $_POST['port'] ?? config('database.port', 3306);
+        $database = $_POST['database'] ?? config('database.name');
+        $username = $_POST['username'] ?? config('database.username');
+        $password = $_POST['password'] ?? config('database.password');
+
+        try {
+            $dsn = "mysql:host={$host};port={$port};dbname={$database};charset=utf8mb4";
+            $pdo = new \PDO($dsn, $username, $password, [
+                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
+                \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
+                \PDO::ATTR_TIMEOUT => 5
+            ]);
+
+            // Test query
+            $pdo->query("SELECT 1");
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'Database connection successful!'
+            ]);
+        } catch (\PDOException $e) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Connection failed: ' . $e->getMessage()
+            ]);
+        }
+        exit;
+    }
+
+    public function testEmailConnection() {
+        header('Content-Type: application/json');
+
+        // Get email from POST or use admin email
+        $testEmail = $_POST['test_email'] ?? authUser()['email'];
+
+        if (empty($testEmail)) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'No email address provided'
+            ]);
+            exit;
+        }
+
+        // Send test email
+        $subject = 'Elite Car Hire - Email Configuration Test';
+        $body = '
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #C5A253;">✓ Email Test Successful</h2>
+            <p>This is a test email from Elite Car Hire system configuration.</p>
+            <p>If you received this email, your SMTP configuration is working correctly.</p>
+            <p style="margin-top: 30px;">
+                <strong>Sent at:</strong> ' . date('Y-m-d H:i:s') . '<br>
+                <strong>Server:</strong> ' . ($_SERVER['SERVER_NAME'] ?? 'Unknown') . '
+            </p>
+        </div>
+        ';
+
+        try {
+            $result = sendEmail($testEmail, $subject, $body);
+
+            if ($result) {
+                echo json_encode([
+                    'success' => true,
+                    'message' => "Test email sent successfully to {$testEmail}"
+                ]);
+            } else {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Failed to send test email. Check email configuration and logs.'
+                ]);
+            }
+        } catch (\Exception $e) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ]);
+        }
+        exit;
     }
 }

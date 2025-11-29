@@ -77,7 +77,6 @@
                 <a href="/contact" class="btn btn-primary">Contact Us Today</a>
             </div>
             <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--medium-gray);">
-                <p><i class="fas fa-phone"></i> <strong>0406 907 849</strong></p>
                 <p><i class="fas fa-envelope"></i> <strong>support@elitecarhire.au</strong></p>
             </div>
         </div>

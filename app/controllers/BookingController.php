@@ -67,12 +67,140 @@ class BookingController {
                      [$vehicle['owner_id'], $bookingId, "Booking: {$vehicle['make']} {$vehicle['model']}", 
                       "$bookingDate $startTime", "$bookingDate $endTime"]);
         
-        createNotification($vehicle['owner_id'], 'new_booking', 'New Booking', 
+        createNotification($vehicle['owner_id'], 'new_booking', 'New Booking',
                           "You have a new booking for your {$vehicle['make']} {$vehicle['model']}");
-        
+
+        // Get customer and owner details
+        $customer = db()->fetch("SELECT * FROM users WHERE id = ?", [$_SESSION['user_id']]);
+        $owner = db()->fetch("SELECT * FROM users WHERE id = ?", [$vehicle['owner_id']]);
+
+        // Send email to customer - booking created, awaiting confirmation
+        $this->sendCustomerBookingCreatedEmail($customer, $vehicle, $bookingReference, $bookingDate, $startTime, $endTime, $duration, $totalAmount, $bookingId);
+
+        // Send email to owner - new booking request
+        $this->sendOwnerNewBookingEmail($owner, $customer, $vehicle, $bookingReference, $bookingDate, $startTime, $endTime, $duration, $totalAmount, $bookingId);
+
+        // Send email to admin - new booking notification
+        $this->sendAdminNewBookingEmail($customer, $owner, $vehicle, $bookingReference, $bookingDate, $totalAmount, $bookingId);
+
         logAudit('create_booking', 'bookings', $bookingId);
-        
+
         flash('success', 'Booking created successfully. Reference: ' . $bookingReference);
         redirect('/customer/bookings');
+    }
+
+    private function sendCustomerBookingCreatedEmail($customer, $vehicle, $reference, $date, $startTime, $endTime, $duration, $amount, $bookingId) {
+        $vehicleName = "{$vehicle['year']} {$vehicle['make']} {$vehicle['model']}";
+        $viewUrl = generateLoginUrl("/customer/bookings");
+        $viewButton = getEmailButton($viewUrl, 'View My Bookings', 'primary');
+
+        $body = "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+            <h2 style='color: #C5A253;'>Booking Created Successfully!</h2>
+            <p>Dear {$customer['first_name']},</p>
+            <p>Your booking request has been created. The vehicle owner will review and confirm your booking shortly.</p>
+
+            <div style='background: #f5f5f5; padding: 20px; border-left: 4px solid #C5A253; margin: 20px 0;'>
+                <h3 style='margin-top: 0;'>Booking Details</h3>
+                <p><strong>Booking Reference:</strong> {$reference}</p>
+                <p><strong>Vehicle:</strong> {$vehicleName}</p>
+                <p><strong>Date:</strong> {$date}</p>
+                <p><strong>Time:</strong> {$startTime} - {$endTime}</p>
+                <p><strong>Duration:</strong> {$duration} hours</p>
+                <p><strong>Total Amount:</strong> \$" . number_format($amount, 2) . " AUD</p>
+                <p><strong>Status:</strong> <span style='color: #f39c12; font-weight: bold;'>PENDING CONFIRMATION</span></p>
+            </div>
+
+            <div style='background: #fff3cd; padding: 15px; border-left: 4px solid #f39c12; margin: 20px 0;'>
+                <p style='margin: 0;'><strong>⏳ Next Steps:</strong> Once the owner confirms your booking, you'll receive a payment link to complete your reservation.</p>
+            </div>
+
+            {$viewButton}
+
+            <p>If you have any questions, please contact us at support@elitecarhire.au</p>
+
+            <p style='margin-top: 30px;'>Best regards,<br>
+            <strong>Elite Car Hire Team</strong><br>
+            Melbourne, Australia</p>
+        </div>
+        ";
+
+        sendEmail($customer['email'], "Booking Created - {$reference}", $body);
+    }
+
+    private function sendOwnerNewBookingEmail($owner, $customer, $vehicle, $reference, $date, $startTime, $endTime, $duration, $amount, $bookingId) {
+        $vehicleName = "{$vehicle['year']} {$vehicle['make']} {$vehicle['model']}";
+        $confirmUrl = generateActionUrl('confirm_booking', '/owner/bookings/confirm-action', $owner['id'], 'booking', $bookingId);
+        $viewUrl = generateLoginUrl("/owner/bookings");
+
+        $confirmButton = getEmailButton($confirmUrl, 'Confirm Booking', 'success');
+        $viewButton = getEmailButton($viewUrl, 'View All Bookings', 'primary');
+
+        $body = "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+            <h2 style='color: #C5A253;'>New Booking Request!</h2>
+            <p>Hi {$owner['first_name']},</p>
+            <p>You have received a new booking request for your <strong>{$vehicleName}</strong>.</p>
+
+            <div style='background: #f5f5f5; padding: 20px; border-left: 4px solid #C5A253; margin: 20px 0;'>
+                <h3 style='margin-top: 0;'>Booking Details</h3>
+                <p><strong>Booking Reference:</strong> {$reference}</p>
+                <p><strong>Vehicle:</strong> {$vehicleName}</p>
+                <p><strong>Customer:</strong> {$customer['first_name']} {$customer['last_name']}</p>
+                <p><strong>Date:</strong> {$date}</p>
+                <p><strong>Time:</strong> {$startTime} - {$endTime}</p>
+                <p><strong>Duration:</strong> {$duration} hours</p>
+                <p><strong>Amount:</strong> \$" . number_format($amount, 2) . " AUD</p>
+            </div>
+
+            <p><strong>Please review and confirm this booking:</strong></p>
+
+            {$confirmButton}
+            {$viewButton}
+
+            <p style='color: #666; font-size: 14px;'><em>Note: Once confirmed, the customer will receive a payment link. After payment, your payout will be processed automatically.</em></p>
+
+            <p style='margin-top: 30px;'>Best regards,<br>
+            <strong>Elite Car Hire Team</strong></p>
+        </div>
+        ";
+
+        $subject = "New Booking Request - {$vehicleName}";
+        sendEmail($owner['email'], $subject, $body);
+
+        // Track this email for reminder sending
+        trackEmailForReminder('booking_request', 'booking', $bookingId, $owner['email'], $subject);
+    }
+
+    private function sendAdminNewBookingEmail($customer, $owner, $vehicle, $reference, $date, $amount, $bookingId) {
+        $vehicleName = "{$vehicle['year']} {$vehicle['make']} {$vehicle['model']}";
+        $viewUrl = generateLoginUrl("/admin/bookings");
+        $viewButton = getEmailButton($viewUrl, 'View in Admin Panel', 'primary');
+
+        $body = "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+            <h2 style='color: #C5A253;'>New Booking Created</h2>
+            <p>A new booking has been created in the system.</p>
+
+            <div style='background: #f5f5f5; padding: 20px; border-left: 4px solid #C5A253; margin: 20px 0;'>
+                <h3 style='margin-top: 0;'>Booking Summary</h3>
+                <p><strong>Reference:</strong> {$reference}</p>
+                <p><strong>Customer:</strong> {$customer['first_name']} {$customer['last_name']} ({$customer['email']})</p>
+                <p><strong>Owner:</strong> {$owner['first_name']} {$owner['last_name']} ({$owner['email']})</p>
+                <p><strong>Vehicle:</strong> {$vehicleName}</p>
+                <p><strong>Date:</strong> {$date}</p>
+                <p><strong>Amount:</strong> \$" . number_format($amount, 2) . " AUD</p>
+                <p><strong>Status:</strong> <span style='color: #f39c12;'>Pending Confirmation</span></p>
+            </div>
+
+            {$viewButton}
+
+            <p style='margin-top: 30px;'>- Elite Car Hire System</p>
+        </div>
+        ";
+
+        // Send to admin email (get from config or database)
+        $adminEmail = config('email.booking_confirmations', 'bookings_confirmations@elitecarhire.au');
+        sendEmail($adminEmail, "New Booking - {$reference}", $body);
     }
 }

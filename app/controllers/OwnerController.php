@@ -177,9 +177,54 @@ class OwnerController {
             }
         }
 
+        // Send notification email to admin
+        $this->sendVehicleSubmissionNotification($vehicleId, $ownerId, $data);
+
         logAudit('create_vehicle', 'vehicles', $vehicleId);
         flash('success', 'Vehicle listing submitted for approval');
         redirect('/owner/listings');
+    }
+
+    private function sendVehicleSubmissionNotification($vehicleId, $ownerId, $vehicleData) {
+        $owner = db()->fetch("SELECT * FROM users WHERE id = ?", [$ownerId]);
+        $vehicleName = "{$vehicleData['year']} {$vehicleData['make']} {$vehicleData['model']}";
+
+        $reviewUrl = generateLoginUrl("/admin/vehicles");
+        $reviewButton = getEmailButton($reviewUrl, 'Review Vehicle', 'primary');
+
+        $body = "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+            <h2 style='color: #C5A253;'>🚗 New Vehicle Submitted for Approval</h2>
+            <p>A new vehicle listing has been submitted and requires your review.</p>
+
+            <div style='background: #f5f5f5; padding: 20px; border-left: 4px solid #C5A253; margin: 20px 0;'>
+                <h3 style='margin-top: 0;'>Vehicle Details</h3>
+                <p><strong>Vehicle:</strong> {$vehicleName}</p>
+                <p><strong>Category:</strong> " . ucwords(str_replace('_', ' ', $vehicleData['category'])) . "</p>
+                <p><strong>Price:</strong> $" . number_format($vehicleData['hourly_rate'], 2) . "/hour</p>
+                <p><strong>Max Passengers:</strong> {$vehicleData['max_passengers']}</p>
+            </div>
+
+            <div style='background: #fff; padding: 15px; border: 1px solid #ddd; margin: 20px 0;'>
+                <h3 style='margin-top: 0;'>Owner Information</h3>
+                <p><strong>Name:</strong> {$owner['first_name']} {$owner['last_name']}</p>
+                <p><strong>Email:</strong> <a href='mailto:{$owner['email']}'>{$owner['email']}</a></p>
+            </div>
+
+            <p><strong>Please review and approve or reject this vehicle listing.</strong></p>
+
+            {$reviewButton}
+
+            <p style='margin-top: 30px;'>- Elite Car Hire System</p>
+        </div>
+        ";
+
+        $vehiclesEmail = config('email.vehicle_approvals', 'vehicles@elitecarhire.au');
+        $subject = "New Vehicle Submission - {$vehicleName}";
+        sendEmail($vehiclesEmail, $subject, $body);
+
+        // Track this email for reminder sending
+        trackEmailForReminder('vehicle_approval', 'vehicle', $vehicleId, $vehiclesEmail, $subject);
     }
 
     public function editListing($id) {
@@ -355,6 +400,136 @@ class OwnerController {
         view('owner/bookings', compact('bookings', 'status', 'view', 'blockedDates', 'statusCounts'));
     }
 
+    public function confirmBookingAction() {
+        requireAuth('owner');
+
+        $token = $_GET['token'] ?? '';
+        $ownerId = $_SESSION['user_id'];
+
+        if (empty($token)) {
+            flash('error', 'Invalid or missing action token');
+            redirect('/owner/bookings');
+        }
+
+        // Verify the action token
+        $tokenData = verifyActionToken($token);
+
+        if (!$tokenData) {
+            flash('error', 'This link has expired or has already been used. Please use the booking management page instead.');
+            redirect('/owner/bookings');
+        }
+
+        // Verify the token belongs to the current user
+        if ($tokenData['user_id'] != $ownerId) {
+            flash('error', 'This action is not authorized for your account');
+            redirect('/owner/bookings');
+        }
+
+        // Verify the action type
+        if ($tokenData['action_type'] !== 'confirm_booking' || $tokenData['entity_type'] !== 'booking') {
+            flash('error', 'Invalid action type');
+            redirect('/owner/bookings');
+        }
+
+        $bookingId = $tokenData['entity_id'];
+
+        // Verify booking belongs to owner
+        $booking = db()->fetch(
+            "SELECT b.*, v.make, v.model, u.first_name, u.last_name
+             FROM bookings b
+             JOIN vehicles v ON b.vehicle_id = v.id
+             JOIN users u ON b.customer_id = u.id
+             WHERE b.id = ? AND b.owner_id = ?",
+            [$bookingId, $ownerId]
+        );
+
+        if (!$booking) {
+            flash('error', 'Booking not found or access denied');
+            redirect('/owner/bookings');
+        }
+
+        if ($booking['status'] !== 'pending') {
+            flash('warning', 'This booking has already been ' . $booking['status']);
+            redirect('/owner/bookings');
+        }
+
+        // Update booking status
+        db()->execute(
+            "UPDATE bookings SET status = 'confirmed', updated_at = NOW()
+             WHERE id = ?",
+            [$bookingId]
+        );
+
+        // Mark the booking request email as responded
+        markEmailReminderResponded('booking', $bookingId);
+
+        // Get full booking and vehicle details for email
+        $fullBooking = db()->fetch(
+            "SELECT b.*, v.year, v.make, v.model, v.hourly_rate,
+                    c.email as customer_email, c.first_name as customer_first_name,
+                    o.first_name as owner_first_name
+             FROM bookings b
+             JOIN vehicles v ON b.vehicle_id = v.id
+             JOIN users c ON b.customer_id = c.id
+             JOIN users o ON b.owner_id = o.id
+             WHERE b.id = ?",
+            [$bookingId]
+        );
+
+        // Send booking confirmation email to customer
+        $this->sendBookingConfirmedEmail($fullBooking);
+
+        // Create notification for customer
+        if (file_exists(__DIR__ . '/../helpers/notifications.php')) {
+            try {
+                require_once __DIR__ . '/../helpers/notifications.php';
+                if (function_exists('notifyBookingConfirmed')) {
+                    $vehicleName = $booking['make'] . ' ' . $booking['model'];
+                    notifyBookingConfirmed(
+                        $booking['customer_id'],
+                        $booking['booking_reference'],
+                        $vehicleName
+                    );
+                }
+            } catch (\Exception $e) {
+                error_log("Notification error in confirmBookingAction: " . $e->getMessage());
+            } catch (\Error $e) {
+                error_log("Notification fatal error in confirmBookingAction: " . $e->getMessage());
+            }
+        }
+
+        // If payment is already made and booking time has started, transition to in_progress
+        if ($booking['payment_status'] === 'paid') {
+            if (file_exists(__DIR__ . '/../helpers/booking_automation.php')) {
+                try {
+                    require_once __DIR__ . '/../helpers/booking_automation.php';
+                    if (function_exists('canTransitionToInProgress') && canTransitionToInProgress($bookingId)) {
+                        transitionBookingToInProgress($bookingId);
+                        flash('success', 'Booking confirmed and started!');
+                    } else {
+                        flash('success', 'Booking confirmed successfully! It will automatically start when the booking time begins.');
+                    }
+                } catch (\Exception $e) {
+                    error_log("Booking automation error in confirmBookingAction: " . $e->getMessage());
+                    flash('success', 'Booking confirmed successfully! It will automatically start when the booking time begins.');
+                } catch (\Error $e) {
+                    error_log("Booking automation fatal error in confirmBookingAction: " . $e->getMessage());
+                    flash('success', 'Booking confirmed successfully! It will automatically start when the booking time begins.');
+                }
+            } else {
+                flash('success', 'Booking confirmed successfully! It will automatically start when the booking time begins.');
+            }
+        } else {
+            flash('success', 'Booking confirmed successfully! Waiting for customer payment.');
+        }
+
+        logAudit('confirm_booking_via_email', 'bookings', $bookingId, [
+            'booking_reference' => $booking['booking_reference']
+        ]);
+
+        redirect('/owner/bookings');
+    }
+
     public function confirmBooking() {
         requireAuth('owner');
 
@@ -394,6 +569,25 @@ class OwnerController {
              WHERE id = ?",
             [$bookingId]
         );
+
+        // Mark the booking request email as responded
+        markEmailReminderResponded('booking', $bookingId);
+
+        // Get full booking and vehicle details for email
+        $fullBooking = db()->fetch(
+            "SELECT b.*, v.year, v.make, v.model, v.hourly_rate,
+                    c.email as customer_email, c.first_name as customer_first_name,
+                    o.first_name as owner_first_name
+             FROM bookings b
+             JOIN vehicles v ON b.vehicle_id = v.id
+             JOIN users c ON b.customer_id = c.id
+             JOIN users o ON b.owner_id = o.id
+             WHERE b.id = ?",
+            [$bookingId]
+        );
+
+        // Send booking confirmation email to customer
+        $this->sendBookingConfirmedEmail($fullBooking);
 
         // Create notification for customer
         if (file_exists(__DIR__ . '/../helpers/notifications.php')) {
@@ -936,5 +1130,46 @@ class OwnerController {
         $ownerId = $_SESSION['user_id'];
         $changes = db()->fetchAll("SELECT * FROM pending_changes WHERE owner_id = ? ORDER BY created_at DESC", [$ownerId]);
         view('owner/pending-changes', compact('changes'));
+    }
+
+    private function sendBookingConfirmedEmail($booking) {
+        $vehicleName = "{$booking['year']} {$booking['make']} {$booking['model']}";
+        $paymentUrl = generateLoginUrl("/customer/bookings");
+        $viewButton = getEmailButton($paymentUrl, 'View Booking & Make Payment', 'success');
+
+        $body = "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+            <h2 style='color: #4caf50;'>✓ Booking Confirmed!</h2>
+            <p>Dear {$booking['customer_first_name']},</p>
+            <p>Great news! <strong>{$booking['owner_first_name']}</strong> has confirmed your booking request.</p>
+
+            <div style='background: #e8f5e9; padding: 20px; border-left: 4px solid #4caf50; margin: 20px 0;'>
+                <h3 style='margin-top: 0; color: #2e7d32;'>Booking Confirmed</h3>
+                <p><strong>Booking Reference:</strong> {$booking['booking_reference']}</p>
+                <p><strong>Vehicle:</strong> {$vehicleName}</p>
+                <p><strong>Date:</strong> {$booking['booking_date']}</p>
+                <p><strong>Time:</strong> {$booking['start_time']} - {$booking['end_time']}</p>
+                <p><strong>Duration:</strong> {$booking['duration_hours']} hours</p>
+                <p><strong>Total Amount:</strong> \$" . number_format($booking['total_amount'], 2) . " AUD</p>
+                <p><strong>Status:</strong> <span style='color: #4caf50; font-weight: bold;'>CONFIRMED - AWAITING PAYMENT</span></p>
+            </div>
+
+            <div style='background: #fff3cd; padding: 15px; border-left: 4px solid #f39c12; margin: 20px 0;'>
+                <p style='margin: 0;'><strong>⚡ Next Step:</strong> Complete your payment to secure this booking. Once payment is received, you'll get instant confirmation.</p>
+            </div>
+
+            {$viewButton}
+
+            <p style='color: #666; font-size: 14px;'><em>Please note: This booking is reserved for you, but payment must be completed within 24 hours to maintain the reservation.</em></p>
+
+            <p>If you have any questions, please contact us at support@elitecarhire.au</p>
+
+            <p style='margin-top: 30px;'>Best regards,<br>
+            <strong>Elite Car Hire Team</strong><br>
+            Melbourne, Australia</p>
+        </div>
+        ";
+
+        sendEmail($booking['customer_email'], "Booking Confirmed - {$booking['booking_reference']}", $body);
     }
 }
