@@ -992,3 +992,67 @@ class OwnerController {
         view('owner/pending-changes', compact('changes'));
     }
 }
+
+    public function notifications() {
+        requireAuth('owner');
+        $ownerId = $_SESSION['user_id'];
+        
+        $notifications = db()->fetchAll(
+            "SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC",
+            [$ownerId]
+        );
+        
+        view('owner/notifications', compact('notifications'));
+    }
+    
+    public function markNotificationRead($id) {
+        requireAuth('owner');
+        $ownerId = $_SESSION['user_id'];
+        
+        // Verify CSRF token
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token.');
+            redirect('/owner/notifications');
+        }
+        
+        db()->execute(
+            "UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?",
+            [$id, $ownerId]
+        );
+        
+        flash('success', 'Notification marked as read');
+        redirect('/owner/notifications');
+    
+    public function notifications() {
+        requireAuth('owner');
+        $ownerId = $_SESSION['user_id'];
+        
+        $notifications = db()->fetchAll(
+            "SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC",
+            [$ownerId]
+        );
+        
+        view('owner/notifications', compact('notifications'));
+    }
+    
+    public function markNotificationRead($id) {
+        requireAuth('owner');
+        $ownerId = $_SESSION['user_id'];
+        
+        // Verify CSRF token
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token.');
+            redirect('/owner/notifications');
+        }
+        
+        db()->execute(
+            "UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?",
+            [$id, $ownerId]
+        );
+        
+        flash('success', 'Notification marked as read');
+        redirect('/owner/notifications');
+    }
+}

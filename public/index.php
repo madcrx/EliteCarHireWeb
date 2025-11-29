@@ -94,6 +94,8 @@ $router->post('/owner/calendar/unblock', 'OwnerController@unblockDate');
 $router->get('/owner/analytics', 'OwnerController@analytics');
 $router->get('/owner/payouts', 'OwnerController@payouts');
 $router->get('/owner/reviews', 'OwnerController@reviews');
+$router->get('/owner/notifications', 'OwnerController@notifications');
+$router->post('/owner/notifications/{id}/mark-read', 'OwnerController@markNotificationRead');
 $router->get('/owner/messages', 'OwnerController@messages');
 $router->get('/owner/pending-changes', 'OwnerController@pendingChanges');
 
