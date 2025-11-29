@@ -3,6 +3,7 @@ namespace controllers;
 
 // Include email sender for immediate email delivery
 require_once __DIR__ . '/../helpers/email_sender.php';
+require_once __DIR__ . '/../helpers/booking_emails.php';
 
 class OwnerController {
     public function __construct() {

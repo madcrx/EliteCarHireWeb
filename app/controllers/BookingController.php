@@ -1,6 +1,10 @@
 <?php
 namespace controllers;
 
+// Include email notification functions
+require_once __DIR__ . '/../helpers/email_sender.php';
+require_once __DIR__ . '/../helpers/booking_emails.php';
+
 class BookingController {
     public function create() {
         requireAuth();
@@ -76,11 +80,15 @@ class BookingController {
                      [$vehicle['owner_id'], $bookingId, "Booking: {$vehicle['make']} {$vehicle['model']}", 
                       "$bookingDate $startTime", "$bookingDate $endTime"]);
         
-        createNotification($vehicle['owner_id'], 'new_booking', 'New Booking', 
+        createNotification($vehicle['owner_id'], 'new_booking', 'New Booking',
                           "You have a new booking for your {$vehicle['make']} {$vehicle['model']}");
-        
+
         logAudit('create_booking', 'bookings', $bookingId);
-        
+
+        // Send email notifications
+        emailCustomerBookingCreated($_SESSION['user_id'], $bookingId);
+        emailOwnerNewBooking($bookingId);
+
         flash('success', 'Booking created successfully. Reference: ' . $bookingReference);
         redirect('/customer/bookings');
     }

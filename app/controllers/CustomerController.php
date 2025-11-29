@@ -1,6 +1,10 @@
 <?php
 namespace controllers;
 
+// Include email notification functions
+require_once __DIR__ . '/../helpers/email_sender.php';
+require_once __DIR__ . '/../helpers/booking_emails.php';
+
 class CustomerController {
     public function __construct() {
         requireAuth('customer');
@@ -149,6 +153,10 @@ class CustomerController {
             ]
         );
 
+        // Send email notifications
+        emailOwnerCustomerApproved($bookingId);
+        emailCustomerBookingConfirmed($bookingId);
+
         flash('success', 'Booking approved! Please proceed with payment to secure your booking.');
         redirect('/customer/bookings/' . $bookingId);
     }
@@ -213,6 +221,10 @@ class CustomerController {
                 "Customer has rejected the additional charges for {$booking['make']} {$booking['model']} (Ref: {$booking['booking_reference']}). The booking has been cancelled."
             ]
         );
+
+        // Send email notifications
+        emailCustomerBookingRejected($bookingId);
+        emailOwnerBookingRejected($bookingId);
 
         flash('success', 'Additional charges rejected. The booking has been cancelled.');
         redirect('/customer/bookings');
