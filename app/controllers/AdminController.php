@@ -926,11 +926,101 @@ class AdminController {
     }
 
     public function paymentSettings() {
-        view('admin/settings/payment');
+        // Load payment-related settings
+        $stripeTestKey = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'stripe_test_secret_key'")['setting_value'] ?? '';
+        $stripeLiveKey = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'stripe_live_secret_key'")['setting_value'] ?? '';
+        $stripeTestPublishable = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'stripe_test_publishable_key'")['setting_value'] ?? '';
+        $stripeLivePublishable = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'stripe_live_publishable_key'")['setting_value'] ?? '';
+        $stripeWebhookSecret = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'stripe_webhook_secret'")['setting_value'] ?? '';
+        $stripeMode = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'stripe_mode'")['setting_value'] ?? 'test';
+        $paymentCurrency = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'payment_currency'")['setting_value'] ?? 'AUD';
+
+        view('admin/settings/payment', compact(
+            'stripeTestKey', 'stripeLiveKey', 'stripeTestPublishable',
+            'stripeLivePublishable', 'stripeWebhookSecret', 'stripeMode', 'paymentCurrency'
+        ));
+    }
+
+    public function savePaymentSettings() {
+        requireAuth('admin');
+
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token.');
+            redirect('/admin/settings/payment');
+        }
+
+        $settings = [
+            'stripe_test_secret_key' => $_POST['stripe_test_secret_key'] ?? '',
+            'stripe_live_secret_key' => $_POST['stripe_live_secret_key'] ?? '',
+            'stripe_test_publishable_key' => $_POST['stripe_test_publishable_key'] ?? '',
+            'stripe_live_publishable_key' => $_POST['stripe_live_publishable_key'] ?? '',
+            'stripe_webhook_secret' => $_POST['stripe_webhook_secret'] ?? '',
+            'stripe_mode' => $_POST['stripe_mode'] ?? 'test',
+            'payment_currency' => $_POST['payment_currency'] ?? 'AUD'
+        ];
+
+        foreach ($settings as $key => $value) {
+            $existing = db()->fetch("SELECT id FROM settings WHERE setting_key = ?", [$key]);
+            if ($existing) {
+                db()->execute("UPDATE settings SET setting_value = ?, updated_at = NOW() WHERE setting_key = ?", [$value, $key]);
+            } else {
+                db()->execute("INSERT INTO settings (setting_key, setting_value, created_at, updated_at) VALUES (?, ?, NOW(), NOW())", [$key, $value]);
+            }
+            logAudit('update_setting', 'settings', null, ['setting_key' => $key]);
+        }
+
+        flash('success', 'Payment settings saved successfully');
+        redirect('/admin/settings/payment');
     }
 
     public function emailConfiguration() {
-        view('admin/settings/email');
+        // Load email settings
+        $smtpHost = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'smtp_host'")['setting_value'] ?? '';
+        $smtpPort = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'smtp_port'")['setting_value'] ?? '587';
+        $smtpUsername = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'smtp_username'")['setting_value'] ?? '';
+        $smtpPassword = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'smtp_password'")['setting_value'] ?? '';
+        $smtpEncryption = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'smtp_encryption'")['setting_value'] ?? 'tls';
+        $emailFrom = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'email_from_address'")['setting_value'] ?? '';
+        $emailFromName = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'email_from_name'")['setting_value'] ?? '';
+
+        view('admin/settings/email', compact(
+            'smtpHost', 'smtpPort', 'smtpUsername', 'smtpPassword',
+            'smtpEncryption', 'emailFrom', 'emailFromName'
+        ));
+    }
+
+    public function saveEmailConfiguration() {
+        requireAuth('admin');
+
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token.');
+            redirect('/admin/settings/email');
+        }
+
+        $settings = [
+            'smtp_host' => $_POST['smtp_host'] ?? '',
+            'smtp_port' => $_POST['smtp_port'] ?? '587',
+            'smtp_username' => $_POST['smtp_username'] ?? '',
+            'smtp_password' => $_POST['smtp_password'] ?? '',
+            'smtp_encryption' => $_POST['smtp_encryption'] ?? 'tls',
+            'email_from_address' => $_POST['email_from_address'] ?? '',
+            'email_from_name' => $_POST['email_from_name'] ?? ''
+        ];
+
+        foreach ($settings as $key => $value) {
+            $existing = db()->fetch("SELECT id FROM settings WHERE setting_key = ?", [$key]);
+            if ($existing) {
+                db()->execute("UPDATE settings SET setting_value = ?, updated_at = NOW() WHERE setting_key = ?", [$value, $key]);
+            } else {
+                db()->execute("INSERT INTO settings (setting_key, setting_value, created_at, updated_at) VALUES (?, ?, NOW(), NOW())", [$key, $value]);
+            }
+            logAudit('update_setting', 'settings', null, ['setting_key' => $key]);
+        }
+
+        flash('success', 'Email configuration saved successfully');
+        redirect('/admin/settings/email');
     }
 
     public function commissionRates() {
@@ -946,7 +1036,55 @@ class AdminController {
     }
 
     public function systemConfiguration() {
-        view('admin/settings/system');
+        // Load system configuration settings
+        $siteName = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'site_name'")['setting_value'] ?? 'Elite Car Hire';
+        $siteUrl = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'site_url'")['setting_value'] ?? '';
+        $maintenanceMode = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'maintenance_mode'")['setting_value'] ?? '0';
+        $debugMode = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'debug_mode'")['setting_value'] ?? '0';
+        $timezone = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'timezone'")['setting_value'] ?? 'Australia/Sydney';
+        $sessionTimeout = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'session_timeout'")['setting_value'] ?? '3600';
+
+        // Load database info (read-only, from config)
+        $dbHost = $_ENV['DB_HOST'] ?? 'localhost';
+        $dbName = $_ENV['DB_NAME'] ?? '';
+        $dbUser = $_ENV['DB_USER'] ?? '';
+
+        view('admin/settings/system', compact(
+            'siteName', 'siteUrl', 'maintenanceMode', 'debugMode',
+            'timezone', 'sessionTimeout', 'dbHost', 'dbName', 'dbUser'
+        ));
+    }
+
+    public function saveSystemConfiguration() {
+        requireAuth('admin');
+
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token.');
+            redirect('/admin/settings/system');
+        }
+
+        $settings = [
+            'site_name' => $_POST['site_name'] ?? 'Elite Car Hire',
+            'site_url' => $_POST['site_url'] ?? '',
+            'maintenance_mode' => $_POST['maintenance_mode'] ?? '0',
+            'debug_mode' => $_POST['debug_mode'] ?? '0',
+            'timezone' => $_POST['timezone'] ?? 'Australia/Sydney',
+            'session_timeout' => $_POST['session_timeout'] ?? '3600'
+        ];
+
+        foreach ($settings as $key => $value) {
+            $existing = db()->fetch("SELECT id FROM settings WHERE setting_key = ?", [$key]);
+            if ($existing) {
+                db()->execute("UPDATE settings SET setting_value = ?, updated_at = NOW() WHERE setting_key = ?", [$value, $key]);
+            } else {
+                db()->execute("INSERT INTO settings (setting_key, setting_value, created_at, updated_at) VALUES (?, ?, NOW(), NOW())", [$key, $value]);
+            }
+            logAudit('update_setting', 'settings', null, ['setting_key' => $key]);
+        }
+
+        flash('success', 'System configuration saved successfully');
+        redirect('/admin/settings/system');
     }
 
     public function paymentLogs() {
