@@ -118,6 +118,8 @@ $router->get('/customer/dashboard', 'CustomerController@dashboard');
 $router->get('/customer/hires', 'CustomerController@hires');
 $router->get('/customer/bookings', 'CustomerController@bookings');
 $router->get('/customer/bookings/{id}', 'CustomerController@viewBooking');
+$router->post('/customer/bookings/approve', 'CustomerController@approveBooking');
+$router->post('/customer/bookings/reject', 'CustomerController@rejectBooking');
 $router->get('/customer/profile', 'CustomerController@profile');
 $router->post('/customer/profile/update', 'CustomerController@updateProfile');
 

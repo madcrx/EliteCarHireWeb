@@ -421,7 +421,14 @@ class OwnerController {
 
         $bookingId = $_POST['booking_id'] ?? '';
         $additionalCharges = floatval($_POST['additional_charges'] ?? 0);
+        $additionalChargesReason = trim($_POST['additional_charges_reason'] ?? '');
         $ownerId = $_SESSION['user_id'];
+
+        // Validate reason is provided if there are additional charges
+        if ($additionalCharges > 0 && empty($additionalChargesReason)) {
+            flash('error', 'Please provide a reason for the additional charges.');
+            redirect('/owner/bookings');
+        }
 
         // Verify booking belongs to owner
         $booking = db()->fetch(
@@ -446,89 +453,70 @@ class OwnerController {
         // Calculate final total amount (base + any additional charges)
         $finalTotalAmount = $booking['base_amount'] + $additionalCharges;
 
-        // Update booking with final price and confirm status
+        // Determine booking status based on whether there are additional charges
+        // If additional charges exist, customer must approve before payment
+        $newStatus = $additionalCharges > 0 ? 'awaiting_approval' : 'confirmed';
+
+        // Update booking with final price, reason, and status
         db()->execute(
             "UPDATE bookings SET
                 additional_charges = ?,
+                additional_charges_reason = ?,
                 total_amount = ?,
-                status = 'confirmed',
+                status = ?,
                 updated_at = NOW()
              WHERE id = ?",
-            [$additionalCharges, $finalTotalAmount, $bookingId]
+            [$additionalCharges, $additionalChargesReason, $finalTotalAmount, $newStatus, $bookingId]
         );
 
         // Log the confirmation
         logAudit('confirm_booking', 'bookings', $bookingId, [
             'additional_charges' => $additionalCharges,
-            'final_total' => $finalTotalAmount
+            'additional_charges_reason' => $additionalChargesReason,
+            'final_total' => $finalTotalAmount,
+            'new_status' => $newStatus
         ]);
 
-        // Create notification for customer
-        if (file_exists(__DIR__ . '/../helpers/notifications.php')) {
-            try {
-                require_once __DIR__ . '/../helpers/notifications.php';
-                if (function_exists('notifyBookingConfirmed')) {
-                    $vehicleName = $booking['make'] . ' ' . $booking['model'];
-                    notifyBookingConfirmed(
-                        $booking['customer_id'],
-                        $booking['booking_reference'],
-                        $vehicleName
-                    );
-                }
-            } catch (\Exception $e) {
-                error_log("Notification error in confirmBooking: " . $e->getMessage());
-            } catch (\Error $e) {
-                error_log("Notification fatal error in confirmBooking: " . $e->getMessage());
-            }
-        }
+        // Create notification for customer based on workflow
+        $vehicleName = $booking['make'] . ' ' . $booking['model'];
+        $notificationTitle = '';
+        $notificationMessage = '';
 
-        // Prepare success message with price information
-        $priceMessage = '';
         if ($additionalCharges > 0) {
-            $priceMessage = ' Additional charges of $' . number_format($additionalCharges, 2) . ' added for excess travel. New total: $' . number_format($finalTotalAmount, 2) . '.';
-        }
-
-        // Send payment request/notification to customer
-        // TODO: Integrate with payment gateway (Stripe) to send payment link to customer
-        // For now, we'll send a notification with the updated amount
-
-        // If payment is already made and booking time has started, transition to in_progress
-        if ($booking['payment_status'] === 'paid') {
-            if (file_exists(__DIR__ . '/../helpers/booking_automation.php')) {
-                try {
-                    require_once __DIR__ . '/../helpers/booking_automation.php';
-                    if (function_exists('canTransitionToInProgress') && canTransitionToInProgress($bookingId)) {
-                        transitionBookingToInProgress($bookingId);
-                        flash('success', 'Booking confirmed and started!' . $priceMessage);
-                    } else {
-                        flash('success', 'Booking confirmed successfully!' . $priceMessage . ' It will automatically start when the booking time begins.');
-                    }
-                } catch (\Exception $e) {
-                    error_log("Booking automation error in confirmBooking: " . $e->getMessage());
-                    flash('success', 'Booking confirmed successfully!' . $priceMessage . ' It will automatically start when the booking time begins.');
-                } catch (\Error $e) {
-                    error_log("Booking automation fatal error in confirmBooking: " . $e->getMessage());
-                    flash('success', 'Booking confirmed successfully!' . $priceMessage . ' It will automatically start when the booking time begins.');
-                }
-            } else {
-                flash('success', 'Booking confirmed successfully!' . $priceMessage . ' It will automatically start when the booking time begins.');
-            }
+            // Customer needs to approve additional charges first
+            $notificationTitle = 'Booking Updated - Approval Required';
+            $notificationMessage = "Your booking for {$vehicleName} (Ref: {$booking['booking_reference']}) has been reviewed by the owner. " .
+                                   "Additional charges of $" . number_format($additionalCharges, 2) . " have been added. " .
+                                   "Reason: {$additionalChargesReason}. " .
+                                   "New total: $" . number_format($finalTotalAmount, 2) . ". " .
+                                   "Please review and approve the updated amount to proceed with your booking.";
         } else {
-            // Customer needs to pay - send them the updated total
-            flash('success', 'Booking confirmed!' . $priceMessage . ' Customer has been notified and will receive payment request for $' . number_format($finalTotalAmount, 2) . '.');
-
-            // Create in-app notification for customer about payment
-            db()->execute(
-                "INSERT INTO notifications (user_id, title, message, type, created_at)
-                 VALUES (?, ?, ?, 'booking', NOW())",
-                [
-                    $booking['customer_id'],
-                    'Booking Confirmed - Payment Required',
-                    'Your booking for ' . $booking['make'] . ' ' . $booking['model'] . ' has been confirmed! Total amount: $' . number_format($finalTotalAmount, 2) . '. Please proceed with payment to secure your booking.'
-                ]
-            );
+            // Direct confirmation - no additional charges
+            $notificationTitle = 'Booking Confirmed - Payment Required';
+            $notificationMessage = "Your booking for {$vehicleName} (Ref: {$booking['booking_reference']}) has been confirmed! " .
+                                   "Total amount: $" . number_format($finalTotalAmount, 2) . ". " .
+                                   "Please proceed with payment to secure your booking.";
         }
 
+        // Send in-app notification to customer
+        db()->execute(
+            "INSERT INTO notifications (user_id, title, message, type, created_at)
+             VALUES (?, ?, ?, 'booking', NOW())",
+            [$booking['customer_id'], $notificationTitle, $notificationMessage]
+        );
+
+        // Prepare success message for owner
+        $successMessage = '';
+        if ($additionalCharges > 0) {
+            $successMessage = 'Booking updated with additional charges of $' . number_format($additionalCharges, 2) . '. ' .
+                            'New total: $' . number_format($finalTotalAmount, 2) . '. ' .
+                            'Customer has been notified and must approve the changes before proceeding to payment.';
+        } else {
+            // No additional charges - booking directly confirmed
+            $successMessage = 'Booking confirmed! Customer has been notified and can now proceed to payment for $' . number_format($finalTotalAmount, 2) . '.';
+        }
+
+        flash('success', $successMessage);
         redirect('/owner/bookings');
     }
 

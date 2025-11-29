@@ -89,4 +89,132 @@ class CustomerController {
 
         view('customer/booking-detail', compact('booking', 'images'));
     }
+
+    public function approveBooking() {
+        requireAuth('customer');
+
+        // Verify CSRF token
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token. Please try again.');
+            redirect('/customer/bookings');
+        }
+
+        $bookingId = $_POST['booking_id'] ?? '';
+        $customerId = $_SESSION['user_id'];
+
+        // Verify booking belongs to customer and is awaiting approval
+        $booking = db()->fetch(
+            "SELECT b.*, v.make, v.model
+             FROM bookings b
+             JOIN vehicles v ON b.vehicle_id = v.id
+             WHERE b.id = ? AND b.customer_id = ?",
+            [$bookingId, $customerId]
+        );
+
+        if (!$booking) {
+            flash('error', 'Booking not found or access denied');
+            redirect('/customer/bookings');
+        }
+
+        if ($booking['status'] !== 'awaiting_approval') {
+            flash('error', 'This booking is not awaiting approval');
+            redirect('/customer/bookings');
+        }
+
+        // Update booking status to confirmed
+        db()->execute(
+            "UPDATE bookings SET
+                status = 'confirmed',
+                updated_at = NOW()
+             WHERE id = ?",
+            [$bookingId]
+        );
+
+        // Log the approval
+        logAudit('approve_booking_changes', 'bookings', $bookingId, [
+            'customer_id' => $customerId,
+            'total_amount' => $booking['total_amount'],
+            'additional_charges' => $booking['additional_charges']
+        ]);
+
+        // Send notification to owner
+        db()->execute(
+            "INSERT INTO notifications (user_id, title, message, type, created_at)
+             VALUES (?, ?, ?, 'booking', NOW())",
+            [
+                $booking['owner_id'],
+                'Customer Approved Booking Changes',
+                "Customer has approved the updated booking for {$booking['make']} {$booking['model']} (Ref: {$booking['booking_reference']}). Total amount: $" . number_format($booking['total_amount'], 2) . ". Awaiting payment."
+            ]
+        );
+
+        flash('success', 'Booking approved! Please proceed with payment to secure your booking.');
+        redirect('/customer/bookings/' . $bookingId);
+    }
+
+    public function rejectBooking() {
+        requireAuth('customer');
+
+        // Verify CSRF token
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token. Please try again.');
+            redirect('/customer/bookings');
+        }
+
+        $bookingId = $_POST['booking_id'] ?? '';
+        $customerId = $_SESSION['user_id'];
+
+        // Verify booking belongs to customer and is awaiting approval
+        $booking = db()->fetch(
+            "SELECT b.*, v.make, v.model
+             FROM bookings b
+             JOIN vehicles v ON b.vehicle_id = v.id
+             WHERE b.id = ? AND b.customer_id = ?",
+            [$bookingId, $customerId]
+        );
+
+        if (!$booking) {
+            flash('error', 'Booking not found or access denied');
+            redirect('/customer/bookings');
+        }
+
+        if ($booking['status'] !== 'awaiting_approval') {
+            flash('error', 'This booking is not awaiting approval');
+            redirect('/customer/bookings');
+        }
+
+        // Cancel the booking
+        db()->execute(
+            "UPDATE bookings SET
+                status = 'cancelled',
+                cancellation_reason = 'Customer rejected additional charges',
+                cancelled_at = NOW(),
+                updated_at = NOW()
+             WHERE id = ?",
+            [$bookingId]
+        );
+
+        // Log the rejection
+        logAudit('reject_booking_changes', 'bookings', $bookingId, [
+            'customer_id' => $customerId,
+            'rejected_amount' => $booking['total_amount'],
+            'additional_charges' => $booking['additional_charges']
+        ]);
+
+        // Send notification to owner
+        db()->execute(
+            "INSERT INTO notifications (user_id, title, message, type, created_at)
+             VALUES (?, ?, ?, 'booking', NOW())",
+            [
+                $booking['owner_id'],
+                'Customer Rejected Booking Changes',
+                "Customer has rejected the additional charges for {$booking['make']} {$booking['model']} (Ref: {$booking['booking_reference']}). The booking has been cancelled."
+            ]
+        );
+
+        flash('success', 'Additional charges rejected. The booking has been cancelled.');
+        redirect('/customer/bookings');
+    }
 }

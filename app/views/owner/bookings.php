@@ -222,7 +222,7 @@
         </p>
 
         <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 1rem; margin-bottom: 1.5rem;">
-            <strong>Important:</strong> You can add extra charges for excess travel before confirming. The updated total will be sent to the customer for payment.
+            <strong>Important:</strong> If you add extra charges, you must provide a reason. The customer must approve the new total before proceeding to payment.
         </div>
 
         <form method="POST" action="/owner/bookings/confirm" id="confirmBookingForm">
@@ -243,11 +243,21 @@
                 <label for="confirm_additional_charges">Additional Charges for Excess Travel (Optional)</label>
                 <input type="number" name="additional_charges" id="confirm_additional_charges"
                        step="0.01" min="0" value="0"
-                       oninput="updateConfirmTotalAmount()"
+                       oninput="updateConfirmTotalAmount(); toggleReasonField();"
                        placeholder="0.00"
                        style="font-size: 1.1rem;">
                 <small style="color: var(--dark-gray); display: block; margin-top: 0.5rem;">
                     Add any extra charges for excess travel or additional services
+                </small>
+            </div>
+
+            <div class="form-group" id="reasonFieldGroup" style="display: none;">
+                <label for="confirm_charges_reason">Reason for Additional Charges *</label>
+                <textarea name="additional_charges_reason" id="confirm_charges_reason"
+                          rows="3" placeholder="Explain why additional charges are being applied (e.g., Excess travel beyond agreed distance, Additional cleaning required, etc.)"
+                          style="width: 100%; padding: 0.75rem; border: 1px solid #dee2e6; border-radius: 4px; font-size: 1rem; font-family: inherit;"></textarea>
+                <small style="color: var(--danger); display: block; margin-top: 0.5rem; font-weight: 500;">
+                    Required when adding extra charges - customer will see this reason
                 </small>
             </div>
 
@@ -264,9 +274,10 @@
             <div style="background: #e7f3ff; border-left: 4px solid #0066cc; padding: 1rem; margin-bottom: 1.5rem;">
                 <strong>What happens next:</strong>
                 <ul style="margin: 0.5rem 0 0 1.5rem; padding: 0;">
-                    <li>Booking status changes to "Confirmed"</li>
+                    <li id="approvalStep" style="display: none;">Customer must approve the updated booking amount</li>
+                    <li>Booking status changes to <span id="statusLabel">"Confirmed"</span></li>
                     <li>Customer receives notification with final amount</li>
-                    <li>Customer will be prompted to complete payment</li>
+                    <li id="paymentStep">Customer will be prompted to complete payment</li>
                     <li>Booking becomes active once payment is received</li>
                 </ul>
             </div>
@@ -692,6 +703,49 @@ function updateConfirmTotalAmount() {
     const totalAmount = confirmBaseAmount + additionalCharges;
     document.getElementById('confirmTotalAmount').textContent = totalAmount.toFixed(2);
 }
+
+function toggleReasonField() {
+    const additionalCharges = parseFloat(document.getElementById('confirm_additional_charges').value) || 0;
+    const reasonGroup = document.getElementById('reasonFieldGroup');
+    const reasonField = document.getElementById('confirm_charges_reason');
+    const approvalStep = document.getElementById('approvalStep');
+    const statusLabel = document.getElementById('statusLabel');
+    const paymentStep = document.getElementById('paymentStep');
+
+    if (additionalCharges > 0) {
+        // Show reason field when charges are added
+        reasonGroup.style.display = 'block';
+        reasonField.required = true;
+
+        // Update workflow steps
+        approvalStep.style.display = 'list-item';
+        statusLabel.textContent = '"Awaiting Customer Approval"';
+        paymentStep.innerHTML = 'Once approved, customer will be prompted to complete payment';
+    } else {
+        // Hide reason field when no charges
+        reasonGroup.style.display = 'none';
+        reasonField.required = false;
+        reasonField.value = '';
+
+        // Reset workflow steps
+        approvalStep.style.display = 'none';
+        statusLabel.textContent = '"Confirmed"';
+        paymentStep.innerHTML = 'Customer will be prompted to complete payment';
+    }
+}
+
+// Form validation before submission
+document.getElementById('confirmBookingForm')?.addEventListener('submit', function(e) {
+    const additionalCharges = parseFloat(document.getElementById('confirm_additional_charges').value) || 0;
+    const reason = document.getElementById('confirm_charges_reason').value.trim();
+
+    if (additionalCharges > 0 && !reason) {
+        e.preventDefault();
+        alert('Please provide a reason for the additional charges.');
+        document.getElementById('confirm_charges_reason').focus();
+        return false;
+    }
+});
 
 // Close modals on outside click
 document.getElementById('editPriceModal')?.addEventListener('click', function(e) {
