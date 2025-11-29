@@ -1,6 +1,9 @@
 <?php
 namespace controllers;
 
+// Include email sender for immediate email delivery
+require_once __DIR__ . '/../helpers/email_sender.php';
+
 class OwnerController {
     public function __construct() {
         try {
@@ -601,7 +604,7 @@ class OwnerController {
 </body>
 </html>";
 
-            sendEmail($booking['email'], $emailSubject, $emailBody);
+            sendEmailEnhanced($booking['email'], $emailSubject, $emailBody, true);
         } else {
             // Email for direct confirmation (no additional charges)
             $emailSubject = "Booking Confirmed - Payment Required (Ref: {$booking['booking_reference']})";
@@ -659,7 +662,7 @@ class OwnerController {
 </body>
 </html>";
 
-            sendEmail($booking['email'], $emailSubject, $emailBody);
+            sendEmailEnhanced($booking['email'], $emailSubject, $emailBody, true);
         }
 
         // Prepare success message for owner
