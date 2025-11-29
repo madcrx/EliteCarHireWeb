@@ -57,6 +57,55 @@ $activeDisputes = db()->fetch("SELECT COUNT(*) as count FROM disputes WHERE stat
         </li>
         <li><a href="/admin/security"><i class="fas fa-shield-alt"></i> Security</a></li>
         <li><a href="/admin/audit-logs"><i class="fas fa-file-alt"></i> Audit Logs</a></li>
-        <li><a href="/admin/settings"><i class="fas fa-cog"></i> Settings</a></li>
+
+        <!-- System Settings Section -->
+        <li style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--medium-gray);">
+            <a href="#" onclick="toggleSettingsMenu(event)" style="font-weight: 600;">
+                <i class="fas fa-cog"></i> System Settings
+                <i class="fas fa-chevron-down" id="settings-chevron" style="float: right; font-size: 0.8rem;"></i>
+            </a>
+        </li>
+        <ul id="settings-submenu" style="display: none; padding-left: 1.5rem; margin: 0;">
+            <li><a href="/admin/settings"><i class="fas fa-sliders-h"></i> General Settings</a></li>
+            <li><a href="/admin/settings/payment"><i class="fas fa-credit-card"></i> Payment Settings (Stripe)</a></li>
+            <li><a href="/admin/settings/email"><i class="fas fa-envelope-open-text"></i> Email Configuration</a></li>
+            <li><a href="/admin/settings/commission"><i class="fas fa-percentage"></i> Commission Rates</a></li>
+            <li><a href="/admin/settings/booking"><i class="fas fa-calendar-alt"></i> Booking Settings</a></li>
+            <li><a href="/admin/settings/notifications"><i class="fas fa-bell"></i> Notification Settings</a></li>
+            <li><a href="/admin/settings/system"><i class="fas fa-server"></i> System Configuration</a></li>
+        </ul>
+
+<script>
+function toggleSettingsMenu(e) {
+    e.preventDefault();
+    const submenu = document.getElementById('settings-submenu');
+    const chevron = document.getElementById('settings-chevron');
+
+    if (submenu.style.display === 'none') {
+        submenu.style.display = 'block';
+        chevron.className = 'fas fa-chevron-up';
+        localStorage.setItem('settingsMenuOpen', 'true');
+    } else {
+        submenu.style.display = 'none';
+        chevron.className = 'fas fa-chevron-down';
+        localStorage.setItem('settingsMenuOpen', 'false');
+    }
+}
+
+// Restore settings menu state on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const isOpen = localStorage.getItem('settingsMenuOpen') === 'true';
+    const currentPath = window.location.pathname;
+
+    // Auto-expand if on a settings page
+    if (currentPath.startsWith('/admin/settings')) {
+        document.getElementById('settings-submenu').style.display = 'block';
+        document.getElementById('settings-chevron').className = 'fas fa-chevron-up';
+    } else if (isOpen) {
+        document.getElementById('settings-submenu').style.display = 'block';
+        document.getElementById('settings-chevron').className = 'fas fa-chevron-up';
+    }
+});
+</script>
     </ul>
 </div>
