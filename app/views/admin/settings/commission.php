@@ -15,60 +15,17 @@
             <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
 
             <div class="card">
-                <h2>Platform Commission Rates</h2>
+                <h2>Platform Commission Rate</h2>
                 <small style="color: var(--dark-gray); display: block; margin-bottom: 1.5rem;">
-                    Set commission rates charged to vehicle owners for bookings. Higher-tier vehicles typically have lower commission rates.
+                    Set the commission rate charged to vehicle owners for bookings
                 </small>
 
                 <div class="form-group">
-                    <label for="default_commission_rate">Default Commission Rate (%) *</label>
-                    <input type="number" name="default_commission_rate" id="default_commission_rate"
-                           value="<?= e($defaultCommissionRate ?? '15') ?>" class="form-control"
+                    <label for="commission_rate">Commission Rate (%) *</label>
+                    <input type="number" name="commission_rate" id="commission_rate"
+                           value="<?= e($commissionRate ?? '15') ?>" class="form-control"
                            step="0.1" min="0" max="100" required>
-                    <small>Applied when no specific vehicle category rate is set</small>
-                </div>
-
-                <hr>
-
-                <h3 style="margin-top: 1.5rem;">Category-Specific Rates</h3>
-                <small style="color: var(--dark-gray); display: block; margin-bottom: 1rem;">
-                    Override the default rate for specific vehicle categories
-                </small>
-
-                <div class="form-group">
-                    <label for="premium_commission_rate">Premium Vehicles (%) *</label>
-                    <input type="number" name="premium_commission_rate" id="premium_commission_rate"
-                           value="<?= e($premiumCommissionRate ?? '12') ?>" class="form-control"
-                           step="0.1" min="0" max="100" required>
-                    <small>Luxury sedans, high-end SUVs (usually lower commission to attract quality inventory)</small>
-                </div>
-
-                <div class="form-group">
-                    <label for="standard_commission_rate">Standard Vehicles (%) *</label>
-                    <input type="number" name="standard_commission_rate" id="standard_commission_rate"
-                           value="<?= e($standardCommissionRate ?? '15') ?>" class="form-control"
-                           step="0.1" min="0" max="100" required>
-                    <small>Mid-range vehicles, standard sedans and SUVs</small>
-                </div>
-
-                <div class="form-group">
-                    <label for="economy_commission_rate">Economy Vehicles (%) *</label>
-                    <input type="number" name="economy_commission_rate" id="economy_commission_rate"
-                           value="<?= e($economyCommissionRate ?? '18') ?>" class="form-control"
-                           step="0.1" min="0" max="100" required>
-                    <small>Budget vehicles, compact cars (higher commission for lower-value bookings)</small>
-                </div>
-
-                <hr>
-
-                <h3 style="margin-top: 1.5rem;">Commission Payment Terms</h3>
-
-                <div class="form-group">
-                    <label for="min_commission_amount">Minimum Commission Amount ($AUD) *</label>
-                    <input type="number" name="min_commission_amount" id="min_commission_amount"
-                           value="<?= e($minCommissionAmount ?? '50') ?>" class="form-control"
-                           step="0.01" min="0" required>
-                    <small>Minimum commission charged per booking (prevents very low commission on short bookings)</small>
+                    <small>Applied uniformly to all vehicles and bookings</small>
                 </div>
 
                 <div class="form-group">
@@ -85,20 +42,28 @@
                 <hr>
 
                 <div style="margin-top: 2rem; padding: 1rem; background: #f7fafc; border-left: 4px solid var(--primary-gold);">
-                    <strong>Example Commission Calculation:</strong>
+                    <strong>Commission Calculation Example:</strong>
                     <ul style="margin: 0.5rem 0 0 1rem;">
                         <li>Booking Amount: $1,000</li>
-                        <li>Premium Vehicle Rate: 12%</li>
-                        <li>Platform Commission: $120</li>
-                        <li>Owner Payout: $880</li>
+                        <li>Commission Rate: 15%</li>
+                        <li>Platform Commission: $150</li>
+                        <li>Owner Payout: $850</li>
                     </ul>
+                </div>
+
+                <div style="margin-top: 1.5rem; padding: 1rem; background: #e7f3ff; border-left: 4px solid #0066cc;">
+                    <strong>Uniform Commission Policy:</strong>
+                    <p style="margin: 0.5rem 0 0 0;">
+                        All vehicles are charged the same commission rate regardless of vehicle type or category.
+                        This ensures fair and transparent pricing for all owners on the platform.
+                    </p>
                 </div>
 
                 <div style="margin-top: 1.5rem; padding: 1rem; background: #fffbf0; border-left: 4px solid #d69e2e;">
                     <strong>Best Practices:</strong>
                     <ul style="margin: 0.5rem 0 0 1rem;">
-                        <li>Keep premium rates lower to attract high-value inventory</li>
-                        <li>Industry standard: 10-20% for luxury vehicle platforms</li>
+                        <li>Industry standard for luxury vehicle platforms: 10-20%</li>
+                        <li>15% balances platform revenue with competitive owner payouts</li>
                         <li>Consider competitive rates in your market</li>
                         <li>Clearly communicate rates to owners during onboarding</li>
                     </ul>
@@ -106,7 +71,7 @@
 
                 <div style="margin-top: 2rem;">
                     <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Save Commission Rates
+                        <i class="fas fa-save"></i> Save Commission Rate
                     </button>
                     <a href="/admin/dashboard" class="btn btn-secondary">Cancel</a>
                 </div>

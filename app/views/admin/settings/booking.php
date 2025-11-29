@@ -46,14 +46,16 @@
 
                 <hr>
 
-                <h3 style="margin-top: 1.5rem;">Cancellation Policy</h3>
+                <h3 style="margin-top: 1.5rem;">Payment & Cancellation Policy</h3>
 
-                <div class="form-group">
-                    <label for="cancellation_hours">Cancellation Notice Period (hours) *</label>
-                    <input type="number" name="cancellation_hours" id="cancellation_hours"
-                           value="<?= e($cancellationHours ?? '24') ?>" class="form-control"
-                           min="1" max="168" required>
-                    <small>Minimum notice required for free cancellation (e.g., 24 hours before booking starts)</small>
+                <div style="background: #e7f3ff; border-left: 4px solid #0066cc; padding: 1rem; margin-bottom: 1.5rem;">
+                    <strong>Payment Policy:</strong>
+                    <p style="margin: 0.5rem 0 0 0;">Full payment is required at the time of booking confirmation.</p>
+                </div>
+
+                <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 1rem; margin-bottom: 1.5rem;">
+                    <strong>Cancellation Policy:</strong>
+                    <p style="margin: 0.5rem 0 0 0;">All cancellations are subject to a 50% cancellation fee, regardless of notice period.</p>
                 </div>
 
                 <hr>
@@ -74,39 +76,15 @@
 
                 <hr>
 
-                <h3 style="margin-top: 1.5rem;">Payment Settings</h3>
-
-                <div class="form-group" style="display: flex; align-items: center; gap: 1rem;">
-                    <input type="checkbox" name="require_deposit" id="require_deposit"
-                           value="1" <?= ($requireDeposit ?? '1') === '1' ? 'checked' : '' ?>
-                           style="width: auto; margin: 0;">
-                    <label for="require_deposit" style="margin: 0; cursor: pointer;">
-                        <strong>Require Deposit Payment</strong>
-                    </label>
-                </div>
-                <small style="display: block; margin-left: 2rem; color: var(--dark-gray);">
-                    Customers must pay a deposit when booking. If disabled, full payment is required upfront.
-                </small>
-
-                <div class="form-group" style="margin-top: 1.5rem;">
-                    <label for="deposit_percentage">Deposit Percentage (%) *</label>
-                    <input type="number" name="deposit_percentage" id="deposit_percentage"
-                           value="<?= e($depositPercentage ?? '30') ?>" class="form-control"
-                           step="1" min="0" max="100" required>
-                    <small>What percentage customers pay as deposit (e.g., 30% deposit, remaining 70% due later)</small>
-                </div>
-
-                <hr>
-
                 <div style="margin-top: 2rem; padding: 1rem; background: #f7fafc; border-left: 4px solid var(--primary-gold);">
                     <strong>Example Booking Flow:</strong>
                     <ol style="margin: 0.5rem 0 0 1.5rem;">
                         <li>Customer selects vehicle and dates (within advance booking window)</li>
                         <li>Booking duration must be between minimum and maximum hours/days</li>
-                        <li>Customer pays deposit (30% if enabled) or full amount</li>
+                        <li>Customer pays full amount (100% payment required)</li>
                         <li>If auto-confirm is OFF: Owner reviews and confirms booking</li>
                         <li>If auto-confirm is ON: Booking is immediately confirmed</li>
-                        <li>Customer can cancel free if more than 24 hours notice</li>
+                        <li>If cancelled, 50% cancellation fee applies</li>
                     </ol>
                 </div>
 
@@ -116,8 +94,6 @@
                         <li><strong>Minimum booking:</strong> 4 hours prevents very short, unprofitable bookings</li>
                         <li><strong>Maximum booking:</strong> 30 days allows long-term rentals but prevents indefinite holds</li>
                         <li><strong>Advance window:</strong> 90 days balances planning flexibility with calendar accuracy</li>
-                        <li><strong>Cancellation:</strong> 24 hours is industry standard for luxury vehicles</li>
-                        <li><strong>Deposit:</strong> 30% deposit secures booking while keeping entry barrier reasonable</li>
                         <li><strong>Auto-confirm:</strong> Disable for premium vehicles that need owner approval</li>
                     </ul>
                 </div>

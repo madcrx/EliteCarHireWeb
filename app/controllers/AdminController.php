@@ -538,10 +538,10 @@ class AdminController {
             $existing = db()->fetch("SELECT id FROM settings WHERE setting_key = ?", [$key]);
 
             if ($existing) {
-                db()->execute("UPDATE settings SET setting_value = ?, updated_at = NOW() WHERE setting_key = ?",
+                db()->execute("UPDATE settings SET setting_value = ? WHERE setting_key = ?",
                              [$value, $key]);
             } else {
-                db()->execute("INSERT INTO settings (setting_key, setting_value, created_at, updated_at) VALUES (?, ?, NOW(), NOW())",
+                db()->execute("INSERT INTO settings (setting_key, setting_value) VALUES (?, ?)",
                              [$key, $value]);
             }
 
@@ -963,9 +963,9 @@ class AdminController {
         foreach ($settings as $key => $value) {
             $existing = db()->fetch("SELECT id FROM settings WHERE setting_key = ?", [$key]);
             if ($existing) {
-                db()->execute("UPDATE settings SET setting_value = ?, updated_at = NOW() WHERE setting_key = ?", [$value, $key]);
+                db()->execute("UPDATE settings SET setting_value = ? WHERE setting_key = ?", [$value, $key]);
             } else {
-                db()->execute("INSERT INTO settings (setting_key, setting_value, created_at, updated_at) VALUES (?, ?, NOW(), NOW())", [$key, $value]);
+                db()->execute("INSERT INTO settings (setting_key, setting_value) VALUES (?, ?)", [$key, $value]);
             }
             logAudit('update_setting', 'settings', null, ['setting_key' => $key]);
         }
@@ -1012,9 +1012,9 @@ class AdminController {
         foreach ($settings as $key => $value) {
             $existing = db()->fetch("SELECT id FROM settings WHERE setting_key = ?", [$key]);
             if ($existing) {
-                db()->execute("UPDATE settings SET setting_value = ?, updated_at = NOW() WHERE setting_key = ?", [$value, $key]);
+                db()->execute("UPDATE settings SET setting_value = ? WHERE setting_key = ?", [$value, $key]);
             } else {
-                db()->execute("INSERT INTO settings (setting_key, setting_value, created_at, updated_at) VALUES (?, ?, NOW(), NOW())", [$key, $value]);
+                db()->execute("INSERT INTO settings (setting_key, setting_value) VALUES (?, ?)", [$key, $value]);
             }
             logAudit('update_setting', 'settings', null, ['setting_key' => $key]);
         }
@@ -1024,18 +1024,11 @@ class AdminController {
     }
 
     public function commissionRates() {
-        // Load commission rate settings
-        $defaultCommissionRate = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'default_commission_rate'")['setting_value'] ?? '15';
-        $premiumCommissionRate = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'premium_commission_rate'")['setting_value'] ?? '12';
-        $standardCommissionRate = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'standard_commission_rate'")['setting_value'] ?? '15';
-        $economyCommissionRate = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'economy_commission_rate'")['setting_value'] ?? '18';
-        $minCommissionAmount = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'min_commission_amount'")['setting_value'] ?? '50';
+        // Load commission rate settings (simplified - fixed 15% for all vehicles)
+        $commissionRate = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'commission_rate'")['setting_value'] ?? '15';
         $commissionPaymentCycle = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'commission_payment_cycle'")['setting_value'] ?? 'monthly';
 
-        view('admin/settings/commission', compact(
-            'defaultCommissionRate', 'premiumCommissionRate', 'standardCommissionRate',
-            'economyCommissionRate', 'minCommissionAmount', 'commissionPaymentCycle'
-        ));
+        view('admin/settings/commission', compact('commissionRate', 'commissionPaymentCycle'));
     }
 
     public function saveCommissionRates() {
@@ -1047,42 +1040,35 @@ class AdminController {
             redirect('/admin/settings/commission');
         }
 
+        // Simplified - single commission rate for all vehicles
         $settings = [
-            'default_commission_rate' => $_POST['default_commission_rate'] ?? '15',
-            'premium_commission_rate' => $_POST['premium_commission_rate'] ?? '12',
-            'standard_commission_rate' => $_POST['standard_commission_rate'] ?? '15',
-            'economy_commission_rate' => $_POST['economy_commission_rate'] ?? '18',
-            'min_commission_amount' => $_POST['min_commission_amount'] ?? '50',
+            'commission_rate' => $_POST['commission_rate'] ?? '15',
             'commission_payment_cycle' => $_POST['commission_payment_cycle'] ?? 'monthly'
         ];
 
         foreach ($settings as $key => $value) {
             $existing = db()->fetch("SELECT id FROM settings WHERE setting_key = ?", [$key]);
             if ($existing) {
-                db()->execute("UPDATE settings SET setting_value = ?, updated_at = NOW() WHERE setting_key = ?", [$value, $key]);
+                db()->execute("UPDATE settings SET setting_value = ? WHERE setting_key = ?", [$value, $key]);
             } else {
-                db()->execute("INSERT INTO settings (setting_key, setting_value, created_at, updated_at) VALUES (?, ?, NOW(), NOW())", [$key, $value]);
+                db()->execute("INSERT INTO settings (setting_key, setting_value) VALUES (?, ?)", [$key, $value]);
             }
             logAudit('update_setting', 'settings', null, ['setting_key' => $key, 'setting_value' => $value]);
         }
 
-        flash('success', 'Commission rates saved successfully');
+        flash('success', 'Commission rate saved successfully');
         redirect('/admin/settings/commission');
     }
 
     public function bookingSettings() {
-        // Load booking-related settings
+        // Load booking-related settings (simplified - full payment & 50% cancellation are fixed)
         $minBookingHours = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'min_booking_hours'")['setting_value'] ?? '4';
         $maxBookingDays = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'max_booking_days'")['setting_value'] ?? '30';
         $advanceBookingDays = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'advance_booking_days'")['setting_value'] ?? '90';
-        $cancellationHours = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'cancellation_hours'")['setting_value'] ?? '24';
         $autoConfirmBookings = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'auto_confirm_bookings'")['setting_value'] ?? '0';
-        $requireDeposit = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'require_deposit'")['setting_value'] ?? '1';
-        $depositPercentage = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'deposit_percentage'")['setting_value'] ?? '30';
 
         view('admin/settings/booking', compact(
-            'minBookingHours', 'maxBookingDays', 'advanceBookingDays',
-            'cancellationHours', 'autoConfirmBookings', 'requireDeposit', 'depositPercentage'
+            'minBookingHours', 'maxBookingDays', 'advanceBookingDays', 'autoConfirmBookings'
         ));
     }
 
@@ -1095,22 +1081,20 @@ class AdminController {
             redirect('/admin/settings/booking');
         }
 
+        // Simplified settings - full payment required, 50% cancellation fee is fixed
         $settings = [
             'min_booking_hours' => $_POST['min_booking_hours'] ?? '4',
             'max_booking_days' => $_POST['max_booking_days'] ?? '30',
             'advance_booking_days' => $_POST['advance_booking_days'] ?? '90',
-            'cancellation_hours' => $_POST['cancellation_hours'] ?? '24',
-            'auto_confirm_bookings' => isset($_POST['auto_confirm_bookings']) ? '1' : '0',
-            'require_deposit' => isset($_POST['require_deposit']) ? '1' : '0',
-            'deposit_percentage' => $_POST['deposit_percentage'] ?? '30'
+            'auto_confirm_bookings' => isset($_POST['auto_confirm_bookings']) ? '1' : '0'
         ];
 
         foreach ($settings as $key => $value) {
             $existing = db()->fetch("SELECT id FROM settings WHERE setting_key = ?", [$key]);
             if ($existing) {
-                db()->execute("UPDATE settings SET setting_value = ?, updated_at = NOW() WHERE setting_key = ?", [$value, $key]);
+                db()->execute("UPDATE settings SET setting_value = ? WHERE setting_key = ?", [$value, $key]);
             } else {
-                db()->execute("INSERT INTO settings (setting_key, setting_value, created_at, updated_at) VALUES (?, ?, NOW(), NOW())", [$key, $value]);
+                db()->execute("INSERT INTO settings (setting_key, setting_value) VALUES (?, ?)", [$key, $value]);
             }
             logAudit('update_setting', 'settings', null, ['setting_key' => $key, 'setting_value' => $value]);
         }
@@ -1160,9 +1144,9 @@ class AdminController {
         foreach ($settings as $key => $value) {
             $existing = db()->fetch("SELECT id FROM settings WHERE setting_key = ?", [$key]);
             if ($existing) {
-                db()->execute("UPDATE settings SET setting_value = ?, updated_at = NOW() WHERE setting_key = ?", [$value, $key]);
+                db()->execute("UPDATE settings SET setting_value = ? WHERE setting_key = ?", [$value, $key]);
             } else {
-                db()->execute("INSERT INTO settings (setting_key, setting_value, created_at, updated_at) VALUES (?, ?, NOW(), NOW())", [$key, $value]);
+                db()->execute("INSERT INTO settings (setting_key, setting_value) VALUES (?, ?)", [$key, $value]);
             }
             logAudit('update_setting', 'settings', null, ['setting_key' => $key, 'setting_value' => $value]);
         }
@@ -1212,9 +1196,9 @@ class AdminController {
         foreach ($settings as $key => $value) {
             $existing = db()->fetch("SELECT id FROM settings WHERE setting_key = ?", [$key]);
             if ($existing) {
-                db()->execute("UPDATE settings SET setting_value = ?, updated_at = NOW() WHERE setting_key = ?", [$value, $key]);
+                db()->execute("UPDATE settings SET setting_value = ? WHERE setting_key = ?", [$value, $key]);
             } else {
-                db()->execute("INSERT INTO settings (setting_key, setting_value, created_at, updated_at) VALUES (?, ?, NOW(), NOW())", [$key, $value]);
+                db()->execute("INSERT INTO settings (setting_key, setting_value) VALUES (?, ?)", [$key, $value]);
             }
             logAudit('update_setting', 'settings', null, ['setting_key' => $key]);
         }
