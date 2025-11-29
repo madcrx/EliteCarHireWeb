@@ -1024,15 +1024,151 @@ class AdminController {
     }
 
     public function commissionRates() {
-        view('admin/settings/commission');
+        // Load commission rate settings
+        $defaultCommissionRate = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'default_commission_rate'")['setting_value'] ?? '15';
+        $premiumCommissionRate = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'premium_commission_rate'")['setting_value'] ?? '12';
+        $standardCommissionRate = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'standard_commission_rate'")['setting_value'] ?? '15';
+        $economyCommissionRate = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'economy_commission_rate'")['setting_value'] ?? '18';
+        $minCommissionAmount = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'min_commission_amount'")['setting_value'] ?? '50';
+        $commissionPaymentCycle = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'commission_payment_cycle'")['setting_value'] ?? 'monthly';
+
+        view('admin/settings/commission', compact(
+            'defaultCommissionRate', 'premiumCommissionRate', 'standardCommissionRate',
+            'economyCommissionRate', 'minCommissionAmount', 'commissionPaymentCycle'
+        ));
+    }
+
+    public function saveCommissionRates() {
+        requireAuth('admin');
+
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token.');
+            redirect('/admin/settings/commission');
+        }
+
+        $settings = [
+            'default_commission_rate' => $_POST['default_commission_rate'] ?? '15',
+            'premium_commission_rate' => $_POST['premium_commission_rate'] ?? '12',
+            'standard_commission_rate' => $_POST['standard_commission_rate'] ?? '15',
+            'economy_commission_rate' => $_POST['economy_commission_rate'] ?? '18',
+            'min_commission_amount' => $_POST['min_commission_amount'] ?? '50',
+            'commission_payment_cycle' => $_POST['commission_payment_cycle'] ?? 'monthly'
+        ];
+
+        foreach ($settings as $key => $value) {
+            $existing = db()->fetch("SELECT id FROM settings WHERE setting_key = ?", [$key]);
+            if ($existing) {
+                db()->execute("UPDATE settings SET setting_value = ?, updated_at = NOW() WHERE setting_key = ?", [$value, $key]);
+            } else {
+                db()->execute("INSERT INTO settings (setting_key, setting_value, created_at, updated_at) VALUES (?, ?, NOW(), NOW())", [$key, $value]);
+            }
+            logAudit('update_setting', 'settings', null, ['setting_key' => $key, 'setting_value' => $value]);
+        }
+
+        flash('success', 'Commission rates saved successfully');
+        redirect('/admin/settings/commission');
     }
 
     public function bookingSettings() {
-        view('admin/settings/booking');
+        // Load booking-related settings
+        $minBookingHours = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'min_booking_hours'")['setting_value'] ?? '4';
+        $maxBookingDays = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'max_booking_days'")['setting_value'] ?? '30';
+        $advanceBookingDays = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'advance_booking_days'")['setting_value'] ?? '90';
+        $cancellationHours = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'cancellation_hours'")['setting_value'] ?? '24';
+        $autoConfirmBookings = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'auto_confirm_bookings'")['setting_value'] ?? '0';
+        $requireDeposit = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'require_deposit'")['setting_value'] ?? '1';
+        $depositPercentage = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'deposit_percentage'")['setting_value'] ?? '30';
+
+        view('admin/settings/booking', compact(
+            'minBookingHours', 'maxBookingDays', 'advanceBookingDays',
+            'cancellationHours', 'autoConfirmBookings', 'requireDeposit', 'depositPercentage'
+        ));
+    }
+
+    public function saveBookingSettings() {
+        requireAuth('admin');
+
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token.');
+            redirect('/admin/settings/booking');
+        }
+
+        $settings = [
+            'min_booking_hours' => $_POST['min_booking_hours'] ?? '4',
+            'max_booking_days' => $_POST['max_booking_days'] ?? '30',
+            'advance_booking_days' => $_POST['advance_booking_days'] ?? '90',
+            'cancellation_hours' => $_POST['cancellation_hours'] ?? '24',
+            'auto_confirm_bookings' => isset($_POST['auto_confirm_bookings']) ? '1' : '0',
+            'require_deposit' => isset($_POST['require_deposit']) ? '1' : '0',
+            'deposit_percentage' => $_POST['deposit_percentage'] ?? '30'
+        ];
+
+        foreach ($settings as $key => $value) {
+            $existing = db()->fetch("SELECT id FROM settings WHERE setting_key = ?", [$key]);
+            if ($existing) {
+                db()->execute("UPDATE settings SET setting_value = ?, updated_at = NOW() WHERE setting_key = ?", [$value, $key]);
+            } else {
+                db()->execute("INSERT INTO settings (setting_key, setting_value, created_at, updated_at) VALUES (?, ?, NOW(), NOW())", [$key, $value]);
+            }
+            logAudit('update_setting', 'settings', null, ['setting_key' => $key, 'setting_value' => $value]);
+        }
+
+        flash('success', 'Booking settings saved successfully');
+        redirect('/admin/settings/booking');
     }
 
     public function notificationSettings() {
-        view('admin/settings/notifications');
+        // Load notification settings
+        $emailNotifications = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'email_notifications_enabled'")['setting_value'] ?? '1';
+        $smsNotifications = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'sms_notifications_enabled'")['setting_value'] ?? '0';
+        $notifyNewBooking = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'notify_new_booking'")['setting_value'] ?? '1';
+        $notifyBookingConfirm = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'notify_booking_confirm'")['setting_value'] ?? '1';
+        $notifyBookingCancel = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'notify_booking_cancel'")['setting_value'] ?? '1';
+        $notifyPaymentReceived = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'notify_payment_received'")['setting_value'] ?? '1';
+        $notifyNewVehicle = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'notify_new_vehicle'")['setting_value'] ?? '1';
+        $adminNotificationEmail = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'admin_notification_email'")['setting_value'] ?? '';
+
+        view('admin/settings/notifications', compact(
+            'emailNotifications', 'smsNotifications', 'notifyNewBooking',
+            'notifyBookingConfirm', 'notifyBookingCancel', 'notifyPaymentReceived',
+            'notifyNewVehicle', 'adminNotificationEmail'
+        ));
+    }
+
+    public function saveNotificationSettings() {
+        requireAuth('admin');
+
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token.');
+            redirect('/admin/settings/notifications');
+        }
+
+        $settings = [
+            'email_notifications_enabled' => isset($_POST['email_notifications_enabled']) ? '1' : '0',
+            'sms_notifications_enabled' => isset($_POST['sms_notifications_enabled']) ? '1' : '0',
+            'notify_new_booking' => isset($_POST['notify_new_booking']) ? '1' : '0',
+            'notify_booking_confirm' => isset($_POST['notify_booking_confirm']) ? '1' : '0',
+            'notify_booking_cancel' => isset($_POST['notify_booking_cancel']) ? '1' : '0',
+            'notify_payment_received' => isset($_POST['notify_payment_received']) ? '1' : '0',
+            'notify_new_vehicle' => isset($_POST['notify_new_vehicle']) ? '1' : '0',
+            'admin_notification_email' => $_POST['admin_notification_email'] ?? ''
+        ];
+
+        foreach ($settings as $key => $value) {
+            $existing = db()->fetch("SELECT id FROM settings WHERE setting_key = ?", [$key]);
+            if ($existing) {
+                db()->execute("UPDATE settings SET setting_value = ?, updated_at = NOW() WHERE setting_key = ?", [$value, $key]);
+            } else {
+                db()->execute("INSERT INTO settings (setting_key, setting_value, created_at, updated_at) VALUES (?, ?, NOW(), NOW())", [$key, $value]);
+            }
+            logAudit('update_setting', 'settings', null, ['setting_key' => $key, 'setting_value' => $value]);
+        }
+
+        flash('success', 'Notification settings saved successfully');
+        redirect('/admin/settings/notifications');
     }
 
     public function systemConfiguration() {

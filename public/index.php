@@ -90,8 +90,11 @@ $router->post('/admin/settings/payment/save', 'AdminController@savePaymentSettin
 $router->get('/admin/settings/email', 'AdminController@emailConfiguration');
 $router->post('/admin/settings/email/save', 'AdminController@saveEmailConfiguration');
 $router->get('/admin/settings/commission', 'AdminController@commissionRates');
+$router->post('/admin/settings/commission/save', 'AdminController@saveCommissionRates');
 $router->get('/admin/settings/booking', 'AdminController@bookingSettings');
+$router->post('/admin/settings/booking/save', 'AdminController@saveBookingSettings');
 $router->get('/admin/settings/notifications', 'AdminController@notificationSettings');
+$router->post('/admin/settings/notifications/save', 'AdminController@saveNotificationSettings');
 $router->get('/admin/settings/system', 'AdminController@systemConfiguration');
 $router->post('/admin/settings/system/save', 'AdminController@saveSystemConfiguration');
 $router->get('/admin/logs/payments', 'AdminController@paymentLogs');
