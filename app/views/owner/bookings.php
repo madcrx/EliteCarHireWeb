@@ -30,49 +30,7 @@
                 <a href="/owner/listings" class="btn btn-primary" style="margin-top: 1rem;">View My Listings</a>
             </div>
         <?php else: ?>
-            <!-- Calendar View - Always Displayed First -->
-            <div class="card" style="margin-bottom: 1.5rem; padding: 0; overflow: hidden;">
-                <!-- Calendar Container -->
-                <div class="bookings-calendar-container">
-                    <!-- Calendar Header with Navigation -->
-                    <div class="bookings-calendar-header">
-                        <button onclick="changeMonth(-1)" class="bookings-calendar-nav-btn">
-                            <i class="fas fa-angle-double-left"></i>
-                        </button>
-                        <h2 id="calendarMonth" class="bookings-calendar-month"></h2>
-                        <button onclick="changeMonth(1)" class="bookings-calendar-nav-btn">
-                            <i class="fas fa-angle-double-right"></i>
-                        </button>
-                    </div>
-
-                    <!-- Calendar Grid -->
-                    <div id="calendar"></div>
-                </div>
-
-                <!-- Status Legend -->
-                <div style="padding: 1.5rem; background: white; border-top: 1px solid var(--light-gray);">
-                    <div style="display: flex; flex-wrap: wrap; gap: 2rem; align-items: center; justify-content: center;">
-                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <div id="legend-available" style="width: 50px; height: 50px; background: white; border: 1px solid #ccc; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #a0a0a0; font-size: 1.2rem;">0</div>
-                            <span style="font-weight: 700; font-size: 0.95rem; color: #333;">AVAILABLE</span>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <div id="legend-booked" style="width: 50px; height: 50px; background: #dc3545; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #8b0000; font-size: 1.2rem;">0</div>
-                            <span style="font-weight: 700; font-size: 0.95rem; color: #333;">BOOKED</span>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <div id="legend-pending" style="width: 50px; height: 50px; background: #f39c12; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #b8860b; font-size: 1.2rem;">0</div>
-                            <span style="font-weight: 700; font-size: 0.95rem; color: #333;">PENDING</span>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <div id="legend-blocked" style="width: 50px; height: 50px; background: #e9ecef; opacity: 0.6; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #868e96; font-size: 1.2rem; text-decoration: line-through;">0</div>
-                            <span style="font-weight: 700; font-size: 0.95rem; color: #333;">BLOCKED</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Table View - Always Displayed Below Calendar -->
+            <!-- Table View - Display First -->
             <div class="card">
                 <h2><i class="fas fa-list"></i> All Bookings</h2>
                 <p style="margin-bottom: 1.5rem; color: var(--dark-gray);">
@@ -158,6 +116,48 @@
                             <?php endforeach; ?>
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            <!-- Calendar View - Moved to Bottom -->
+            <div class="card" style="margin-bottom: 1.5rem; padding: 0; overflow: hidden;">
+                <!-- Calendar Container -->
+                <div class="bookings-calendar-container">
+                    <!-- Calendar Header with Navigation -->
+                    <div class="bookings-calendar-header">
+                        <button onclick="changeMonth(-1)" class="bookings-calendar-nav-btn">
+                            <i class="fas fa-angle-double-left"></i>
+                        </button>
+                        <h2 id="calendarMonth" class="bookings-calendar-month"></h2>
+                        <button onclick="changeMonth(1)" class="bookings-calendar-nav-btn">
+                            <i class="fas fa-angle-double-right"></i>
+                        </button>
+                    </div>
+
+                    <!-- Calendar Grid -->
+                    <div id="calendar"></div>
+                </div>
+
+                <!-- Status Legend -->
+                <div style="padding: 1.5rem; background: white; border-top: 1px solid var(--light-gray);">
+                    <div style="display: flex; flex-wrap: wrap; gap: 2rem; align-items: center; justify-content: center;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <div id="legend-available" style="width: 50px; height: 50px; background: white; border: 1px solid #ccc; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #a0a0a0; font-size: 1.2rem;">0</div>
+                            <span style="font-weight: 700; font-size: 0.95rem; color: #333;">AVAILABLE</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <div id="legend-booked" style="width: 50px; height: 50px; background: #dc3545; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #8b0000; font-size: 1.2rem;">0</div>
+                            <span style="font-weight: 700; font-size: 0.95rem; color: #333;">BOOKED</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <div id="legend-pending" style="width: 50px; height: 50px; background: #f39c12; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #b8860b; font-size: 1.2rem;">0</div>
+                            <span style="font-weight: 700; font-size: 0.95rem; color: #333;">PENDING</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <div id="legend-blocked" style="width: 50px; height: 50px; background: #e9ecef; opacity: 0.6; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #868e96; font-size: 1.2rem; text-decoration: line-through;">0</div>
+                            <span style="font-weight: 700; font-size: 0.95rem; color: #333;">BLOCKED</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 

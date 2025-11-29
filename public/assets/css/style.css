@@ -598,6 +598,21 @@ table tbody tr:hover {
 .bookings-calendar-container {
     border: 1px solid #ccc;
     background: white;
+    max-width: 50%;
+    margin: 0 auto;
+}
+
+/* Responsive: Larger on tablets and smaller screens */
+@media (max-width: 1024px) {
+    .bookings-calendar-container {
+        max-width: 70%;
+    }
+}
+
+@media (max-width: 768px) {
+    .bookings-calendar-container {
+        max-width: 100%;
+    }
 }
 
 #calendar {
