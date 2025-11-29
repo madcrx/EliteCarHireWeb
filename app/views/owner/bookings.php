@@ -213,8 +213,8 @@
 </div>
 
 <!-- Confirm Booking Modal -->
-<div id="confirmBookingModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
-    <div style="background: white; padding: 2rem; border-radius: var(--border-radius); max-width: 600px; width: 90%;">
+<div id="confirmBookingModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; overflow-y: auto; padding: 20px;">
+    <div style="background: white; padding: 2rem; border-radius: var(--border-radius); max-width: 650px; width: 90%; max-height: 90vh; overflow-y: auto; margin: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
         <h2 style="margin-top: 0;"><i class="fas fa-check-circle"></i> Confirm Booking</h2>
         <p style="color: var(--dark-gray); margin-bottom: 1rem;">
             Booking: <strong id="confirmBookingRef"></strong><br>
@@ -295,8 +295,8 @@
 </div>
 
 <!-- Cancel Booking Modal -->
-<div id="cancelModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
-    <div style="background: white; padding: 2rem; border-radius: var(--border-radius); max-width: 500px; width: 90%;">
+<div id="cancelModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; overflow-y: auto; padding: 20px;">
+    <div style="background: white; padding: 2rem; border-radius: var(--border-radius); max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto; margin: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
         <h2 style="margin-top: 0;">Cancel Booking</h2>
         <p style="color: var(--dark-gray); margin-bottom: 1.5rem;">
             This will request admin approval to cancel booking <strong id="cancelBookingRef"></strong>.
