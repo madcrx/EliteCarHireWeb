@@ -608,7 +608,6 @@ function emailCustomerPaymentReceived($bookingId) {
             <ul>
                 <li>You'll receive a reminder email closer to your booking date</li>
                 <li>Make sure to arrive on time for pickup</li>
-                <li>Bring a valid driver's license and ID</li>
             </ul>
 
             <div style='text-align: center; margin: 30px 0;'>
