@@ -1,4 +1,62 @@
 <?php ob_start(); ?>
+<style>
+    /* Mobile responsive table */
+    .table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin: 0 -1rem;
+        padding: 0 1rem;
+    }
+
+    @media (max-width: 768px) {
+        .table-container {
+            width: 100%;
+            overflow-x: scroll;
+        }
+
+        .table-container table {
+            min-width: 800px; /* Ensure table is wide enough to show all columns */
+        }
+
+        /* Make action column sticky on mobile for better UX */
+        .table-container table th:last-child,
+        .table-container table td:last-child {
+            position: sticky;
+            right: 0;
+            background: white;
+            box-shadow: -2px 0 5px rgba(0,0,0,0.1);
+            z-index: 10;
+        }
+
+        .table-container table thead th:last-child {
+            background: var(--primary-color, #333);
+        }
+
+        /* Highlight awaiting approval rows on mobile */
+        .table-container table tr[style*="background-color: #fff3cd"] td:last-child {
+            background-color: #fff3cd;
+        }
+
+        /* Show scroll hint */
+        .table-container::after {
+            content: "← Swipe to see all columns →";
+            display: block;
+            text-align: center;
+            font-size: 0.85rem;
+            color: #666;
+            padding: 0.5rem;
+            margin-top: 0.5rem;
+            font-style: italic;
+        }
+    }
+
+    @media (min-width: 769px) {
+        .table-container::after {
+            display: none;
+        }
+    }
+</style>
+
 <div class="container dashboard">
     <h1>My Bookings</h1>
 
