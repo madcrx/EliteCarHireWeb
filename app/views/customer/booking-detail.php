@@ -122,40 +122,24 @@
                         <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
                         <input type="hidden" name="booking_id" value="<?= $booking['id'] ?>">
 
+                        <!-- Stripe Card Element -->
                         <div style="margin-bottom: 1rem;">
-                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Card Number</label>
-                            <input type="text" name="card_number" id="cardNumber"
-                                   placeholder="1234 5678 9012 3456"
-                                   maxlength="19"
-                                   required
-                                   style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px;">
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Card Details</label>
+                            <div id="card-element" style="padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; background: white;"></div>
+                            <div id="card-errors" style="color: #dc3545; font-size: 0.875rem; margin-top: 0.5rem;"></div>
                         </div>
 
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                            <div>
-                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Expiry Date</label>
-                                <input type="text" name="card_expiry" id="cardExpiry"
-                                       placeholder="MM/YY"
-                                       maxlength="5"
-                                       required
-                                       style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px;">
-                            </div>
-                            <div>
-                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">CVV</label>
-                                <input type="text" name="card_cvv" id="cardCvv"
-                                       placeholder="123"
-                                       maxlength="4"
-                                       required
-                                       style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px;">
-                            </div>
-                        </div>
-
-                        <button type="submit" class="btn btn-primary" style="width: 100%;">
-                            Pay <?= formatMoney($booking['total_amount']) ?> Now
+                        <button type="submit" id="submit-button" class="btn btn-primary" style="width: 100%;">
+                            <span id="button-text">Pay <?= formatMoney($booking['total_amount']) ?> Now</span>
+                            <span id="spinner" style="display: none;">Processing...</span>
                         </button>
                     </form>
 
                     <div id="paymentMessage" style="margin-top: 1rem;"></div>
+
+                    <div style="margin-top: 1rem; padding: 0.75rem; background: #f8f9fa; border-radius: 4px; font-size: 0.875rem;">
+                        <p style="margin: 0;"><i class="fas fa-lock"></i> Secure payment powered by Stripe</p>
+                    </div>
                 </div>
                 <?php elseif ($booking['payment_status'] === 'paid'): ?>
                 <div class="card" style="background-color: #e6f7e6; border: 2px solid #4caf50;">
@@ -177,68 +161,99 @@
     </div>
 </div>
 
+<?php if ($booking['status'] === 'confirmed' && $booking['payment_status'] !== 'paid'): ?>
+<script src="https://js.stripe.com/v3/"></script>
 <script>
-// Format card number with spaces
-document.getElementById('cardNumber')?.addEventListener('input', function(e) {
-    let value = e.target.value.replace(/\s/g, '');
-    let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
-    e.target.value = formattedValue;
-});
+// Initialize Stripe
+const stripe = Stripe('<?= getStripePublishableKey() ?>');
+const elements = stripe.elements();
 
-// Format expiry date with slash
-document.getElementById('cardExpiry')?.addEventListener('input', function(e) {
-    let value = e.target.value.replace(/\D/g, '');
-    if (value.length >= 2) {
-        value = value.slice(0, 2) + '/' + value.slice(2, 4);
+// Create card element
+const cardElement = elements.create('card', {
+    style: {
+        base: {
+            fontSize: '16px',
+            color: '#32325d',
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+            '::placeholder': {
+                color: '#aab7c4'
+            }
+        },
+        invalid: {
+            color: '#dc3545',
+            iconColor: '#dc3545'
+        }
     }
-    e.target.value = value;
 });
 
-// Only allow numbers in CVV
-document.getElementById('cardCvv')?.addEventListener('input', function(e) {
-    e.target.value = e.target.value.replace(/\D/g, '');
+// Mount card element
+cardElement.mount('#card-element');
+
+// Handle realtime validation errors
+cardElement.on('change', function(event) {
+    const displayError = document.getElementById('card-errors');
+    if (event.error) {
+        displayError.textContent = event.error.message;
+    } else {
+        displayError.textContent = '';
+    }
 });
 
-// Handle payment form submission
-document.getElementById('paymentForm')?.addEventListener('submit', function(e) {
+// Handle form submission
+const form = document.getElementById('paymentForm');
+const submitButton = document.getElementById('submit-button');
+const buttonText = document.getElementById('button-text');
+const spinner = document.getElementById('spinner');
+const messageDiv = document.getElementById('paymentMessage');
+
+form.addEventListener('submit', async function(e) {
     e.preventDefault();
 
-    const form = e.target;
-    const submitButton = form.querySelector('button[type="submit"]');
-    const messageDiv = document.getElementById('paymentMessage');
-
-    // Disable submit button
+    // Disable submit button and show loading
     submitButton.disabled = true;
-    submitButton.textContent = 'Processing...';
+    buttonText.style.display = 'none';
+    spinner.style.display = 'inline';
     messageDiv.innerHTML = '';
 
-    // Get form data
-    const formData = new FormData(form);
+    try {
+        // Create payment method
+        const {error, paymentMethod} = await stripe.createPaymentMethod({
+            type: 'card',
+            card: cardElement,
+        });
 
-    // Send payment request
-    fetch('/api/payment/process', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
+        if (error) {
+            throw new Error(error.message);
+        }
+
+        // Send payment method to server
+        const formData = new FormData(form);
+        formData.append('payment_method_id', paymentMethod.id);
+
+        const response = await fetch('/api/payment/process', {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await response.json();
+
         if (data.success) {
             messageDiv.innerHTML = '<div class="alert alert-success">' + data.message + '</div>';
             setTimeout(() => {
                 window.location.reload();
             }, 1500);
         } else {
-            messageDiv.innerHTML = '<div class="alert alert-error">' + data.message + '</div>';
-            submitButton.disabled = false;
-            submitButton.textContent = 'Pay <?= formatMoney($booking['total_amount']) ?> Now';
+            throw new Error(data.message || 'Payment failed');
         }
-    })
-    .catch(error => {
-        messageDiv.innerHTML = '<div class="alert alert-error">An error occurred. Please try again.</div>';
+
+    } catch (error) {
+        messageDiv.innerHTML = '<div class="alert alert-error">' + error.message + '</div>';
         submitButton.disabled = false;
-        submitButton.textContent = 'Pay <?= formatMoney($booking['total_amount']) ?> Now';
-    });
+        buttonText.style.display = 'inline';
+        spinner.style.display = 'none';
+    }
 });
 </script>
+<?php endif; ?>
 
 <?php $content = ob_get_clean(); include __DIR__ . '/../layout.php'; ?>

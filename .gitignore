@@ -11,6 +11,9 @@ storage/uploads/*
 .env
 .env.local
 
+# Stripe credentials (sensitive - never commit)
+STRIPE_CREDENTIALS.txt
+
 # IDE files
 .idea/
 .vscode/

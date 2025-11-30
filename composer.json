@@ -1,0 +1,15 @@
+{
+    "name": "elite-car-hire/web",
+    "description": "Elite Car Hire Web Application",
+    "type": "project",
+    "require": {
+        "php": ">=7.4",
+        "stripe/stripe-php": "^13.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "controllers\\": "app/controllers/",
+            "": "app/"
+        }
+    }
+}
