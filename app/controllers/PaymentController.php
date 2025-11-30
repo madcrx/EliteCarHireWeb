@@ -1,9 +1,19 @@
 <?php
 namespace controllers;
 
+// Include email notification functions
+require_once __DIR__ . '/../helpers/email_sender.php';
+require_once __DIR__ . '/../helpers/booking_emails.php';
+
 class PaymentController {
     public function process() {
         requireAuth();
+
+        // Verify CSRF token
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            json(['success' => false, 'message' => 'Invalid security token. Please refresh and try again.'], 403);
+        }
 
         $bookingId = $_POST['booking_id'] ?? 0;
         $cardNumber = $_POST['card_number'] ?? '';
@@ -58,6 +68,10 @@ class PaymentController {
                           'Payment has been received for booking ' . $booking['booking_reference']);
 
         logAudit('process_payment', 'payments', db()->lastInsertId());
+
+        // Send email notifications
+        emailCustomerPaymentReceived($bookingId);
+        emailOwnerPaymentReceived($bookingId);
 
         json(['success' => true, 'message' => 'Payment processed successfully! Your booking is now locked in.', 'transaction_id' => $transactionId]);
     }

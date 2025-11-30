@@ -119,6 +119,7 @@
                     <p style="margin-bottom: 1rem;">Your booking has been confirmed by the owner. Please complete the payment to lock in your reservation permanently.</p>
 
                     <form id="paymentForm" style="margin-top: 1rem;">
+                        <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
                         <input type="hidden" name="booking_id" value="<?= $booking['id'] ?>">
 
                         <div style="margin-bottom: 1rem;">
