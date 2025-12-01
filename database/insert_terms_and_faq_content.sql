@@ -409,7 +409,7 @@ VALUES ('terms', 'Terms of Service', '
 
     <p>For questions, concerns, or support regarding these Terms of Service:</p>
     <ul>
-        <li><strong>Email:</strong> support@elitecarhire.com.au</li>
+        <li><strong>Email:</strong> support@elitecarhire.au</li>
         <li><strong>Contact Form:</strong> Available through the platform</li>
         <li><strong>Response Time:</strong> We aim to respond within 48 hours</li>
     </ul>
@@ -1051,7 +1051,7 @@ VALUES ('faq', 'Frequently Asked Questions', '
                 <div class="faq-answer">
                     <p>Our support team is here to help:</p>
                     <ul>
-                        <li><strong>Email:</strong> support@elitecarhire.com.au</li>
+                        <li><strong>Email:</strong> support@elitecarhire.au</li>
                         <li><strong>Contact Form:</strong> Available at <a href="/contact">/contact</a></li>
                         <li><strong>Help Center:</strong> Browse FAQs and guides in your account dashboard</li>
                     </ul>
@@ -1223,7 +1223,7 @@ VALUES ('faq', 'Frequently Asked Questions', '
 
                     <p><strong>To Delete Your Account:</strong></p>
                     <ol>
-                        <li>Contact support@elitecarhire.com.au</li>
+                        <li>Contact support@elitecarhire.au</li>
                         <li>Request account deletion with subject "Account Deletion Request"</li>
                         <li>We\'ll confirm your identity and process the request within 7-10 business days</li>
                     </ol>
@@ -1245,7 +1245,7 @@ VALUES ('faq', 'Frequently Asked Questions', '
         <p>If you couldn\'t find the answer you were looking for, our support team is ready to assist.</p>
         <p><strong>Contact us:</strong></p>
         <ul>
-            <li>Email: <a href="mailto:support@elitecarhire.com.au">support@elitecarhire.com.au</a></li>
+            <li>Email: <a href="mailto:support@elitecarhire.au">support@elitecarhire.au</a></li>
             <li>Use our <a href="/contact">Contact Form</a></li>
             <li>Response time: Within 48 hours for general inquiries, 24 hours for urgent booking issues</li>
         </ul>

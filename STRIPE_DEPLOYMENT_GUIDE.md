@@ -148,7 +148,7 @@ You should see:
 Your Stripe API credentials are stored in a separate file: `STRIPE_CREDENTIALS.txt`
 
 1. Open `STRIPE_CREDENTIALS.txt` and keep it handy (contains your API keys)
-2. Log into your admin panel: `https://yoursite.com/admin`
+2. Log into your admin panel: `https://elitecarhire.au/admin`
 3. Navigate to: **Settings → Stripe Settings** (`/admin/settings/stripe`)
 4. Enter your Stripe credentials from STRIPE_CREDENTIALS.txt:
    - **Payment Gateway**: Select "Stripe"
@@ -166,7 +166,7 @@ Your Stripe API credentials are stored in a separate file: `STRIPE_CREDENTIALS.t
 1. Log into Stripe Dashboard: https://dashboard.stripe.com
 2. Go to Developers → Webhooks
 3. Click "+ Add Endpoint"
-4. Enter webhook URL: `https://yoursite.com/webhook/stripe.php`
+4. Enter webhook URL: `https://elitecarhire.au/webhook/stripe.php`
 5. Select events to listen to:
    - payment_intent.succeeded
    - payment_intent.payment_failed

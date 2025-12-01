@@ -29,7 +29,7 @@
                     <label for="site_url">Site URL *</label>
                     <input type="url" name="site_url" id="site_url"
                            value="<?= e($siteUrl ?? '') ?>" class="form-control"
-                           placeholder="https://elitecarhire.com.au" required>
+                           placeholder="https://elitecarhire.au" required>
                     <small>Full URL to your website (include https://)</small>
                 </div>
 

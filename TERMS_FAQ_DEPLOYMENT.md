@@ -144,8 +144,8 @@ You should see two rows:
 
 Visit these URLs on your website:
 
-- **Terms of Service:** `https://yoursite.com/terms`
-- **FAQ:** `https://yoursite.com/faq`
+- **Terms of Service:** `https://elitecarhire.au/terms`
+- **FAQ:** `https://elitecarhire.au/faq`
 
 Both pages should display with full content and styling.
 
@@ -186,8 +186,8 @@ If you have a CMS admin interface for managing pages, edit the content there.
 
 Search for and replace these placeholders in the SQL file before deployment:
 
-- **Email:** `support@elitecarhire.com.au` → Your actual support email
-- **Domain:** Update any references to `yoursite.com` with your actual domain
+- **Email:** `support@elitecarhire.au` → Your actual support email
+- **Domain:** Update any references to `elitecarhire.au` with your actual domain
 
 ### Adjusting Policies
 
