@@ -34,11 +34,8 @@ SET content = REPLACE(content, 'elitecarhire.com.au', 'elitecarhire.au'),
     updated_at = CURRENT_TIMESTAMP
 WHERE content LIKE '%elitecarhire.com.au%';
 
--- Update any email templates (if stored in database)
-UPDATE email_templates
-SET template_content = REPLACE(template_content, 'elitecarhire.com.au', 'elitecarhire.au'),
-    updated_at = CURRENT_TIMESTAMP
-WHERE template_content LIKE '%elitecarhire.com.au%';
+-- Note: Email templates are built in code (app/helpers/booking_emails.php), not stored in database
+-- No database update needed for email templates
 
 -- Verify changes
 SELECT 'Settings Table' AS table_name, setting_key, setting_value
