@@ -1,15 +1,19 @@
 <?php
-// Get active company logo from site_images table
+// Use static logo (fallback until site_images table is implemented)
+// Default to static logo file
+$logoPath = '/assets/images/logo.png';
+
+// Try to get logo from site_images table if it exists (for future use)
 try {
     $activeLogoId = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'active_logo_id'");
     if ($activeLogoId && $activeLogoId['setting_value']) {
         $logoData = db()->fetch("SELECT image_path FROM site_images WHERE id = ? AND image_type = 'logo'", [$activeLogoId['setting_value']]);
-        $logoPath = $logoData['image_path'] ?? null;
-    } else {
-        $logoPath = null;
+        if ($logoData && !empty($logoData['image_path'])) {
+            $logoPath = $logoData['image_path'];
+        }
     }
 } catch (\PDOException $e) {
-    $logoPath = null;
+    // site_images table doesn't exist - use static logo (normal for now)
 }
 ?>
 <!DOCTYPE html>
