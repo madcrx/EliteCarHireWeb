@@ -55,10 +55,11 @@ Options +FollowSymLinks -Indexes
 ### 3. Created Directory Structure
 
 **Directories created:**
-- `storage/uploads/site-images/` (for logos)
+- `storage/uploads/logo/` (for company logos via Admin → Settings)
+- `storage/uploads/site-images/` (for site images via Admin → Images)
 - `storage/vehicles/` (for vehicle images)
 
-Both with correct `755` permissions.
+All with correct `755` permissions.
 
 ### 4. Updated .gitignore
 
@@ -98,8 +99,10 @@ ls -la storage
 
 ```bash
 cd /home/cp825575/EliteCarHireWeb
+mkdir -p storage/uploads/logo
 mkdir -p storage/uploads/site-images
 mkdir -p storage/vehicles
+chmod 755 storage/uploads/logo
 chmod 755 storage/uploads/site-images
 chmod 755 storage/vehicles
 ```
@@ -107,8 +110,9 @@ chmod 755 storage/vehicles
 ### Step 4: Test Image Access
 
 **Test URLs in browser:**
-1. https://elitecarhire.au/storage/uploads/site-images/
-2. https://elitecarhire.au/storage/vehicles/
+1. https://elitecarhire.au/storage/uploads/logo/
+2. https://elitecarhire.au/storage/uploads/site-images/
+3. https://elitecarhire.au/storage/vehicles/
 
 **Expected results:**
 - **403 Forbidden** = OK (directory browsing disabled, but symlink works)
@@ -120,16 +124,17 @@ To properly test, upload a test image first (see Step 5).
 
 **Via Admin Panel:**
 1. Log into admin at https://elitecarhire.au/admin/login
-2. Go to **Admin → Images**
+2. Go to **Admin → Settings** (scroll down to Company Logo section)
 3. Upload logo image(s)
-4. Logo will be saved to `storage/uploads/site-images/`
-5. Accessible at URL `/storage/uploads/site-images/filename.png`
+4. Logo will be saved to `storage/uploads/logo/`
+5. Accessible at URL `/storage/uploads/logo/filename.png`
 
 **Via FTP/cPanel (alternative):**
 1. Connect via FTP or cPanel File Manager
-2. Navigate to: `/home/cp825575/EliteCarHireWeb/storage/uploads/site-images/`
+2. Navigate to: `/home/cp825575/EliteCarHireWeb/storage/uploads/logo/`
 3. Upload logo files (PNG, JPG, or SVG recommended)
 4. Set file permissions to `644`
+5. Update database `site_images` table with the logo path
 
 ### Step 6: Verify Homepage Logo
 
@@ -141,12 +146,12 @@ To properly test, upload a test image first (see Step 5).
 
 ## How Image Paths Work Now
 
-### Logo Images
+### Company Logo Images (via Admin → Settings)
 
-**Upload location:** `storage/uploads/site-images/logo-123456.png`
-**Database path:** `/storage/uploads/site-images/logo-123456.png`
-**URL:** `https://elitecarhire.au/storage/uploads/site-images/logo-123456.png`
-**Symlink resolves to:** `storage/uploads/site-images/logo-123456.png` ✅
+**Upload location:** `storage/uploads/logo/logo-123456.png`
+**Database path:** `/storage/uploads/logo/logo-123456.png`
+**URL:** `https://elitecarhire.au/storage/uploads/logo/logo-123456.png`
+**Symlink resolves to:** `storage/uploads/logo/logo-123456.png` ✅
 
 ### Vehicle Images
 
@@ -177,10 +182,12 @@ ls -la /home/cp825575/EliteCarHireWeb/storage/
 ```bash
 # Directories should be 755
 chmod 755 /home/cp825575/EliteCarHireWeb/storage/uploads
+chmod 755 /home/cp825575/EliteCarHireWeb/storage/uploads/logo
 chmod 755 /home/cp825575/EliteCarHireWeb/storage/uploads/site-images
 chmod 755 /home/cp825575/EliteCarHireWeb/storage/vehicles
 
 # Image files should be 644
+chmod 644 /home/cp825575/EliteCarHireWeb/storage/uploads/logo/*
 chmod 644 /home/cp825575/EliteCarHireWeb/storage/uploads/site-images/*
 chmod 644 /home/cp825575/EliteCarHireWeb/storage/vehicles/*
 ```
