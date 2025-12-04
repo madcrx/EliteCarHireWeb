@@ -1,0 +1,36 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Redirect old domain to new domain (if old domain points here)
+    RewriteCond %{HTTP_HOST} ^(www\.)?elitecarhire\.com\.au$ [NC]
+    RewriteRule ^(.*)$ https://elitecarhire.au/$1 [R=301,L]
+
+    # Redirect all requests to public/ subdirectory
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ public/$1 [L]
+
+    # Redirect /public/something to /something (clean URLs)
+    RewriteCond %{REQUEST_URI} ^/public/(.*)$
+    RewriteRule ^public/(.*)$ /$1 [R=301,L]
+</IfModule>
+
+# Prevent access to sensitive directories
+<IfModule mod_rewrite.c>
+    RewriteRule ^(app|config|database|storage|vendor)/.*$ - [F,L]
+</IfModule>
+
+# Disable directory browsing
+Options -Indexes
+
+# Deny access to .env and config files
+<FilesMatch "^\.">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+<FilesMatch "(^#.*#|\.(bak|conf|dist|fla|in[ci]|log|psd|sh|sql|sw[op])|~)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
