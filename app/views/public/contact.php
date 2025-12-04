@@ -18,6 +18,12 @@
         <form method="POST" action="/contact/submit">
             <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
 
+            <!-- Honeypot field (hidden from humans, visible to bots) -->
+            <input type="text" name="website" value="" style="display:none !important;" tabindex="-1" autocomplete="off">
+
+            <!-- Timestamp for time-based validation -->
+            <input type="hidden" name="form_timestamp" value="<?= time() ?>">
+
             <div class="form-group">
                 <label>Name *</label>
                 <input type="text" name="name" required>

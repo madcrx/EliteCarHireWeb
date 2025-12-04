@@ -138,14 +138,78 @@ class PublicController {
             redirect('/contact');
         }
 
-        $name = $_POST['name'] ?? '';
+        // SPAM PROTECTION 1: Honeypot Check
+        // If the 'website' field is filled, it's a bot (humans can't see this field)
+        if (!empty($_POST['website'])) {
+            // Silently reject (don't tell bot it failed)
+            flash('success', 'Thank you for contacting us. We will respond soon.');
+            redirect('/contact');
+            return;
+        }
+
+        // SPAM PROTECTION 2: Time-based Check
+        // Form must be on screen for at least 3 seconds (bots submit instantly)
+        $formTimestamp = $_POST['form_timestamp'] ?? 0;
+        $currentTime = time();
+        $timeDiff = $currentTime - $formTimestamp;
+
+        if ($timeDiff < 3) {
+            // Too fast - likely a bot
+            flash('success', 'Thank you for contacting us. We will respond soon.');
+            redirect('/contact');
+            return;
+        }
+
+        // SPAM PROTECTION 3: Email Validation
         $email = $_POST['email'] ?? '';
+
+        // Check for common spam email patterns
+        $spamPatterns = [
+            '@tempmail.',
+            '@throwaway.',
+            '@guerrillamail.',
+            '@mailinator.',
+            '@10minutemail.',
+            '@trashmail.',
+            'test@test.com',
+            'spam@spam.com',
+            'noreply@',
+        ];
+
+        foreach ($spamPatterns as $pattern) {
+            if (stripos($email, $pattern) !== false) {
+                flash('error', 'Please use a valid email address.');
+                redirect('/contact');
+                return;
+            }
+        }
+
+        // SPAM PROTECTION 4: Rate Limiting by IP
+        $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+
+        // Check if this IP has submitted in the last 5 minutes
+        $recentSubmission = db()->fetch(
+            "SELECT COUNT(*) as count FROM contact_submissions
+             WHERE ip_address = ? AND created_at > DATE_SUB(NOW(), INTERVAL 5 MINUTE)",
+            [$ip]
+        );
+
+        if ($recentSubmission && $recentSubmission['count'] > 0) {
+            flash('error', 'You have already submitted a message recently. Please wait a few minutes before submitting again.');
+            redirect('/contact');
+            return;
+        }
+
+        $name = $_POST['name'] ?? '';
         $phone = $_POST['phone'] ?? '';
         $subject = $_POST['subject'] ?? '';
         $message = $_POST['message'] ?? '';
 
-        db()->execute("INSERT INTO contact_submissions (name, email, phone, subject, message) VALUES (?, ?, ?, ?, ?)",
-                     [$name, $email, $phone, $subject, $message]);
+        // Insert with IP address for rate limiting
+        db()->execute(
+            "INSERT INTO contact_submissions (name, email, phone, subject, message, ip_address) VALUES (?, ?, ?, ?, ?, ?)",
+            [$name, $email, $phone, $subject, $message, $ip]
+        );
 
         flash('success', 'Thank you for contacting us. We will respond soon.');
         redirect('/contact');
