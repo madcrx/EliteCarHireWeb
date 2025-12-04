@@ -3,10 +3,11 @@
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
-// Test Payments Query
-echo "=== TESTING PAYMENTS QUERY ===\n\n";
-
+// Load required files
 require __DIR__ . '/../app/Database.php';
+require __DIR__ . '/../app/helpers.php';
+
+echo "=== TESTING PAYMENTS QUERY ===\n\n";
 
 try {
     $sql = "SELECT p.*, b.booking_reference, u.first_name, u.last_name,
