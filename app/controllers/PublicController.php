@@ -123,7 +123,7 @@ class PublicController {
     
     public function faq() {
         $page = db()->fetch("SELECT * FROM cms_pages WHERE page_key = 'faq'");
-        view('public/page', ['page' => $page, 'title' => 'FAQ']);
+        view('public/faq', ['page' => $page, 'title' => 'Frequently Asked Questions']);
     }
     
     public function contact() {

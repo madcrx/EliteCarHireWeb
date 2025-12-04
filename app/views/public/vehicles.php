@@ -104,7 +104,7 @@
         <?php foreach ($vehicles as $vehicle): ?>
             <div class="vehicle-card">
                 <?php if ($vehicle['primary_image']): ?>
-                    <img src="/<?= e($vehicle['primary_image']) ?>" alt="<?= e($vehicle['make'] . ' ' . $vehicle['model']) ?>">
+                    <img src="/<?= e($vehicle['primary_image']) ?>" alt="<?= e($vehicle['year'] . ' ' . $vehicle['make'] . ' ' . $vehicle['model'] . ' - Luxury chauffeur hire Melbourne - ' . ucwords(str_replace('_', ' ', $vehicle['category'])) . ' rental') ?>">
                 <?php else: ?>
                     <div style="height: 200px; background: var(--light-gray); display: flex; align-items: center; justify-content: center;">
                         <i class="fas fa-car" style="font-size: 4rem; color: var(--medium-gray);"></i>

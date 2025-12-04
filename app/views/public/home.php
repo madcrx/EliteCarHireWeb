@@ -14,9 +14,9 @@
         <?php foreach ($featuredVehicles as $vehicle): ?>
             <div class="vehicle-card">
                 <?php if ($vehicle['primary_image']): ?>
-                    <img src="/<?= e($vehicle['primary_image']) ?>" alt="<?= e($vehicle['make'] . ' ' . $vehicle['model']) ?>">
+                    <img src="/<?= e($vehicle['primary_image']) ?>" alt="<?= e($vehicle['year'] . ' ' . $vehicle['make'] . ' ' . $vehicle['model'] . ' - Luxury chauffeur service Melbourne - Premium vehicle hire') ?>">
                 <?php else: ?>
-                    <img src="/assets/images/placeholder.jpg" alt="Vehicle">
+                    <img src="/assets/images/placeholder.jpg" alt="Luxury vehicle for hire - Elite Car Hire Melbourne chauffeur service">
                 <?php endif; ?>
                 <div class="vehicle-card-body">
                     <h3><?= e($vehicle['make']) ?> <?= e($vehicle['model']) ?></h3>

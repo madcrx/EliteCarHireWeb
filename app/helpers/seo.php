@@ -136,6 +136,133 @@ function seoStructuredData() {
 }
 
 /**
+ * Generate FAQ Schema markup
+ */
+function seoFAQSchema($faqs = []) {
+    if (empty($faqs)) {
+        // Default FAQs if none provided
+        $faqs = [
+            [
+                'question' => 'What areas do you service in Melbourne?',
+                'answer' => 'We provide luxury chauffeur services throughout Melbourne including CBD, South Yarra, Toorak, Brighton, St Kilda, and all surrounding suburbs. We also service regional Victoria for special events.',
+            ],
+            [
+                'question' => 'Do customers drive the vehicles?',
+                'answer' => 'No, Elite Car Hire operates as a professional chauffeur service. All vehicles are driven exclusively by our experienced, licensed chauffeurs. Customers are passengers only.',
+            ],
+            [
+                'question' => 'What types of vehicles do you offer?',
+                'answer' => 'Our luxury fleet includes Mercedes AMG, Lamborghini, Ferrari, Porsche, Rolls-Royce, and other exotic and prestige vehicles, all maintained to the highest standards.',
+            ],
+            [
+                'question' => 'How do I book a chauffeur service?',
+                'answer' => 'You can book through our website, call us at 0406 907 849, or email support@elitecarhire.au. We recommend booking in advance for special events and peak periods.',
+            ],
+            [
+                'question' => 'Do you provide chauffeurs for weddings?',
+                'answer' => 'Yes, wedding car hire with professional chauffeurs is one of our specialties. We offer luxury vehicles and experienced chauffeurs to make your special day memorable.',
+            ],
+        ];
+    }
+
+    $schema = [
+        '@context' => 'https://schema.org',
+        '@type' => 'FAQPage',
+        'mainEntity' => [],
+    ];
+
+    foreach ($faqs as $faq) {
+        $schema['mainEntity'][] = [
+            '@type' => 'Question',
+            'name' => $faq['question'],
+            'acceptedAnswer' => [
+                '@type' => 'Answer',
+                'text' => $faq['answer'],
+            ],
+        ];
+    }
+
+    return '<script type="application/ld+json">' . "\n" . json_encode($schema, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n" . '</script>';
+}
+
+/**
+ * Generate Review/Rating Schema markup for a vehicle
+ */
+function seoReviewSchema($vehicleName, $reviews = []) {
+    if (empty($reviews)) {
+        return ''; // No reviews yet
+    }
+
+    // Calculate aggregate rating
+    $totalRating = 0;
+    $reviewCount = count($reviews);
+
+    foreach ($reviews as $review) {
+        $totalRating += $review['rating'];
+    }
+
+    $averageRating = $reviewCount > 0 ? round($totalRating / $reviewCount, 1) : 0;
+
+    $schema = [
+        '@context' => 'https://schema.org',
+        '@type' => 'Product',
+        'name' => $vehicleName,
+        'aggregateRating' => [
+            '@type' => 'AggregateRating',
+            'ratingValue' => $averageRating,
+            'reviewCount' => $reviewCount,
+            'bestRating' => 5,
+            'worstRating' => 1,
+        ],
+        'review' => [],
+    ];
+
+    // Add individual reviews
+    foreach (array_slice($reviews, 0, 5) as $review) { // Max 5 reviews in schema
+        $schema['review'][] = [
+            '@type' => 'Review',
+            'author' => [
+                '@type' => 'Person',
+                'name' => $review['author_name'] ?? 'Anonymous',
+            ],
+            'datePublished' => $review['date'] ?? date('Y-m-d'),
+            'reviewBody' => $review['comment'] ?? '',
+            'reviewRating' => [
+                '@type' => 'Rating',
+                'ratingValue' => $review['rating'],
+                'bestRating' => 5,
+                'worstRating' => 1,
+            ],
+        ];
+    }
+
+    return '<script type="application/ld+json">' . "\n" . json_encode($schema, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n" . '</script>';
+}
+
+/**
+ * Generate breadcrumb Schema markup
+ */
+function seoBreadcrumbSchema($items) {
+    $schema = [
+        '@context' => 'https://schema.org',
+        '@type' => 'BreadcrumbList',
+        'itemListElement' => [],
+    ];
+
+    $position = 1;
+    foreach ($items as $item) {
+        $schema['itemListElement'][] = [
+            '@type' => 'ListItem',
+            'position' => $position++,
+            'name' => $item['name'],
+            'item' => 'https://elitecarhire.au' . $item['url'],
+        ];
+    }
+
+    return '<script type="application/ld+json">' . "\n" . json_encode($schema, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n" . '</script>';
+}
+
+/**
  * Get optimized page title
  */
 function seoPageTitle($page = 'home') {

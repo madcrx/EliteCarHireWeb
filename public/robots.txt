@@ -1,0 +1,49 @@
+# robots.txt for Elite Car Hire
+# https://elitecarhire.au/robots.txt
+
+User-agent: *
+
+# Allow all pages
+Allow: /
+
+# Disallow admin and user areas
+Disallow: /admin/
+Disallow: /owner/
+Disallow: /customer/
+Disallow: /api/
+
+# Disallow login/register pages
+Disallow: /login
+Disallow: /register
+Disallow: /logout
+
+# Disallow diagnostic/test files (if any remain)
+Disallow: /diagnose-
+Disallow: /check-
+Disallow: /test-
+Disallow: /fix-
+
+# Allow important directories
+Allow: /assets/
+Allow: /storage/
+
+# Sitemap location
+Sitemap: https://elitecarhire.au/sitemap.xml
+
+# Crawl delay (optional - prevents aggressive crawling)
+Crawl-delay: 1
+
+# Google-specific directives
+User-agent: Googlebot
+Allow: /
+
+# Bing-specific directives
+User-agent: Bingbot
+Allow: /
+
+# Block bad bots (optional)
+User-agent: AhrefsBot
+Crawl-delay: 10
+
+User-agent: SemrushBot
+Crawl-delay: 10

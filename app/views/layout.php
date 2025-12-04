@@ -83,6 +83,14 @@ elseif (strpos($uri, '/faq') === 0) $currentPage = 'faq';
         </div>
     <?php endif; ?>
 
+    <?php
+    // Show breadcrumbs on all pages except home and login/register
+    $showBreadcrumbs = !in_array($uri, ['/', '/login', '/register', '/logout']);
+    if ($showBreadcrumbs && !auth()):
+        require __DIR__ . '/components/breadcrumbs.php';
+    endif;
+    ?>
+
     <main>
         <?php echo $content ?? '' ?>
     </main>

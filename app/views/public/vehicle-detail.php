@@ -1,4 +1,21 @@
-<?php ob_start(); ?>
+<?php
+ob_start();
+
+// Add review schema if there are reviews
+if (!empty($reviews)) {
+    $reviewsForSchema = [];
+    foreach ($reviews as $review) {
+        $reviewsForSchema[] = [
+            'author_name' => $review['first_name'] . ' ' . substr($review['last_name'], 0, 1) . '.',
+            'rating' => $review['rating'],
+            'comment' => $review['review_text'],
+            'date' => date('Y-m-d', strtotime($review['created_at'])),
+        ];
+    }
+    $vehicleName = $vehicle['year'] . ' ' . $vehicle['make'] . ' ' . $vehicle['model'];
+    echo seoReviewSchema($vehicleName, $reviewsForSchema);
+}
+?>
 <div class="container" style="padding: 4rem 0;">
     <div class="card">
         <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
@@ -6,16 +23,18 @@
                 <h1 style="color: var(--primary-gold); margin-bottom: 1rem;">
                     <?= e($vehicle['year']) ?> <?= e($vehicle['make']) ?> <?= e($vehicle['model']) ?>
                 </h1>
-                
+
                 <?php if (!empty($images)): ?>
                     <div style="margin-bottom: 2rem;">
-                        <img src="/<?= e($images[0]['image_path']) ?>" alt="<?= e($vehicle['make'] . ' ' . $vehicle['model']) ?>" 
+                        <img src="/<?= e($images[0]['image_path']) ?>"
+                             alt="<?= e($vehicle['year'] . ' ' . $vehicle['make'] . ' ' . $vehicle['model'] . ' - Luxury chauffeur service Melbourne') ?>"
                              style="width: 100%; border-radius: var(--border-radius);">
-                        
+
                         <?php if (count($images) > 1): ?>
                             <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-top: 1rem;">
-                                <?php foreach (array_slice($images, 1, 4) as $img): ?>
-                                    <img src="/<?= e($img['image_path']) ?>" alt="Image" 
+                                <?php foreach (array_slice($images, 1, 4) as $index => $img): ?>
+                                    <img src="/<?= e($img['image_path']) ?>"
+                                         alt="<?= e($vehicle['make'] . ' ' . $vehicle['model'] . ' - Interior and exterior view ' . ($index + 2)) ?>"
                                          style="width: 100%; height: 100px; object-fit: cover; border-radius: var(--border-radius);">
                                 <?php endforeach; ?>
                             </div>
