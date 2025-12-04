@@ -26,8 +26,10 @@ try {
         // Allow admin users to bypass maintenance mode
         $isAdmin = isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
         $isAdminRoute = strpos($_SERVER['REQUEST_URI'], '/admin/') === 0;
+        $isLoginRoute = strpos($_SERVER['REQUEST_URI'], '/login') === 0;
 
-        if (!$isAdmin && !$isAdminRoute) {
+        // Allow access if: already logged in as admin, accessing admin routes, or accessing login page
+        if (!$isAdmin && !$isAdminRoute && !$isLoginRoute) {
             http_response_code(503);
             require __DIR__ . '/../app/views/maintenance.php';
             exit;
