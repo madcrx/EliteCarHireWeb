@@ -10,7 +10,7 @@
 
 // Prevent running if symlink already exists
 $link = __DIR__ . '/storage';
-$target = __DIR__ . '/../storage/uploads';
+$target = __DIR__ . '/../storage';
 
 ?>
 <!DOCTYPE html>

@@ -28,8 +28,8 @@ Create a symbolic link from `public/storage` to `../storage/uploads` so images a
 # Navigate to public directory
 cd /home/cp825575/EliteCarHireWeb/public
 
-# Create symlink to storage/uploads
-ln -s ../storage/uploads storage
+# Create symlink to storage directory (NOT storage/uploads)
+ln -s ../storage storage
 
 # Verify symlink was created
 ls -la storage
@@ -50,7 +50,7 @@ lrwxrwxrwx 1 cp825575 cp825575 18 Dec 4 storage -> ../storage/uploads
 
 ```bash
 cd /home/cp825575/EliteCarHireWeb/public
-ln -s ../storage/uploads storage
+ln -s ../storage storage
 ls -la storage
 ```
 
@@ -67,7 +67,7 @@ If you don't have SSH or Terminal access, create this file:
 // Create storage symlink
 // RUN ONCE then DELETE this file
 
-$target = __DIR__ . '/../storage/uploads';
+$target = __DIR__ . '/../storage';
 $link = __DIR__ . '/storage';
 
 // Check if symlink already exists
@@ -119,7 +119,7 @@ If your host doesn't support symlinks, copy the storage directory:
 
 ```bash
 cd /home/cp825575/EliteCarHireWeb/public
-cp -r ../storage/uploads ./storage
+cp -r ../storage ./storage
 chmod -R 755 storage
 ```
 
@@ -221,8 +221,8 @@ WHERE image_path LIKE '/storage/uploads/vehicles/%';
 ## Summary
 
 **Recommended Solution:**
-1. Create symlink: `public/storage` → `../storage/uploads`
-2. This makes `/storage/uploads/site-images/` accessible at URL `/storage/uploads/site-images/`
+1. Create symlink: `public/storage` → `../storage`
+2. This makes both `/storage/uploads/site-images/` and `/storage/vehicles/` accessible via web URLs
 3. Works for both logos and vehicle images
 
 **After Creating Symlink:**
