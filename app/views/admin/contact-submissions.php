@@ -88,7 +88,7 @@
                         <!-- Delete Button -->
                         <form method="POST" action="/admin/contact-submissions/<?= $submission['id'] ?>/delete" style="display: inline-block;" onsubmit="return confirm('Are you sure you want to delete this contact submission? This action cannot be undone.');">
                             <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
-                            <button type="submit" class="btn" style="background: var(--danger); color: white;">
+                            <button type="submit" class="btn" style="background: #dc3545; color: white; border: none;">
                                 <i class="fas fa-trash"></i> Delete
                             </button>
                         </form>
