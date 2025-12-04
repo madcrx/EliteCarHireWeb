@@ -199,78 +199,86 @@ VALUES ('terms', 'Terms of Service', '
 
     <h2>7. Customer Responsibilities</h2>
 
-    <h3>7.1 Driver Requirements</h3>
+    <p><strong>Important Note:</strong> Elite Car Hire operates as a chauffeur service. Owners are the sole authorized drivers of all vehicles. Customers are passengers only.</p>
+
+    <h3>7.1 Passenger Requirements</h3>
     <p>Customers must:</p>
     <ul>
-        <li>Be at least 25 years of age at the time of rental</li>
-        <li>Hold a valid, full Australian driver\'s license (not provisional or learner)</li>
-        <li>Present their license for verification at vehicle pickup</li>
-        <li>Be the sole authorized driver unless additional drivers are pre-approved by the Owner</li>
+        <li>Be at least 18 years of age for booking purposes</li>
+        <li>Provide accurate pickup and destination information</li>
+        <li>Be present at the agreed pickup time and location</li>
+        <li>Provide valid identification when requested</li>
+        <li>Have the booking confirmation or reference number available</li>
     </ul>
 
-    <h3>7.2 Vehicle Use and Care</h3>
+    <h3>7.2 Passenger Conduct</h3>
     <p>Customers agree to:</p>
     <ul>
-        <li>Operate the vehicle safely and lawfully at all times</li>
-        <li>Comply with all road rules and traffic regulations</li>
-        <li>Use the vehicle only for the purpose stated in the booking</li>
-        <li>Not use the vehicle for illegal activities, racing, or off-road driving (unless specifically approved)</li>
+        <li>Conduct themselves in a respectful and lawful manner</li>
+        <li>Follow all reasonable directions given by the Owner/Driver</li>
+        <li>Not engage in illegal activities while in the vehicle</li>
         <li>Not smoke in the vehicle unless explicitly permitted by the Owner</li>
-        <li>Return the vehicle in the same condition as received, including fuel level</li>
-        <li>Report any damage, mechanical issues, or accidents immediately</li>
+        <li>Wear seatbelts at all times as required by law</li>
+        <li>Keep the vehicle clean and free from damage</li>
+        <li>Report any concerns or issues to the Owner/Driver immediately</li>
     </ul>
 
-    <h3>7.3 Prohibited Uses</h3>
+    <h3>7.3 Prohibited Conduct</h3>
     <p>Customers must NOT:</p>
     <ul>
-        <li>Allow unlicensed persons to drive the vehicle</li>
-        <li>Use the vehicle while under the influence of alcohol or drugs</li>
+        <li>Operate or attempt to operate the vehicle (Owners are the sole drivers)</li>
+        <li>Consume alcohol or drugs in an excessive or disruptive manner</li>
         <li>Exceed passenger capacity limits</li>
-        <li>Transport hazardous materials</li>
-        <li>Modify or alter the vehicle in any way</li>
-        <li>Sub-rent or lend the vehicle to third parties</li>
+        <li>Transport hazardous or illegal materials</li>
+        <li>Damage, modify, or alter the vehicle in any way</li>
+        <li>Behave in an aggressive, abusive, or threatening manner toward the Owner/Driver</li>
+        <li>Interfere with the Owner/Driver\'s operation of the vehicle</li>
     </ul>
 
-    <h3>7.4 Fuel Policy</h3>
-    <p>Unless otherwise specified by the Owner:</p>
+    <h3>7.4 Service Modifications</h3>
+    <p>Customers understand that:</p>
     <ul>
-        <li>Vehicles should be returned with the same fuel level as at pickup</li>
-        <li>Failure to return with adequate fuel may result in refueling charges plus administrative fees</li>
+        <li>Route and itinerary changes may be requested but are subject to Owner approval</li>
+        <li>The Owner/Driver has final discretion on routes, stops, and driving decisions for safety</li>
+        <li>Extended time or additional destinations may incur extra charges as agreed with the Owner</li>
+        <li>The Owner/Driver may refuse service or terminate the journey if the Customer violates these terms</li>
     </ul>
 
     <h2>8. Damage, Loss, and Liability</h2>
 
-    <h3>8.1 Damage During Rental Period</h3>
-    <p>Customers are liable for:</p>
+    <h3>8.1 Customer Liability for Damage</h3>
+    <p>As passengers, Customers are liable ONLY for damage they cause through:</p>
     <ul>
-        <li>All damage to the vehicle occurring during the rental period</li>
-        <li>Damage to third-party property caused by their operation of the vehicle</li>
-        <li>Interior damage including stains, burns, tears, or odors</li>
-        <li>Missing items, accessories, or equipment</li>
+        <li>Failure to follow the Owner/Driver\'s reasonable directions</li>
+        <li>Intentional or reckless damage to the vehicle interior or exterior</li>
+        <li>Interior damage including stains, burns, tears, or odors caused by the Customer</li>
+        <li>Damage to accessories or equipment caused by misuse or negligence</li>
+        <li>Loss or theft of items left in the vehicle due to Customer negligence</li>
     </ul>
 
+    <p><strong>Important:</strong> Customers are NOT liable for damage caused by the Owner/Driver\'s operation of the vehicle, normal wear and tear, or mechanical failures not caused by Customer actions.</p>
+
     <h3>8.2 Accident and Incident Reporting</h3>
-    <p>In the event of an accident, theft, or damage, Customers must:</p>
+    <p>In the event of an accident, incident, or damage, Customers must:</p>
     <ol>
-        <li>Immediately cease driving if the vehicle is unsafe</li>
+        <li>Remain calm and follow the Owner/Driver\'s instructions</li>
         <li>Contact emergency services if required (000)</li>
-        <li>Notify the Owner as soon as safely possible</li>
-        <li>Notify Elite Car Hire within 24 hours</li>
-        <li>Complete a detailed incident report</li>
-        <li>Obtain police report for any accident involving injury or significant damage</li>
-        <li>Cooperate fully with insurance claims processes</li>
-        <li>Not admit fault or liability without consulting the Owner and their insurer</li>
+        <li>Provide accurate information to authorities if requested</li>
+        <li>Notify Elite Car Hire within 24 hours if the incident involved Customer conduct</li>
+        <li>Complete a detailed incident report if requested</li>
+        <li>Cooperate fully with any investigation or insurance claims process</li>
+        <li>Provide honest statements about the incident</li>
     </ol>
 
     <h3>8.3 Insurance Coverage</h3>
-    <p>Vehicle insurance is maintained by the Owner. Customers should:</p>
+    <p>Vehicle insurance is maintained by the Owner for their operation of the vehicle. Customers should:</p>
     <ul>
-        <li>Review insurance coverage details with the Owner before rental</li>
-        <li>Understand excess amounts and exclusions</li>
-        <li>Consider obtaining additional personal insurance if desired</li>
+        <li>Understand that the Owner\'s insurance covers vehicle operation and accidents</li>
+        <li>Consider obtaining personal travel or accident insurance for their own protection</li>
+        <li>Be aware they may be liable for interior damage they directly cause through misconduct</li>
     </ul>
 
-    <p><em>Note:</em> Elite Car Hire is not responsible for insurance coverage - this is managed between Owners and their insurance providers.</p>
+    <p><em>Note:</em> Elite Car Hire is not responsible for insurance coverage. Owners maintain appropriate insurance for their chauffeur services. Customers are responsible for their own personal insurance needs.</p>
 
     <h2>9. Dispute Resolution</h2>
 

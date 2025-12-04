@@ -2,12 +2,6 @@
 // Elite Car Hire - Main Entry Point
 session_start();
 
-// Error reporting
-error_reporting(E_ALL);
-ini_set('display_errors', 0);
-ini_set('log_errors', 1);
-ini_set('error_log', __DIR__ . '/../storage/logs/error.log');
-
 // Load configuration
 $config = require __DIR__ . '/../config/app.php';
 
@@ -24,6 +18,46 @@ require __DIR__ . '/../app/Database.php';
 
 // Load helpers
 require __DIR__ . '/../app/helpers.php';
+
+// Check maintenance mode (allow admin access)
+try {
+    $maintenanceMode = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'maintenance_mode'");
+    if ($maintenanceMode && $maintenanceMode['setting_value'] == '1') {
+        // Allow admin users to bypass maintenance mode
+        $isAdmin = isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
+        $isAdminRoute = strpos($_SERVER['REQUEST_URI'], '/admin/') === 0;
+
+        if (!$isAdmin && !$isAdminRoute) {
+            http_response_code(503);
+            require __DIR__ . '/../app/views/maintenance.php';
+            exit;
+        }
+    }
+} catch (\PDOException $e) {
+    // Settings table doesn't exist yet - continue normally
+}
+
+// Check debug mode and set error reporting
+try {
+    $debugMode = db()->fetch("SELECT setting_value FROM settings WHERE setting_key = 'debug_mode'");
+    if ($debugMode && $debugMode['setting_value'] == '1') {
+        error_reporting(E_ALL);
+        ini_set('display_errors', 1);
+        ini_set('log_errors', 1);
+        ini_set('error_log', __DIR__ . '/../storage/logs/error.log');
+    } else {
+        error_reporting(E_ALL);
+        ini_set('display_errors', 0);
+        ini_set('log_errors', 1);
+        ini_set('error_log', __DIR__ . '/../storage/logs/error.log');
+    }
+} catch (\PDOException $e) {
+    // Settings table doesn't exist - use default (debug off)
+    error_reporting(E_ALL);
+    ini_set('display_errors', 0);
+    ini_set('log_errors', 1);
+    ini_set('error_log', __DIR__ . '/../storage/logs/error.log');
+}
 
 // Initialize router
 require __DIR__ . '/../app/Router.php';
