@@ -50,7 +50,12 @@
                                 </td>
                                 <td>
                                     <?php if ($payout['status'] === 'pending'): ?>
-                                        <button class="btn btn-primary btn-sm">Process</button>
+                                        <form method="POST" action="/admin/payouts/<?= $payout['id'] ?>/process" style="display: inline-block;" onsubmit="return confirm('Mark this payout as paid? This action cannot be undone.');">
+                                            <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
+                                            <button type="submit" class="btn btn-primary btn-sm">Process</button>
+                                        </form>
+                                    <?php elseif ($payout['status'] === 'paid'): ?>
+                                        <span class="badge badge-success">Paid</span>
                                     <?php endif; ?>
                                 </td>
                             </tr>

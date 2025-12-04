@@ -398,10 +398,15 @@ class AdminController {
     }
     
     public function payments() {
+        requireAuth('admin');
+
         $status = $_GET['status'] ?? 'all';
 
-        $sql = "SELECT p.*, b.booking_reference FROM payments p
+        $sql = "SELECT p.*, b.booking_reference, u.first_name, u.last_name,
+                CONCAT(u.first_name, ' ', u.last_name) as customer_name
+                FROM payments p
                 JOIN bookings b ON p.booking_id = b.id
+                JOIN users u ON b.customer_id = u.id
                 WHERE 1=1";
         $params = [];
 
@@ -417,9 +422,12 @@ class AdminController {
     }
     
     public function payouts() {
+        requireAuth('admin');
+
         $status = $_GET['status'] ?? 'all';
 
-        $sql = "SELECT p.*, u.first_name, u.last_name, b.booking_reference
+        $sql = "SELECT p.*, u.first_name, u.last_name, b.booking_reference,
+                CONCAT(u.first_name, ' ', u.last_name) as owner_name
                 FROM payouts p
                 JOIN users u ON p.owner_id = u.id
                 LEFT JOIN bookings b ON p.booking_id = b.id
@@ -436,7 +444,40 @@ class AdminController {
         $payouts = db()->fetchAll($sql, $params);
         view('admin/payouts', compact('payouts', 'status'));
     }
-    
+
+    public function processPayout($id) {
+        requireAuth('admin');
+
+        // Verify CSRF token
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token. Please try again.');
+            redirect('/admin/payouts');
+        }
+
+        // Get payout details
+        $payout = db()->fetch("SELECT * FROM payouts WHERE id = ?", [$id]);
+
+        if (!$payout) {
+            flash('error', 'Payout not found.');
+            redirect('/admin/payouts');
+        }
+
+        if ($payout['status'] !== 'pending') {
+            flash('error', 'This payout has already been processed.');
+            redirect('/admin/payouts');
+        }
+
+        // Update payout status to paid
+        db()->execute(
+            "UPDATE payouts SET status = 'paid', paid_at = NOW(), updated_at = NOW() WHERE id = ?",
+            [$id]
+        );
+
+        flash('success', 'Payout has been marked as paid successfully.');
+        redirect('/admin/payouts');
+    }
+
     public function disputes() {
         $status = $_GET['status'] ?? 'all';
 
