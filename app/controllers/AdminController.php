@@ -468,13 +468,13 @@ class AdminController {
             redirect('/admin/payouts');
         }
 
-        // Update payout status to paid
+        // Update payout status to completed
         db()->execute(
-            "UPDATE payouts SET status = 'paid', paid_at = NOW(), updated_at = NOW() WHERE id = ?",
+            "UPDATE payouts SET status = 'completed', paid_at = NOW(), updated_at = NOW() WHERE id = ?",
             [$id]
         );
 
-        flash('success', 'Payout has been marked as paid successfully.');
+        flash('success', 'Payout has been marked as completed successfully.');
         redirect('/admin/payouts');
     }
 
