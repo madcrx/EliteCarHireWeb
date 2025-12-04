@@ -1204,4 +1204,151 @@ class OwnerController {
         flash('success', 'Notification marked as read');
         redirect('/owner/notifications');
     }
+
+    /**
+     * Stripe Connect: Start onboarding process
+     */
+    public function stripeConnect() {
+        requireAuth('owner');
+        require_once __DIR__ . '/../helpers/stripe_helper.php';
+
+        $userId = $_SESSION['user_id'];
+
+        // Check if Stripe Connect is enabled
+        if (!isStripeConnectEnabled()) {
+            flash('error', 'Stripe Connect is not enabled. Please contact support.');
+            redirect('/owner/dashboard');
+        }
+
+        // Get user details
+        $user = db()->fetch("SELECT * FROM users WHERE id = ?", [$userId]);
+
+        // Check if already has Stripe account
+        if (!empty($user['stripe_account_id'])) {
+            // Refresh account status
+            $accountStatus = getStripeConnectAccountStatus($user['stripe_account_id']);
+
+            if ($accountStatus && $accountStatus['charges_enabled']) {
+                flash('info', 'Your Stripe account is already connected.');
+                redirect('/owner/dashboard');
+            }
+
+            // Account exists but not completed, create new link
+            $accountLink = createStripeConnectAccountLink($user['stripe_account_id']);
+        } else {
+            // Create new Stripe Express account
+            $account = createStripeConnectAccount($userId, $user['email']);
+
+            if (!$account) {
+                flash('error', 'Failed to create Stripe account. Please try again.');
+                redirect('/owner/dashboard');
+            }
+
+            // Create account link for onboarding
+            $accountLink = createStripeConnectAccountLink($account['account_id']);
+        }
+
+        if (!$accountLink) {
+            flash('error', 'Failed to create onboarding link. Please try again.');
+            redirect('/owner/dashboard');
+        }
+
+        // Redirect to Stripe onboarding
+        header('Location: ' . $accountLink);
+        exit;
+    }
+
+    /**
+     * Stripe Connect: Handle return after onboarding
+     */
+    public function stripeReturn() {
+        requireAuth('owner');
+        require_once __DIR__ . '/../helpers/stripe_helper.php';
+
+        $userId = $_SESSION['user_id'];
+        $user = db()->fetch("SELECT * FROM users WHERE id = ?", [$userId]);
+
+        if (empty($user['stripe_account_id'])) {
+            flash('error', 'No Stripe account found.');
+            redirect('/owner/dashboard');
+        }
+
+        // Check account status
+        $accountStatus = getStripeConnectAccountStatus($user['stripe_account_id']);
+
+        if ($accountStatus) {
+            // Update user status in database
+            updateUserStripeConnectStatus($userId, $accountStatus);
+
+            if ($accountStatus['charges_enabled'] && $accountStatus['payouts_enabled']) {
+                flash('success', 'Stripe account successfully connected! You can now receive automatic payouts.');
+            } elseif ($accountStatus['details_submitted']) {
+                flash('info', 'Thank you for submitting your details. Stripe is reviewing your account.');
+            } else {
+                flash('warning', 'Onboarding incomplete. Please complete all required information.');
+
+                // Create new link to continue
+                $accountLink = createStripeConnectAccountLink($user['stripe_account_id']);
+                if ($accountLink) {
+                    header('Location: ' . $accountLink);
+                    exit;
+                }
+            }
+        } else {
+            flash('error', 'Failed to verify account status.');
+        }
+
+        redirect('/owner/dashboard');
+    }
+
+    /**
+     * Stripe Connect: Handle refresh when link expires
+     */
+    public function stripeRefresh() {
+        requireAuth('owner');
+        require_once __DIR__ . '/../helpers/stripe_helper.php';
+
+        $userId = $_SESSION['user_id'];
+        $user = db()->fetch("SELECT * FROM users WHERE id = ?", [$userId]);
+
+        if (empty($user['stripe_account_id'])) {
+            flash('error', 'No Stripe account found.');
+            redirect('/owner/dashboard');
+        }
+
+        // Create new account link
+        $accountLink = createStripeConnectAccountLink($user['stripe_account_id']);
+
+        if (!$accountLink) {
+            flash('error', 'Failed to refresh onboarding link. Please try again.');
+            redirect('/owner/dashboard');
+        }
+
+        // Redirect to Stripe onboarding
+        header('Location: ' . $accountLink);
+        exit;
+    }
+
+    /**
+     * Stripe Connect: Dashboard/settings page
+     */
+    public function stripeSettings() {
+        requireAuth('owner');
+        require_once __DIR__ . '/../helpers/stripe_helper.php';
+
+        $userId = $_SESSION['user_id'];
+        $user = db()->fetch("SELECT * FROM users WHERE id = ?", [$userId]);
+
+        $stripeStatus = null;
+        if (!empty($user['stripe_account_id'])) {
+            $stripeStatus = getStripeConnectAccountStatus($user['stripe_account_id']);
+
+            // Update status in database
+            if ($stripeStatus) {
+                updateUserStripeConnectStatus($userId, $stripeStatus);
+            }
+        }
+
+        view('owner/stripe-settings', compact('user', 'stripeStatus'));
+    }
 }
