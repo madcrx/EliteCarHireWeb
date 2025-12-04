@@ -150,6 +150,12 @@ $router->post('/owner/notifications/{id}/mark-read', 'OwnerController@markNotifi
 $router->get('/owner/messages', 'OwnerController@messages');
 $router->get('/owner/pending-changes', 'OwnerController@pendingChanges');
 
+// Stripe Connect routes (Owner)
+$router->get('/owner/stripe/connect', 'OwnerController@stripeConnect');
+$router->get('/owner/stripe/return', 'OwnerController@stripeReturn');
+$router->get('/owner/stripe/refresh', 'OwnerController@stripeRefresh');
+$router->get('/owner/stripe/settings', 'OwnerController@stripeSettings');
+
 // Customer routes
 $router->get('/customer/dashboard', 'CustomerController@dashboard');
 $router->get('/customer/hires', 'CustomerController@hires');

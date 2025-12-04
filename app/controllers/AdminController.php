@@ -447,6 +447,7 @@ class AdminController {
 
     public function processPayout($id) {
         requireAuth('admin');
+        require_once __DIR__ . '/../helpers/stripe_helper.php';
 
         // Verify CSRF token
         $token = $_POST['csrf_token'] ?? '';
@@ -455,8 +456,16 @@ class AdminController {
             redirect('/admin/payouts');
         }
 
-        // Get payout details
-        $payout = db()->fetch("SELECT * FROM payouts WHERE id = ?", [$id]);
+        // Get payout details with owner information
+        $payout = db()->fetch(
+            "SELECT p.*, u.stripe_account_id, u.stripe_account_status, u.stripe_payouts_enabled,
+                    b.booking_reference
+             FROM payouts p
+             JOIN users u ON p.owner_id = u.id
+             LEFT JOIN bookings b ON p.booking_id = b.id
+             WHERE p.id = ?",
+            [$id]
+        );
 
         if (!$payout) {
             flash('error', 'Payout not found.');
@@ -468,13 +477,62 @@ class AdminController {
             redirect('/admin/payouts');
         }
 
-        // Update payout status to completed
-        db()->execute(
-            "UPDATE payouts SET status = 'completed', paid_at = NOW(), updated_at = NOW() WHERE id = ?",
-            [$id]
-        );
+        // Check if owner has Stripe Connect enabled and verified
+        $canUseStripe = isStripeConnectEnabled()
+                       && !empty($payout['stripe_account_id'])
+                       && $payout['stripe_account_status'] === 'verified'
+                       && $payout['stripe_payouts_enabled'];
 
-        flash('success', 'Payout has been marked as completed successfully.');
+        if ($canUseStripe) {
+            // Process via Stripe Connect transfer
+            try {
+                $description = "Payout for booking " . ($payout['booking_reference'] ?? 'N/A');
+                $metadata = [
+                    'payout_id' => $id,
+                    'booking_id' => $payout['booking_id'] ?? '',
+                    'owner_id' => $payout['owner_id'],
+                ];
+
+                $transfer = createManualTransfer(
+                    $payout['amount'],
+                    $payout['stripe_account_id'],
+                    $description,
+                    $metadata
+                );
+
+                if ($transfer) {
+                    // Update payout with Stripe transfer details
+                    db()->execute(
+                        "UPDATE payouts SET
+                            status = 'completed',
+                            stripe_transfer_id = ?,
+                            transfer_date = NOW(),
+                            paid_at = NOW(),
+                            updated_at = NOW()
+                         WHERE id = ?",
+                        [$transfer['transfer_id'], $id]
+                    );
+
+                    flash('success', 'Payout has been transferred via Stripe successfully! Transfer ID: ' . $transfer['transfer_id']);
+                } else {
+                    flash('error', 'Failed to create Stripe transfer. Please try again or process manually.');
+                }
+
+            } catch (Exception $e) {
+                error_log("Stripe transfer error: " . $e->getMessage());
+                flash('error', 'Stripe transfer failed: ' . $e->getMessage());
+            }
+
+        } else {
+            // Manual payout (no Stripe Connect) - just mark as completed
+            db()->execute(
+                "UPDATE payouts SET status = 'completed', paid_at = NOW(), updated_at = NOW() WHERE id = ?",
+                [$id]
+            );
+
+            flash('success', 'Payout has been marked as completed. Please process the bank transfer manually.');
+        }
+
         redirect('/admin/payouts');
     }
 

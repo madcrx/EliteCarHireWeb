@@ -55,6 +55,9 @@
             </div>
         <?php endif; ?>
 
+        <!-- Stripe Connect Status -->
+        <?php include __DIR__ . '/components/stripe-connect-status.php'; ?>
+
         <div class="stats-grid">
             <div class="stat-card">
                 <h3><?= $stats['total_vehicles'] ?></h3>
