@@ -2,9 +2,39 @@
 -- Run this on your live database to add Stripe-related tables
 
 -- Add Stripe account ID to users table for Connect integration
-ALTER TABLE users
-ADD COLUMN stripe_account_id VARCHAR(255) NULL AFTER email,
-ADD INDEX idx_stripe_account (stripe_account_id);
+-- Note: Skip the next section if you get "Duplicate column name" error
+SET @column_exists = (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'users'
+    AND COLUMN_NAME = 'stripe_account_id'
+);
+
+SET @sql = IF(@column_exists = 0,
+    'ALTER TABLE users ADD COLUMN stripe_account_id VARCHAR(255) NULL AFTER email',
+    'SELECT "Column stripe_account_id already exists, skipping..." AS message'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Add index if column exists but index doesn't
+SET @index_exists = (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'users'
+    AND INDEX_NAME = 'idx_stripe_account'
+);
+
+SET @sql = IF(@index_exists = 0,
+    'ALTER TABLE users ADD INDEX idx_stripe_account (stripe_account_id)',
+    'SELECT "Index idx_stripe_account already exists, skipping..." AS message'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 -- Webhook events tracking table
 CREATE TABLE IF NOT EXISTS stripe_webhook_events (
