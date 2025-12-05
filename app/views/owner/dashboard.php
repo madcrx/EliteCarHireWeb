@@ -16,6 +16,39 @@
     <div class="main-content">
         <h1>Owner Dashboard</h1>
 
+        <!-- Stripe Connect Warning -->
+        <?php if (!$hasStripeConnected): ?>
+            <div class="card" style="background: #fff3cd; border-left: 4px solid #f39c12; margin-bottom: 1.5rem;">
+                <h3 style="margin-top: 0; color: #d68910;">
+                    <i class="fas fa-exclamation-triangle"></i> ACTION REQUIRED: Connect Your Bank Account
+                </h3>
+                <p style="margin-bottom: 1rem; color: #856404;">
+                    <strong>Hi <?= e($ownerName) ?>!</strong> To receive payouts and confirm customer bookings, you must connect your bank account through Stripe Connect.
+                </p>
+                <div style="background: #ffffff; padding: 1rem; border-radius: var(--border-radius); margin-bottom: 1rem;">
+                    <h4 style="margin-top: 0; color: #d68910;">What you'll need:</h4>
+                    <ul style="margin: 0.5rem 0; padding-left: 1.5rem; color: #856404;">
+                        <li>Australian Business Number (ABN) or Personal details</li>
+                        <li>Bank account details (BSB and Account number)</li>
+                        <li>Government-issued ID (Driver's license or passport)</li>
+                        <li>5-10 minutes to complete the process</li>
+                    </ul>
+                </div>
+                <p style="margin-bottom: 1rem; font-size: 0.9rem; color: #856404;">
+                    <i class="fas fa-info-circle"></i> <strong>Note:</strong> You won't be able to confirm bookings or receive payments until your Stripe account is connected and verified.
+                </p>
+                <a href="/owner/stripe/connect" class="btn btn-warning" style="background: #f39c12; border-color: #f39c12;">
+                    <i class="fas fa-link"></i> Connect Stripe Account Now
+                </a>
+            </div>
+        <?php else: ?>
+            <div class="card" style="background: #d4edda; border-left: 4px solid #28a745; margin-bottom: 1.5rem;">
+                <p style="margin: 0; color: #155724;">
+                    <i class="fas fa-check-circle"></i> <strong>Account Connected & Verified</strong> - You can receive payouts and confirm bookings.
+                </p>
+            </div>
+        <?php endif; ?>
+
         <!-- Notifications -->
         <?php if (!empty($notifications)): ?>
             <div class="card" style="background: #e3f2fd; border-left: 4px solid #2196f3; margin-bottom: 1.5rem;">

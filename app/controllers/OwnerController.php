@@ -35,6 +35,13 @@ class OwnerController {
                 return;
             }
 
+            // Check if owner has connected Stripe account
+            $owner = db()->fetch("SELECT stripe_account_id, first_name FROM users WHERE id = ?", [$ownerId]);
+            $hasStripeConnected = !empty($owner['stripe_account_id']);
+            $ownerName = $owner['first_name'] ?? 'Owner';
+
+            error_log("OwnerController::dashboard() - Stripe Connected: " . ($hasStripeConnected ? 'Yes' : 'No'));
+
             // Initialize notifications as empty (graceful fallback)
             $notifications = [];
             $notificationCount = 0;
@@ -100,7 +107,7 @@ class OwnerController {
             }
 
             error_log("OwnerController::dashboard() - Rendering view");
-            view('owner/dashboard', compact('stats', 'recentBookings', 'notifications', 'notificationCount'));
+            view('owner/dashboard', compact('stats', 'recentBookings', 'notifications', 'notificationCount', 'hasStripeConnected', 'ownerName'));
             error_log("OwnerController::dashboard() - Complete");
 
         } catch (\Exception $e) {
@@ -414,6 +421,13 @@ class OwnerController {
             redirect('/owner/bookings');
         }
 
+        // Check if owner has connected Stripe account
+        $owner = db()->fetch("SELECT stripe_account_id FROM users WHERE id = ?", [$ownerId]);
+        if (empty($owner['stripe_account_id'])) {
+            flash('error', 'You must connect and verify your Stripe account before confirming bookings. Go to your dashboard to connect now.');
+            redirect('/owner/dashboard');
+        }
+
         // Verify the action token
         $tokenData = verifyActionToken($token);
 
@@ -545,6 +559,13 @@ class OwnerController {
 
         $bookingId = $_POST['booking_id'] ?? '';
         $ownerId = $_SESSION['user_id'];
+
+        // Check if owner has connected Stripe account
+        $owner = db()->fetch("SELECT stripe_account_id FROM users WHERE id = ?", [$ownerId]);
+        if (empty($owner['stripe_account_id'])) {
+            flash('error', 'You must connect and verify your Stripe account before confirming bookings. Go to your dashboard to connect now.');
+            redirect('/owner/dashboard');
+        }
 
         // Verify booking belongs to owner
         $booking = db()->fetch(
