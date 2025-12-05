@@ -7,27 +7,32 @@ When setting up or updating your database, run the migration files in this order
 ### 1. **add_timestamps_to_payments.sql** (Run FIRST if you have existing database)
    - Adds `created_at` and `updated_at` columns to the `payments` table
    - Required before running stripe_integration.sql
-   - Safe to run multiple times (uses IF NOT EXISTS)
+   - Safe to run multiple times
 
-### 2. **add_created_at_to_settings.sql** (Optional, only if you get errors)
+### 2. **add_timestamps_to_bookings.sql** (Run if Owner Dashboard shows error)
+   - Adds `created_at` and `updated_at` columns to the `bookings` table
+   - Required for Owner Dashboard to work properly
+   - Safe to run multiple times
+
+### 3. **add_created_at_to_settings.sql** (Optional, only if you get errors)
    - Adds `created_at` column to the `settings` table
    - Only needed if your settings table is missing this column
    - Safe to run multiple times
 
-### 3. **stripe_integration.sql**
+### 4. **stripe_integration.sql**
    - Adds Stripe Connect support
    - Creates webhook tracking tables
    - Requires payments table to have timestamp columns
    - Now includes safety checks - safe to run multiple times
    - Automatically skips adding columns/indexes that already exist
 
-### 4. **configure_stripe_connect_settings.sql** (Run after stripe_integration.sql)
+### 5. **configure_stripe_connect_settings.sql** OR **SIMPLE_STRIPE_SETTINGS.sql**
    - Configures Stripe Connect settings in the database
    - Sets up webhook secret, client ID, and redirect URLs
-   - **IMPORTANT:** Edit this file first to add your actual Stripe credentials
+   - **Use SIMPLE_STRIPE_SETTINGS.sql** - easier and works without created_at
    - Safe to run multiple times (uses ON DUPLICATE KEY UPDATE)
 
-### 5. Other migrations (run as needed):
+### 6. Other migrations (run as needed):
    - add_cancellation_fee_to_bookings.sql
    - update_terms_privacy.sql
    - remove_services_about_pages.sql
@@ -54,8 +59,13 @@ mysql -u your_username -p your_database_name < database/migrations/stripe_integr
 ### Error: "Unknown column 'created_at' in 'field list'"
 **Possible causes:**
 1. Missing `created_at` column in `payments` table → Run `add_timestamps_to_payments.sql`
-2. Missing `created_at` column in `settings` table → Run `add_created_at_to_settings.sql`
-3. Using old SQL that references non-existent columns → Use the updated migration files from this repository
+2. Missing `created_at` column in `bookings` table → Run `add_timestamps_to_bookings.sql`
+3. Missing `created_at` column in `settings` table → Run `add_created_at_to_settings.sql`
+4. Using old SQL that references non-existent columns → Use the updated migration files from this repository
+
+### Error: "A fatal error occurred loading the dashboard" (Owner Dashboard)
+**Cause:** Missing `created_at` column in the `bookings` table
+**Solution:** Run `add_timestamps_to_bookings.sql` migration, then refresh the Owner Dashboard
 
 ### Error: "Duplicate column name 'stripe_account_id'"
 **Solution:** The column already exists. The updated `stripe_integration.sql` now handles this automatically. Re-download and run the updated version, or simply continue - the column is already there.

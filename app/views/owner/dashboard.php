@@ -16,6 +16,39 @@
     <div class="main-content">
         <h1>Owner Dashboard</h1>
 
+        <!-- Stripe Connect Warning -->
+        <?php if (!$hasStripeConnected): ?>
+            <div class="card" style="background: #fff3cd; border-left: 4px solid #f39c12; margin-bottom: 1.5rem;">
+                <h3 style="margin-top: 0; color: #d68910;">
+                    <i class="fas fa-exclamation-triangle"></i> ACTION REQUIRED: Connect Your Bank Account
+                </h3>
+                <p style="margin-bottom: 1rem; color: #856404;">
+                    <strong>Hi <?= e($ownerName) ?>!</strong> To receive payouts and confirm customer bookings, you must connect your bank account through Stripe Connect.
+                </p>
+                <div style="background: #ffffff; padding: 1rem; border-radius: var(--border-radius); margin-bottom: 1rem;">
+                    <h4 style="margin-top: 0; color: #d68910;">What you'll need:</h4>
+                    <ul style="margin: 0.5rem 0; padding-left: 1.5rem; color: #856404;">
+                        <li>Australian Business Number (ABN) or Personal details</li>
+                        <li>Bank account details (BSB and Account number)</li>
+                        <li>Government-issued ID (Driver's license or passport)</li>
+                        <li>5-10 minutes to complete the process</li>
+                    </ul>
+                </div>
+                <p style="margin-bottom: 1rem; font-size: 0.9rem; color: #856404;">
+                    <i class="fas fa-info-circle"></i> <strong>Note:</strong> You won't be able to confirm bookings or receive payments until your Stripe account is connected and verified.
+                </p>
+                <a href="/owner/stripe/connect" class="btn btn-warning" style="background: #f39c12; border-color: #f39c12;">
+                    <i class="fas fa-link"></i> Connect Stripe Account Now
+                </a>
+            </div>
+        <?php else: ?>
+            <div class="card" style="background: #d4edda; border-left: 4px solid #28a745; margin-bottom: 1.5rem;">
+                <p style="margin: 0; color: #155724;">
+                    <i class="fas fa-check-circle"></i> <strong>Account Connected & Verified</strong> - You can receive payouts and confirm bookings.
+                </p>
+            </div>
+        <?php endif; ?>
+
         <!-- Notifications -->
         <?php if (!empty($notifications)): ?>
             <div class="card" style="background: #e3f2fd; border-left: 4px solid #2196f3; margin-bottom: 1.5rem;">
@@ -76,32 +109,39 @@
         
         <div class="card">
             <h2>Recent Bookings</h2>
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Reference</th>
-                            <th>Vehicle</th>
-                            <th>Customer</th>
-                            <th>Date</th>
-                            <th>Amount</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($recentBookings as $booking): ?>
+            <?php if (empty($recentBookings)): ?>
+                <p style="text-align: center; padding: 2rem; color: var(--dark-gray);">
+                    <i class="fas fa-calendar" style="font-size: 3rem; color: var(--light-gray); margin-bottom: 1rem;"></i><br>
+                    No bookings yet. When customers book your vehicles, they'll appear here.
+                </p>
+            <?php else: ?>
+                <div class="table-container">
+                    <table>
+                        <thead>
                             <tr>
-                                <td><?= e($booking['booking_reference']) ?></td>
-                                <td><?= e($booking['make'] . ' ' . $booking['model']) ?></td>
-                                <td><?= e($booking['first_name'] . ' ' . $booking['last_name']) ?></td>
-                                <td><?= date('M d, Y', strtotime($booking['booking_date'])) ?></td>
-                                <td><?= formatMoney($booking['total_amount'] - $booking['commission_amount']) ?></td>
-                                <td><span class="badge badge-<?= $booking['status'] === 'completed' ? 'success' : 'warning' ?>"><?= ucfirst($booking['status']) ?></span></td>
+                                <th>Reference</th>
+                                <th>Vehicle</th>
+                                <th>Customer</th>
+                                <th>Date</th>
+                                <th>Amount</th>
+                                <th>Status</th>
                             </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($recentBookings as $booking): ?>
+                                <tr>
+                                    <td><?= e($booking['booking_reference']) ?></td>
+                                    <td><?= e($booking['make'] . ' ' . $booking['model']) ?></td>
+                                    <td><?= e($booking['first_name'] . ' ' . $booking['last_name']) ?></td>
+                                    <td><?= date('M d, Y', strtotime($booking['booking_date'])) ?></td>
+                                    <td><?= formatMoney($booking['total_amount'] - $booking['commission_amount']) ?></td>
+                                    <td><span class="badge badge-<?= $booking['status'] === 'completed' ? 'success' : 'warning' ?>"><?= ucfirst($booking['status']) ?></span></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 </div>

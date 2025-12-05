@@ -136,6 +136,12 @@ $router->get('/owner/reviews', 'OwnerController@reviews');
 $router->get('/owner/messages', 'OwnerController@messages');
 $router->get('/owner/pending-changes', 'OwnerController@pendingChanges');
 
+// Owner - Stripe Connect routes
+$router->get('/owner/stripe/connect', 'StripeConnectController@connect');
+$router->get('/owner/stripe/return', 'StripeConnectController@connectReturn');
+$router->get('/owner/stripe/refresh', 'StripeConnectController@connectRefresh');
+$router->post('/owner/stripe/disconnect', 'StripeConnectController@disconnect');
+
 // Customer routes
 $router->get('/customer/dashboard', 'CustomerController@dashboard');
 $router->get('/customer/hires', 'CustomerController@hires');

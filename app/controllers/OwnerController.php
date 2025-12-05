@@ -35,6 +35,13 @@ class OwnerController {
                 return;
             }
 
+            // Check if owner has connected Stripe account
+            $owner = db()->fetch("SELECT stripe_account_id, first_name FROM users WHERE id = ?", [$ownerId]);
+            $hasStripeConnected = !empty($owner['stripe_account_id']);
+            $ownerName = $owner['first_name'] ?? 'Owner';
+
+            error_log("OwnerController::dashboard() - Stripe Connected: " . ($hasStripeConnected ? 'Yes' : 'No'));
+
             // Initialize notifications as empty (graceful fallback)
             $notifications = [];
             $notificationCount = 0;
@@ -74,7 +81,9 @@ class OwnerController {
             // PHP 8.2 compatible: fetch results first, validate type, then access array keys safely
             $vehicleCount = db()->fetch("SELECT COUNT(*) as count FROM vehicles WHERE owner_id = ?", [$ownerId]);
             $bookingCount = db()->fetch("SELECT COUNT(*) as count FROM bookings WHERE owner_id = ? AND status IN ('confirmed', 'in_progress')", [$ownerId]);
-            $earnings = db()->fetch("SELECT COALESCE(SUM(total_amount - commission_amount), 0) as earnings FROM bookings WHERE owner_id = ? AND status='completed' AND MONTH(created_at) = MONTH(NOW())", [$ownerId]);
+
+            // Use booking_date instead of created_at for better compatibility
+            $earnings = db()->fetch("SELECT COALESCE(SUM(total_amount - commission_amount), 0) as earnings FROM bookings WHERE owner_id = ? AND status='completed' AND MONTH(booking_date) = MONTH(NOW()) AND YEAR(booking_date) = YEAR(NOW())", [$ownerId]);
             $payouts = db()->fetch("SELECT COALESCE(SUM(amount), 0) as amount FROM payouts WHERE owner_id = ? AND status='pending'", [$ownerId]);
 
             $stats = [
@@ -85,10 +94,11 @@ class OwnerController {
             ];
 
             error_log("OwnerController::dashboard() - Fetching recent bookings");
+            // Use booking_date and id for sorting instead of created_at for better compatibility
             $recentBookings = db()->fetchAll("SELECT b.*, v.make, v.model, u.first_name, u.last_name FROM bookings b
                                               JOIN vehicles v ON b.vehicle_id = v.id
                                               JOIN users u ON b.customer_id = u.id
-                                              WHERE b.owner_id = ? ORDER BY b.created_at DESC LIMIT 10", [$ownerId]);
+                                              WHERE b.owner_id = ? ORDER BY b.booking_date DESC, b.id DESC LIMIT 10", [$ownerId]);
 
             // Ensure recentBookings is an array
             if (!is_array($recentBookings)) {
@@ -97,7 +107,7 @@ class OwnerController {
             }
 
             error_log("OwnerController::dashboard() - Rendering view");
-            view('owner/dashboard', compact('stats', 'recentBookings', 'notifications', 'notificationCount'));
+            view('owner/dashboard', compact('stats', 'recentBookings', 'notifications', 'notificationCount', 'hasStripeConnected', 'ownerName'));
             error_log("OwnerController::dashboard() - Complete");
 
         } catch (\Exception $e) {
@@ -411,6 +421,13 @@ class OwnerController {
             redirect('/owner/bookings');
         }
 
+        // Check if owner has connected Stripe account
+        $owner = db()->fetch("SELECT stripe_account_id FROM users WHERE id = ?", [$ownerId]);
+        if (empty($owner['stripe_account_id'])) {
+            flash('error', 'You must connect and verify your Stripe account before confirming bookings. Go to your dashboard to connect now.');
+            redirect('/owner/dashboard');
+        }
+
         // Verify the action token
         $tokenData = verifyActionToken($token);
 
@@ -542,6 +559,13 @@ class OwnerController {
 
         $bookingId = $_POST['booking_id'] ?? '';
         $ownerId = $_SESSION['user_id'];
+
+        // Check if owner has connected Stripe account
+        $owner = db()->fetch("SELECT stripe_account_id FROM users WHERE id = ?", [$ownerId]);
+        if (empty($owner['stripe_account_id'])) {
+            flash('error', 'You must connect and verify your Stripe account before confirming bookings. Go to your dashboard to connect now.');
+            redirect('/owner/dashboard');
+        }
 
         // Verify booking belongs to owner
         $booking = db()->fetch(
