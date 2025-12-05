@@ -13,6 +13,8 @@ When setting up or updating your database, run the migration files in this order
    - Adds Stripe Connect support
    - Creates webhook tracking tables
    - Requires payments table to have timestamp columns
+   - Now includes safety checks - safe to run multiple times
+   - Automatically skips adding columns/indexes that already exist
 
 ### 3. Other migrations (run as needed):
    - add_cancellation_fee_to_bookings.sql
@@ -40,6 +42,9 @@ mysql -u your_username -p your_database_name < database/migrations/stripe_integr
 
 ### Error: "Unknown column 'created_at' in 'field list'"
 **Solution:** Run `add_timestamps_to_payments.sql` first, then retry the failed migration.
+
+### Error: "Duplicate column name 'stripe_account_id'"
+**Solution:** The column already exists. The updated `stripe_integration.sql` now handles this automatically. Re-download and run the updated version, or simply continue - the column is already there.
 
 ### Error: "Table already exists"
 **Solution:** The migration has already been run. You can skip it or drop the table first (⚠️ only if you're sure).
