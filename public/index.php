@@ -92,6 +92,7 @@ $router->get('/admin/bookings', 'AdminController@bookings');
 $router->get('/admin/payments', 'AdminController@payments');
 $router->get('/admin/payouts', 'AdminController@payouts');
 $router->post('/admin/payouts/{id}/process', 'AdminController@processPayout');
+$router->post('/admin/payouts/batch-process', 'AdminController@processBatchPayouts');
 $router->get('/admin/disputes', 'AdminController@disputes');
 $router->get('/admin/analytics', 'AdminController@analytics');
 $router->get('/admin/security', 'AdminController@security');

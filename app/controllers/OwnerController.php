@@ -415,6 +415,18 @@ class OwnerController {
 
     public function confirmBooking() {
         requireAuth('owner');
+        require_once __DIR__ . '/../helpers/stripe_helper.php';
+
+        // MANDATORY: Check if owner has verified Stripe Connect account
+        $owner = db()->fetch("SELECT * FROM users WHERE id = ?", [$_SESSION['user_id']]);
+
+        if (!isStripeConnectEnabled() ||
+            empty($owner['stripe_account_id']) ||
+            $owner['stripe_account_status'] !== 'verified' ||
+            !$owner['stripe_payouts_enabled']) {
+            flash('error', 'You must connect and verify your Stripe account before confirming bookings. Please complete your Stripe Connect onboarding from the dashboard.');
+            redirect('/owner/dashboard');
+        }
 
         // Verify CSRF token
         $token = $_POST['csrf_token'] ?? '';

@@ -227,3 +227,35 @@ function timeAgo($timestamp) {
 
     return 'just now';
 }
+
+/**
+ * Calculate next payout date (Monday) with minimum 4-day waiting period
+ *
+ * Payouts are processed weekly on Mondays. Bookings must be completed
+ * for at least 4 days before being eligible for payout.
+ *
+ * @param string $bookingEndDate - The booking end_date (Y-m-d format)
+ * @return string - Next Monday payout date (Y-m-d format)
+ */
+function calculateNextPayoutDate($bookingEndDate) {
+    // Minimum 4 days after booking completion
+    $earliestPayoutDate = date('Y-m-d', strtotime($bookingEndDate . ' +4 days'));
+
+    // Find the next Monday from earliest payout date
+    $earliestTimestamp = strtotime($earliestPayoutDate);
+    $dayOfWeek = date('N', $earliestTimestamp); // 1 (Monday) through 7 (Sunday)
+
+    if ($dayOfWeek == 1) {
+        // Already Monday
+        $nextMonday = $earliestPayoutDate;
+    } else {
+        // Calculate days until next Monday
+        $daysUntilMonday = (8 - $dayOfWeek) % 7;
+        if ($daysUntilMonday == 0) {
+            $daysUntilMonday = 7;
+        }
+        $nextMonday = date('Y-m-d', strtotime($earliestPayoutDate . ' +' . $daysUntilMonday . ' days'));
+    }
+
+    return $nextMonday;
+}

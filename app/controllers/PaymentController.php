@@ -40,67 +40,39 @@ class PaymentController {
             // Initialize Stripe
             initStripe();
 
-            // Get owner details to check for Stripe Connect
+            // Get owner details to verify Stripe Connect (REQUIRED)
             $owner = db()->fetch("SELECT * FROM users WHERE id = ?", [$booking['owner_id']]);
 
-            // Check if owner has verified Stripe Connect account
-            $useConnect = isStripeConnectEnabled()
-                         && !empty($owner['stripe_account_id'])
-                         && $owner['stripe_account_status'] === 'verified'
-                         && $owner['stripe_payouts_enabled'];
-
-            $amount = stripeAmount($booking['total_amount']); // Convert to cents
-            $stripeTransferId = null;
-
-            // Create payment with or without Stripe Connect
-            if ($useConnect) {
-                // Use Stripe Connect destination charge for automatic split
-                $paymentIntent = \Stripe\PaymentIntent::create([
-                    'amount' => $amount,
-                    'currency' => 'aud',
-                    'payment_method' => $paymentMethodId,
-                    'confirm' => true,
-                    'automatic_payment_methods' => [
-                        'enabled' => true,
-                        'allow_redirects' => 'never'
-                    ],
-                    'description' => "Booking {$booking['booking_reference']} - Elite Car Hire",
-                    'metadata' => [
-                        'booking_id' => $bookingId,
-                        'booking_reference' => $booking['booking_reference'],
-                        'customer_id' => $booking['customer_id'],
-                        'owner_id' => $booking['owner_id'],
-                    ],
-                    'transfer_data' => [
-                        'destination' => $owner['stripe_account_id'],
-                        'amount' => stripeAmount($booking['total_amount'] - $booking['commission_amount']), // 85% to owner
-                    ],
-                ]);
-
-                // Get transfer ID from the charge
-                if ($paymentIntent->status === 'succeeded' && !empty($paymentIntent->charges->data)) {
-                    $charge = $paymentIntent->charges->data[0];
-                    $stripeTransferId = $charge->transfer ?? null;
-                }
-            } else {
-                // Standard payment (manual payout later)
-                $paymentIntent = \Stripe\PaymentIntent::create([
-                    'amount' => $amount,
-                    'currency' => 'aud',
-                    'payment_method' => $paymentMethodId,
-                    'confirm' => true,
-                    'automatic_payment_methods' => [
-                        'enabled' => true,
-                        'allow_redirects' => 'never'
-                    ],
-                    'description' => "Booking {$booking['booking_reference']} - {$booking['customer_id']}",
-                    'metadata' => [
-                        'booking_id' => $bookingId,
-                        'booking_reference' => $booking['booking_reference'],
-                        'customer_id' => $booking['customer_id'],
-                    ],
-                ]);
+            // CRITICAL: Owner MUST have verified Stripe Connect account
+            // This should never happen as booking confirmation requires verified account
+            if (empty($owner['stripe_account_id']) ||
+                $owner['stripe_account_status'] !== 'verified' ||
+                !$owner['stripe_payouts_enabled']) {
+                error_log("CRITICAL: Payment attempted for owner without verified Stripe Connect. Owner ID: {$booking['owner_id']}");
+                json(['success' => false, 'message' => 'Payment cannot be processed. The vehicle owner needs to complete Stripe account setup.'], 400);
             }
+
+            // Create standard payment (platform receives 100%)
+            // Payout will be scheduled for next Monday (minimum 4 days after booking completion)
+            $amount = stripeAmount($booking['total_amount']); // Convert to cents
+
+            $paymentIntent = \Stripe\PaymentIntent::create([
+                'amount' => $amount,
+                'currency' => 'aud',
+                'payment_method' => $paymentMethodId,
+                'confirm' => true,
+                'automatic_payment_methods' => [
+                    'enabled' => true,
+                    'allow_redirects' => 'never'
+                ],
+                'description' => "Booking {$booking['booking_reference']} - Elite Car Hire",
+                'metadata' => [
+                    'booking_id' => $bookingId,
+                    'booking_reference' => $booking['booking_reference'],
+                    'customer_id' => $booking['customer_id'],
+                    'owner_id' => $booking['owner_id'],
+                ],
+            ]);
 
             // Check payment status
             if ($paymentIntent->status === 'succeeded') {
@@ -118,21 +90,15 @@ class PaymentController {
                 // Update booking payment status
                 db()->execute("UPDATE bookings SET payment_status = 'paid' WHERE id = ?", [$bookingId]);
 
-                // Create payout record for owner
+                // Calculate scheduled payout date
+                // Payouts occur weekly on Monday, minimum 4 days after booking end_date
                 $payoutAmount = $booking['total_amount'] - $booking['commission_amount'];
+                $scheduledDate = calculateNextPayoutDate($booking['end_date']);
 
-                if ($useConnect && $stripeTransferId) {
-                    // Automatic payout via Stripe Connect - mark as completed immediately
-                    db()->execute("INSERT INTO payouts (owner_id, booking_id, amount, status, stripe_transfer_id,
-                                  transfer_date, scheduled_date, paid_at, created_at, updated_at)
-                                  VALUES (?, ?, ?, 'completed', ?, NOW(), NOW(), NOW(), NOW(), NOW())",
-                                 [$booking['owner_id'], $bookingId, $payoutAmount, $stripeTransferId]);
-                } else {
-                    // Manual payout - schedule for later
-                    db()->execute("INSERT INTO payouts (owner_id, booking_id, amount, status, scheduled_date, created_at, updated_at)
-                                  VALUES (?, ?, ?, 'pending', DATE_ADD(CURDATE(), INTERVAL 7 DAY), NOW(), NOW())",
-                                 [$booking['owner_id'], $bookingId, $payoutAmount]);
-                }
+                // Create scheduled payout (will be processed on Monday via batch job)
+                db()->execute("INSERT INTO payouts (owner_id, booking_id, amount, status, scheduled_date, created_at, updated_at)
+                              VALUES (?, ?, ?, 'scheduled', ?, NOW(), NOW())",
+                             [$booking['owner_id'], $bookingId, $payoutAmount, $scheduledDate]);
 
                 // Create notification
                 createNotification($booking['owner_id'], 'payment_received', 'Payment Received',

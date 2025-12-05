@@ -472,25 +472,112 @@ class AdminController {
             redirect('/admin/payouts');
         }
 
-        if ($payout['status'] !== 'pending') {
-            flash('error', 'This payout has already been processed.');
+        if ($payout['status'] !== 'scheduled') {
+            flash('error', 'Only scheduled payouts can be processed.');
             redirect('/admin/payouts');
         }
 
-        // Check if owner has Stripe Connect enabled and verified
-        $canUseStripe = isStripeConnectEnabled()
-                       && !empty($payout['stripe_account_id'])
-                       && $payout['stripe_account_status'] === 'verified'
-                       && $payout['stripe_payouts_enabled'];
+        // All owners MUST have verified Stripe Connect (no manual transfers)
+        if (empty($payout['stripe_account_id']) ||
+            $payout['stripe_account_status'] !== 'verified' ||
+            !$payout['stripe_payouts_enabled']) {
+            flash('error', 'Cannot process payout. Owner has not completed Stripe Connect verification.');
+            redirect('/admin/payouts');
+        }
 
-        if ($canUseStripe) {
-            // Process via Stripe Connect transfer
+        // Process via Stripe Connect transfer
+        try {
+            $description = "Payout for booking " . ($payout['booking_reference'] ?? 'N/A');
+            $metadata = [
+                'payout_id' => $id,
+                'booking_id' => $payout['booking_id'] ?? '',
+                'owner_id' => $payout['owner_id'],
+            ];
+
+            $transfer = createManualTransfer(
+                $payout['amount'],
+                $payout['stripe_account_id'],
+                $description,
+                $metadata
+            );
+
+            if ($transfer) {
+                // Update payout with Stripe transfer details
+                db()->execute(
+                    "UPDATE payouts SET
+                        status = 'completed',
+                        stripe_transfer_id = ?,
+                        transfer_date = NOW(),
+                        paid_at = NOW(),
+                        updated_at = NOW()
+                     WHERE id = ?",
+                    [$transfer['transfer_id'], $id]
+                );
+
+                flash('success', 'Payout transferred successfully! Transfer ID: ' . $transfer['transfer_id']);
+            } else {
+                flash('error', 'Failed to create Stripe transfer. Please try again.');
+            }
+
+        } catch (Exception $e) {
+            error_log("Stripe transfer error: " . $e->getMessage());
+            flash('error', 'Stripe transfer failed: ' . $e->getMessage());
+        }
+
+        redirect('/admin/payouts');
+    }
+
+    /**
+     * Process all scheduled payouts for today (Monday batch processing)
+     */
+    public function processBatchPayouts() {
+        requireAuth('admin');
+        require_once __DIR__ . '/../helpers/stripe_helper.php';
+
+        // Verify CSRF token
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            json(['success' => false, 'message' => 'Invalid security token'], 403);
+        }
+
+        // Get all payouts scheduled for today or earlier
+        $today = date('Y-m-d');
+        $payouts = db()->fetchAll(
+            "SELECT p.*, u.stripe_account_id, u.stripe_account_status, u.stripe_payouts_enabled,
+                    b.booking_reference, CONCAT(u.first_name, ' ', u.last_name) as owner_name
+             FROM payouts p
+             JOIN users u ON p.owner_id = u.id
+             LEFT JOIN bookings b ON p.booking_id = b.id
+             WHERE p.status = 'scheduled' AND p.scheduled_date <= ?
+             ORDER BY p.scheduled_date ASC, p.id ASC",
+            [$today]
+        );
+
+        if (empty($payouts)) {
+            json(['success' => true, 'message' => 'No payouts scheduled for processing', 'processed' => 0]);
+        }
+
+        $processed = 0;
+        $failed = 0;
+        $errors = [];
+
+        foreach ($payouts as $payout) {
+            // Verify owner has Stripe Connect
+            if (empty($payout['stripe_account_id']) ||
+                $payout['stripe_account_status'] !== 'verified' ||
+                !$payout['stripe_payouts_enabled']) {
+                $failed++;
+                $errors[] = "Payout #{$payout['id']} - {$payout['owner_name']}: No verified Stripe account";
+                continue;
+            }
+
             try {
-                $description = "Payout for booking " . ($payout['booking_reference'] ?? 'N/A');
+                $description = "Weekly payout for booking " . ($payout['booking_reference'] ?? 'N/A');
                 $metadata = [
-                    'payout_id' => $id,
+                    'payout_id' => $payout['id'],
                     'booking_id' => $payout['booking_id'] ?? '',
                     'owner_id' => $payout['owner_id'],
+                    'batch_date' => $today,
                 ];
 
                 $transfer = createManualTransfer(
@@ -501,7 +588,7 @@ class AdminController {
                 );
 
                 if ($transfer) {
-                    // Update payout with Stripe transfer details
+                    // Update payout status
                     db()->execute(
                         "UPDATE payouts SET
                             status = 'completed',
@@ -510,30 +597,39 @@ class AdminController {
                             paid_at = NOW(),
                             updated_at = NOW()
                          WHERE id = ?",
-                        [$transfer['transfer_id'], $id]
+                        [$transfer['transfer_id'], $payout['id']]
                     );
 
-                    flash('success', 'Payout has been transferred via Stripe successfully! Transfer ID: ' . $transfer['transfer_id']);
+                    // Create notification for owner
+                    createNotification(
+                        $payout['owner_id'],
+                        'payout_completed',
+                        'Payout Processed',
+                        "Your weekly payout of " . formatMoney($payout['amount']) . " has been transferred to your bank account. Transfer ID: {$transfer['transfer_id']}"
+                    );
+
+                    $processed++;
                 } else {
-                    flash('error', 'Failed to create Stripe transfer. Please try again or process manually.');
+                    $failed++;
+                    $errors[] = "Payout #{$payout['id']} - {$payout['owner_name']}: Transfer creation failed";
                 }
 
             } catch (Exception $e) {
-                error_log("Stripe transfer error: " . $e->getMessage());
-                flash('error', 'Stripe transfer failed: ' . $e->getMessage());
+                $failed++;
+                $errors[] = "Payout #{$payout['id']} - {$payout['owner_name']}: {$e->getMessage()}";
+                error_log("Batch payout error for payout #{$payout['id']}: " . $e->getMessage());
             }
-
-        } else {
-            // Manual payout (no Stripe Connect) - just mark as completed
-            db()->execute(
-                "UPDATE payouts SET status = 'completed', paid_at = NOW(), updated_at = NOW() WHERE id = ?",
-                [$id]
-            );
-
-            flash('success', 'Payout has been marked as completed. Please process the bank transfer manually.');
         }
 
-        redirect('/admin/payouts');
+        // Return JSON response
+        json([
+            'success' => true,
+            'processed' => $processed,
+            'failed' => $failed,
+            'total' => count($payouts),
+            'errors' => $errors,
+            'message' => "Processed {$processed} payouts successfully" . ($failed > 0 ? ", {$failed} failed" : "")
+        ]);
     }
 
     public function disputes() {

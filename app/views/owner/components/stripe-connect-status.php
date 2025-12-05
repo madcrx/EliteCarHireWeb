@@ -24,20 +24,28 @@ $connectEnabled = isStripeConnectEnabled();
         </div>
 
     <?php elseif (empty($user['stripe_account_id'])): ?>
-        <!-- Not Connected -->
-        <div style="padding: 1.5rem; background: #e7f3ff; border-radius: var(--border-radius); border: 1px solid #2196f3;">
-            <h4 style="margin-top: 0; color: #1976d2;">
-                <i class="fas fa-link"></i> Connect Your Bank Account
+        <!-- Not Connected - REQUIRED -->
+        <div style="padding: 1.5rem; background: #fff3cd; border-radius: var(--border-radius); border: 2px solid #ff9800;">
+            <h4 style="margin-top: 0; color: #e65100;">
+                <i class="fas fa-exclamation-triangle"></i> ACTION REQUIRED: Connect Your Bank Account
             </h4>
-            <p style="color: #0d47a1; margin-bottom: 1rem;">
-                Connect your bank account to receive automatic payouts for your bookings.
-                You'll receive <strong>85% of each booking</strong> directly to your bank account within 2-7 business days.
+            <p style="color: #e65100; margin-bottom: 1rem; font-weight: 600;">
+                ⚠️ You MUST connect your Stripe account to confirm bookings and receive payments.
             </p>
-            <p style="color: #0d47a1; margin-bottom: 1.5rem; font-size: 0.9rem;">
-                <i class="fas fa-shield-alt"></i> Secure onboarding powered by Stripe
+            <p style="color: #5d4037; margin-bottom: 1rem;">
+                <strong>Without Stripe Connect:</strong>
             </p>
-            <a href="/owner/stripe/connect" class="btn btn-primary" style="font-size: 1.1rem;">
-                <i class="fas fa-plus-circle"></i> Connect Stripe Account
+            <ul style="color: #5d4037; margin-bottom: 1.5rem;">
+                <li>❌ You cannot confirm bookings</li>
+                <li>❌ Customers cannot pay for your vehicles</li>
+                <li>❌ You will not receive any payouts</li>
+            </ul>
+            <p style="color: #1976d2; margin-bottom: 1.5rem;">
+                <strong>After connecting:</strong> You'll receive <strong>85% of each booking</strong> paid weekly on Mondays,
+                minimum 4 days after booking completion. All transfers are secure and direct to your bank account.
+            </p>
+            <a href="/owner/stripe/connect" class="btn btn-primary" style="font-size: 1.1rem; background: #ff9800; border-color: #ff9800;">
+                <i class="fas fa-plus-circle"></i> Connect Stripe Account Now
             </a>
         </div>
 
@@ -72,7 +80,7 @@ $connectEnabled = isStripeConnectEnabled();
                 </div>
             </div>
             <p style="color: #2e7d32; margin-bottom: 1rem; font-size: 0.9rem;">
-                Your bank account is connected. You'll automatically receive payouts for all completed bookings.
+                Your bank account is connected. You'll receive weekly payouts every <strong>Monday</strong> for bookings completed at least 4 days prior.
             </p>
             <a href="/owner/stripe/settings" class="btn" style="background: #4caf50; color: white;">
                 <i class="fas fa-cog"></i> Manage Stripe Account
@@ -152,11 +160,13 @@ $connectEnabled = isStripeConnectEnabled();
                 <i class="fas fa-info-circle"></i> How It Works
             </h4>
             <ul style="margin: 0; padding-left: 1.5rem; color: var(--dark-gray); font-size: 0.9rem;">
-                <li>Customers pay for bookings through Stripe</li>
-                <li>You automatically receive <strong>85%</strong> of each booking (platform keeps 15% commission)</li>
-                <li>Payouts arrive in your bank account within <strong>2-7 business days</strong></li>
-                <li>All transactions are secure and PCI compliant</li>
-                <li>View payout history in your <a href="/owner/payouts" style="color: var(--primary-gold);">Payouts</a> page</li>
+                <li><strong>Payment:</strong> Customers pay 100% upfront through Stripe</li>
+                <li><strong>Commission:</strong> You receive <strong>85%</strong> of each booking (platform keeps 15%)</li>
+                <li><strong>Schedule:</strong> Payouts are processed <strong>weekly on Mondays</strong></li>
+                <li><strong>Timing:</strong> Bookings must be completed for at least <strong>4 days</strong> before payout</li>
+                <li><strong>Transfer:</strong> Funds arrive in your bank account within 2-7 business days after Monday processing</li>
+                <li><strong>Security:</strong> All transactions are secure and PCI compliant via Stripe</li>
+                <li><strong>History:</strong> View payout details in your <a href="/owner/payouts" style="color: var(--primary-gold);">Payouts</a> page</li>
             </ul>
         </div>
     <?php endif; ?>
