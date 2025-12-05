@@ -74,7 +74,9 @@ class OwnerController {
             // PHP 8.2 compatible: fetch results first, validate type, then access array keys safely
             $vehicleCount = db()->fetch("SELECT COUNT(*) as count FROM vehicles WHERE owner_id = ?", [$ownerId]);
             $bookingCount = db()->fetch("SELECT COUNT(*) as count FROM bookings WHERE owner_id = ? AND status IN ('confirmed', 'in_progress')", [$ownerId]);
-            $earnings = db()->fetch("SELECT COALESCE(SUM(total_amount - commission_amount), 0) as earnings FROM bookings WHERE owner_id = ? AND status='completed' AND MONTH(created_at) = MONTH(NOW())", [$ownerId]);
+
+            // Use booking_date instead of created_at for better compatibility
+            $earnings = db()->fetch("SELECT COALESCE(SUM(total_amount - commission_amount), 0) as earnings FROM bookings WHERE owner_id = ? AND status='completed' AND MONTH(booking_date) = MONTH(NOW()) AND YEAR(booking_date) = YEAR(NOW())", [$ownerId]);
             $payouts = db()->fetch("SELECT COALESCE(SUM(amount), 0) as amount FROM payouts WHERE owner_id = ? AND status='pending'", [$ownerId]);
 
             $stats = [
@@ -85,10 +87,11 @@ class OwnerController {
             ];
 
             error_log("OwnerController::dashboard() - Fetching recent bookings");
+            // Use booking_date and id for sorting instead of created_at for better compatibility
             $recentBookings = db()->fetchAll("SELECT b.*, v.make, v.model, u.first_name, u.last_name FROM bookings b
                                               JOIN vehicles v ON b.vehicle_id = v.id
                                               JOIN users u ON b.customer_id = u.id
-                                              WHERE b.owner_id = ? ORDER BY b.created_at DESC LIMIT 10", [$ownerId]);
+                                              WHERE b.owner_id = ? ORDER BY b.booking_date DESC, b.id DESC LIMIT 10", [$ownerId]);
 
             // Ensure recentBookings is an array
             if (!is_array($recentBookings)) {

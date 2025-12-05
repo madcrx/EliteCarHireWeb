@@ -76,32 +76,39 @@
         
         <div class="card">
             <h2>Recent Bookings</h2>
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Reference</th>
-                            <th>Vehicle</th>
-                            <th>Customer</th>
-                            <th>Date</th>
-                            <th>Amount</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($recentBookings as $booking): ?>
+            <?php if (empty($recentBookings)): ?>
+                <p style="text-align: center; padding: 2rem; color: var(--dark-gray);">
+                    <i class="fas fa-calendar" style="font-size: 3rem; color: var(--light-gray); margin-bottom: 1rem;"></i><br>
+                    No bookings yet. When customers book your vehicles, they'll appear here.
+                </p>
+            <?php else: ?>
+                <div class="table-container">
+                    <table>
+                        <thead>
                             <tr>
-                                <td><?= e($booking['booking_reference']) ?></td>
-                                <td><?= e($booking['make'] . ' ' . $booking['model']) ?></td>
-                                <td><?= e($booking['first_name'] . ' ' . $booking['last_name']) ?></td>
-                                <td><?= date('M d, Y', strtotime($booking['booking_date'])) ?></td>
-                                <td><?= formatMoney($booking['total_amount'] - $booking['commission_amount']) ?></td>
-                                <td><span class="badge badge-<?= $booking['status'] === 'completed' ? 'success' : 'warning' ?>"><?= ucfirst($booking['status']) ?></span></td>
+                                <th>Reference</th>
+                                <th>Vehicle</th>
+                                <th>Customer</th>
+                                <th>Date</th>
+                                <th>Amount</th>
+                                <th>Status</th>
                             </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($recentBookings as $booking): ?>
+                                <tr>
+                                    <td><?= e($booking['booking_reference']) ?></td>
+                                    <td><?= e($booking['make'] . ' ' . $booking['model']) ?></td>
+                                    <td><?= e($booking['first_name'] . ' ' . $booking['last_name']) ?></td>
+                                    <td><?= date('M d, Y', strtotime($booking['booking_date'])) ?></td>
+                                    <td><?= formatMoney($booking['total_amount'] - $booking['commission_amount']) ?></td>
+                                    <td><span class="badge badge-<?= $booking['status'] === 'completed' ? 'success' : 'warning' ?>"><?= ucfirst($booking['status']) ?></span></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 </div>
