@@ -81,39 +81,75 @@ class StripeWebhookController {
     }
 
     /**
-     * Verify webhook signature
+     * Verify webhook signature (manual verification without SDK)
+     *
+     * Implements Stripe's webhook signature verification algorithm:
+     * https://stripe.com/docs/webhooks/signatures
      */
     private function verifyWebhook($payload, $sigHeader) {
-        $webhookSecret = config('payment.stripe.webhook_secret');
+        // Get webhook secret from environment or config
+        $webhookSecret = getenv('STRIPE_WEBHOOK_SECRET') ?: $_ENV['STRIPE_WEBHOOK_SECRET'] ?? '';
+
+        if (empty($webhookSecret)) {
+            // Fallback to config
+            $webhookSecret = config('payment.stripe.webhook_secret');
+        }
 
         if (empty($webhookSecret)) {
             error_log('Stripe webhook secret not configured');
             return null;
         }
 
-        // Load Stripe library
-        $stripePath = __DIR__ . '/../../vendor/stripe/stripe-php/init.php';
-        if (!file_exists($stripePath)) {
-            error_log('Stripe PHP library not found');
+        // Parse signature header
+        $sigParts = [];
+        foreach (explode(',', $sigHeader) as $element) {
+            $parts = explode('=', $element, 2);
+            if (count($parts) === 2) {
+                $sigParts[$parts[0]][] = $parts[1];
+            }
+        }
+
+        if (!isset($sigParts['t']) || !isset($sigParts['v1'])) {
+            error_log('Invalid Stripe signature header format');
             return null;
         }
 
-        require_once $stripePath;
+        $timestamp = $sigParts['t'][0];
+        $signatures = $sigParts['v1'];
 
-        try {
-            $event = \Stripe\Webhook::constructEvent(
-                $payload,
-                $sigHeader,
-                $webhookSecret
-            );
-            return $event;
-        } catch (\UnexpectedValueException $e) {
-            error_log('Invalid webhook payload: ' . $e->getMessage());
-            return null;
-        } catch (\Stripe\Exception\SignatureVerificationException $e) {
-            error_log('Invalid webhook signature: ' . $e->getMessage());
+        // Check timestamp tolerance (5 minutes)
+        $tolerance = 300; // 5 minutes
+        if (abs(time() - $timestamp) > $tolerance) {
+            error_log('Webhook timestamp too old or in future');
             return null;
         }
+
+        // Compute expected signature
+        $signedPayload = $timestamp . '.' . $payload;
+        $expectedSignature = hash_hmac('sha256', $signedPayload, $webhookSecret);
+
+        // Compare signatures (constant-time comparison)
+        $signatureValid = false;
+        foreach ($signatures as $signature) {
+            if (hash_equals($expectedSignature, $signature)) {
+                $signatureValid = true;
+                break;
+            }
+        }
+
+        if (!$signatureValid) {
+            error_log('Invalid webhook signature');
+            return null;
+        }
+
+        // Decode and return event
+        $event = json_decode($payload);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            error_log('Invalid JSON in webhook payload: ' . json_last_error_msg());
+            return null;
+        }
+
+        return $event;
     }
 
     /**
