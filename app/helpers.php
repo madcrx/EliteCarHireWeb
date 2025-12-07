@@ -457,3 +457,113 @@ function markReminderSent($reminderId) {
     }
 }
 
+/**
+ * Generate FAQ Schema JSON-LD for SEO
+ *
+ * @param array $faqs Array of FAQ items with 'question' and 'answer' keys
+ * @return string JSON-LD script tag
+ */
+function seoFAQSchema($faqs) {
+    if (empty($faqs)) {
+        return '';
+    }
+
+    $schema = [
+        '@context' => 'https://schema.org',
+        '@type' => 'FAQPage',
+        'mainEntity' => []
+    ];
+
+    foreach ($faqs as $faq) {
+        if (!isset($faq['question']) || !isset($faq['answer'])) {
+            continue;
+        }
+
+        $schema['mainEntity'][] = [
+            '@type' => 'Question',
+            'name' => htmlspecialchars($faq['question'], ENT_QUOTES, 'UTF-8'),
+            'acceptedAnswer' => [
+                '@type' => 'Answer',
+                'text' => htmlspecialchars(strip_tags($faq['answer']), ENT_QUOTES, 'UTF-8')
+            ]
+        ];
+    }
+
+    if (empty($schema['mainEntity'])) {
+        return '';
+    }
+
+    $json = json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+
+    return '<script type="application/ld+json">' . "\n" . $json . "\n" . '</script>';
+}
+
+/**
+ * Generate Organization Schema JSON-LD for SEO
+ *
+ * @return string JSON-LD script tag
+ */
+function seoOrganizationSchema() {
+    $schema = [
+        '@context' => 'https://schema.org',
+        '@type' => 'Organization',
+        'name' => config('app.name', 'Elite Car Hire'),
+        'url' => config('app.url', 'https://elitecarhire.au'),
+        'logo' => asset('images/logo.png'),
+        'contactPoint' => [
+            '@type' => 'ContactPoint',
+            'telephone' => '+61-406-907-849',
+            'contactType' => 'customer service',
+            'areaServed' => 'AU',
+            'availableLanguage' => 'en'
+        ],
+        'sameAs' => [
+            // Add social media URLs here
+        ]
+    ];
+
+    $json = json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+
+    return '<script type="application/ld+json">' . "\n" . $json . "\n" . '</script>';
+}
+
+/**
+ * Generate LocalBusiness Schema JSON-LD for SEO
+ *
+ * @return string JSON-LD script tag
+ */
+function seoLocalBusinessSchema() {
+    $schema = [
+        '@context' => 'https://schema.org',
+        '@type' => 'LocalBusiness',
+        'name' => config('app.name', 'Elite Car Hire'),
+        'image' => asset('images/logo.png'),
+        '@id' => config('app.url', 'https://elitecarhire.au'),
+        'url' => config('app.url', 'https://elitecarhire.au'),
+        'telephone' => '+61-406-907-849',
+        'priceRange' => '$$',
+        'address' => [
+            '@type' => 'PostalAddress',
+            'addressCountry' => 'AU'
+        ],
+        'openingHoursSpecification' => [
+            '@type' => 'OpeningHoursSpecification',
+            'dayOfWeek' => [
+                'Monday',
+                'Tuesday',
+                'Wednesday',
+                'Thursday',
+                'Friday',
+                'Saturday',
+                'Sunday'
+            ],
+            'opens' => '00:00',
+            'closes' => '23:59'
+        ]
+    ];
+
+    $json = json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+
+    return '<script type="application/ld+json">' . "\n" . $json . "\n" . '</script>';
+}
+
