@@ -1,3 +1,7 @@
+# Composer dependencies
+/vendor/
+composer.lock
+
 # Database Configuration (contains credentials)
 config/database.php
 

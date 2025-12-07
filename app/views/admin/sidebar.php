@@ -11,20 +11,12 @@ $failedPayments = db()->fetch("SELECT COUNT(*) as count FROM payments WHERE stat
 // Get current path for active state
 $currentPath = $_SERVER['REQUEST_URI'];
 $isActive = function($path) use ($currentPath) {
-    // Remove query string for comparison
     $currentPathBase = parse_url($currentPath, PHP_URL_PATH);
     $pathBase = parse_url($path, PHP_URL_PATH);
 
-    // Exact match for paths with query strings
-    if (strpos($path, '?') !== false && $currentPath === $path) {
-        return 'active';
-    }
-
-    // Partial match for base paths
     if ($currentPathBase === $pathBase || strpos($currentPathBase, $pathBase) === 0) {
         return 'active';
     }
-
     return '';
 };
 ?>
@@ -37,382 +29,131 @@ $isActive = function($path) use ($currentPath) {
 
     <div class="sidebar-nav">
         <!-- Dashboard -->
-        <div class="nav-section">
-            <a href="/admin/dashboard" class="nav-item <?= $isActive('/admin/dashboard') ?>">
-                <i class="fas fa-tachometer-alt"></i>
-                <span>Dashboard</span>
-            </a>
-        </div>
+        <a href="/admin/dashboard" class="nav-item <?= $isActive('/admin/dashboard') ?>">
+            <i class="fas fa-tachometer-alt"></i>
+            <span>Dashboard</span>
+        </a>
 
-        <!-- Content Management -->
-        <div class="nav-section">
-            <div class="section-title" onclick="toggleSection(this)">
-                <i class="fas fa-edit"></i>
-                <span>Content Management</span>
-                <i class="fas fa-chevron-down toggle-icon"></i>
-            </div>
-            <div class="section-items">
-                <a href="/admin/cms" class="nav-item <?= $isActive('/admin/cms') ?>">
-                    <i class="fas fa-file-alt"></i>
-                    <span>CMS Pages</span>
-                    <small>Terms, Privacy, FAQ</small>
-                </a>
-                <a href="/admin/images" class="nav-item <?= $isActive('/admin/images') ?>">
-                    <i class="fas fa-images"></i>
-                    <span>Website Images</span>
-                    <small>Placeholders & Graphics</small>
-                </a>
-                <a href="/admin/settings" class="nav-item <?= $isActive('/admin/settings') ?>">
-                    <i class="fas fa-image"></i>
-                    <span>Company Logo</span>
-                    <small>Upload & Manage Logo</small>
-                </a>
-            </div>
-        </div>
+        <!-- Main Management Sections -->
+        <div class="nav-divider">Management</div>
 
-        <!-- User Management -->
-        <div class="nav-section">
-            <div class="section-title" onclick="toggleSection(this)">
-                <i class="fas fa-users"></i>
-                <span>User Management</span>
-                <?php if ($pendingUsers > 0): ?>
-                    <span class="notification-badge"><?= $pendingUsers ?></span>
-                <?php endif; ?>
-                <i class="fas fa-chevron-down toggle-icon"></i>
-            </div>
-            <div class="section-items">
-                <a href="/admin/users?role=all" class="nav-item <?= $isActive('/admin/users?role=all') ?>">
-                    <i class="fas fa-user"></i>
-                    <span>All Users</span>
-                </a>
-                <a href="/admin/users?role=customer" class="nav-item <?= $isActive('/admin/users?role=customer') ?>">
-                    <i class="fas fa-user-circle"></i>
-                    <span>Customers</span>
-                </a>
-                <a href="/admin/users?role=owner" class="nav-item <?= $isActive('/admin/users?role=owner') ?>">
-                    <i class="fas fa-user-tie"></i>
-                    <span>Vehicle Owners</span>
-                </a>
-                <a href="/admin/users?status=pending" class="nav-item <?= $isActive('/admin/users?status=pending') ?>">
-                    <i class="fas fa-user-clock"></i>
-                    <span>Pending Approvals</span>
-                    <?php if ($pendingUsers > 0): ?>
-                        <span class="badge-small"><?= $pendingUsers ?></span>
-                    <?php endif; ?>
-                </a>
-                <a href="/admin/users?status=suspended" class="nav-item <?= $isActive('/admin/users?status=suspended') ?>">
-                    <i class="fas fa-user-slash"></i>
-                    <span>Suspended Users</span>
-                </a>
-            </div>
-        </div>
+        <a href="/admin/users" class="nav-item <?= $isActive('/admin/users') ?>">
+            <i class="fas fa-users"></i>
+            <span>Users</span>
+            <?php if ($pendingUsers > 0): ?>
+                <span class="badge-small"><?= $pendingUsers ?></span>
+            <?php endif; ?>
+        </a>
 
-        <!-- Vehicle Management -->
-        <div class="nav-section">
-            <div class="section-title" onclick="toggleSection(this)">
-                <i class="fas fa-car"></i>
-                <span>Vehicle Management</span>
-                <?php if ($pendingVehicles > 0): ?>
-                    <span class="notification-badge"><?= $pendingVehicles ?></span>
-                <?php endif; ?>
-                <i class="fas fa-chevron-down toggle-icon"></i>
-            </div>
-            <div class="section-items">
-                <a href="/admin/vehicles?status=all" class="nav-item <?= $isActive('/admin/vehicles?status=all') ?>">
-                    <i class="fas fa-list"></i>
-                    <span>All Vehicles</span>
-                </a>
-                <a href="/admin/vehicles?status=approved" class="nav-item <?= $isActive('/admin/vehicles?status=approved') ?>">
-                    <i class="fas fa-check-circle"></i>
-                    <span>Active Listings</span>
-                </a>
-                <a href="/admin/vehicles?status=pending" class="nav-item <?= $isActive('/admin/vehicles?status=pending') ?>">
-                    <i class="fas fa-clock"></i>
-                    <span>Pending Approval</span>
-                    <?php if ($pendingVehicles > 0): ?>
-                        <span class="badge-small"><?= $pendingVehicles ?></span>
-                    <?php endif; ?>
-                </a>
-                <a href="/admin/vehicles?status=rejected" class="nav-item <?= $isActive('/admin/vehicles?status=rejected') ?>">
-                    <i class="fas fa-times-circle"></i>
-                    <span>Rejected Listings</span>
-                </a>
-                <a href="/admin/pending-changes" class="nav-item <?= $isActive('/admin/pending-changes') ?>">
-                    <i class="fas fa-edit"></i>
-                    <span>Vehicle Updates</span>
-                    <?php if ($pendingChanges > 0): ?>
-                        <span class="badge-small"><?= $pendingChanges ?></span>
-                    <?php endif; ?>
-                </a>
-            </div>
-        </div>
+        <a href="/admin/vehicles" class="nav-item <?= $isActive('/admin/vehicles') ?>">
+            <i class="fas fa-car"></i>
+            <span>Vehicles</span>
+            <?php if ($pendingVehicles > 0): ?>
+                <span class="badge-small"><?= $pendingVehicles ?></span>
+            <?php endif; ?>
+        </a>
 
-        <!-- Booking Management -->
-        <div class="nav-section">
-            <div class="section-title" onclick="toggleSection(this)">
-                <i class="fas fa-calendar-check"></i>
-                <span>Booking Management</span>
-                <?php if ($pendingBookings > 0): ?>
-                    <span class="notification-badge"><?= $pendingBookings ?></span>
-                <?php endif; ?>
-                <i class="fas fa-chevron-down toggle-icon"></i>
-            </div>
-            <div class="section-items">
-                <a href="/admin/bookings?status=all" class="nav-item <?= $isActive('/admin/bookings?status=all') ?>">
-                    <i class="fas fa-list"></i>
-                    <span>All Bookings</span>
-                </a>
-                <a href="/admin/bookings?status=pending" class="nav-item <?= $isActive('/admin/bookings?status=pending') ?>">
-                    <i class="fas fa-hourglass-half"></i>
-                    <span>Pending</span>
-                    <?php if ($pendingBookings > 0): ?>
-                        <span class="badge-small"><?= $pendingBookings ?></span>
-                    <?php endif; ?>
-                </a>
-                <a href="/admin/bookings?status=confirmed" class="nav-item <?= $isActive('/admin/bookings?status=confirmed') ?>">
-                    <i class="fas fa-check"></i>
-                    <span>Confirmed</span>
-                </a>
-                <a href="/admin/bookings?status=in_progress" class="nav-item <?= $isActive('/admin/bookings?status=in_progress') ?>">
-                    <i class="fas fa-clock"></i>
-                    <span>In Progress</span>
-                </a>
-                <a href="/admin/bookings?status=completed" class="nav-item <?= $isActive('/admin/bookings?status=completed') ?>">
-                    <i class="fas fa-check-double"></i>
-                    <span>Completed</span>
-                </a>
-                <a href="/admin/bookings?status=cancelled" class="nav-item <?= $isActive('/admin/bookings?status=cancelled') ?>">
-                    <i class="fas fa-ban"></i>
-                    <span>Cancelled</span>
-                </a>
-            </div>
-        </div>
+        <a href="/admin/bookings" class="nav-item <?= $isActive('/admin/bookings') ?>">
+            <i class="fas fa-calendar-check"></i>
+            <span>Bookings</span>
+            <?php if ($pendingBookings > 0): ?>
+                <span class="badge-small"><?= $pendingBookings ?></span>
+            <?php endif; ?>
+        </a>
 
-        <!-- Financial Management -->
-        <div class="nav-section">
-            <div class="section-title" onclick="toggleSection(this)">
-                <i class="fas fa-dollar-sign"></i>
-                <span>Financial Management</span>
-                <?php if ($failedPayments > 0): ?>
-                    <span class="notification-badge warning"><?= $failedPayments ?></span>
-                <?php endif; ?>
-                <i class="fas fa-chevron-down toggle-icon"></i>
-            </div>
-            <div class="section-items">
-                <a href="/admin/payments?status=all" class="nav-item <?= $isActive('/admin/payments?status=all') ?>">
-                    <i class="fas fa-credit-card"></i>
-                    <span>Payments</span>
-                </a>
-                <a href="/admin/payments?status=completed" class="nav-item <?= $isActive('/admin/payments?status=completed') ?>">
-                    <i class="fas fa-check-circle"></i>
-                    <span>Successful Payments</span>
-                </a>
-                <a href="/admin/payments?status=failed" class="nav-item <?= $isActive('/admin/payments?status=failed') ?>">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <span>Failed Payments</span>
-                    <?php if ($failedPayments > 0): ?>
-                        <span class="badge-small warning"><?= $failedPayments ?></span>
-                    <?php endif; ?>
-                </a>
-                <a href="/admin/payments?status=refunded" class="nav-item <?= $isActive('/admin/payments?status=refunded') ?>">
-                    <i class="fas fa-undo"></i>
-                    <span>Refunds</span>
-                </a>
-                <a href="/admin/payouts?status=all" class="nav-item <?= $isActive('/admin/payouts?status=all') ?>">
-                    <i class="fas fa-money-bill-wave"></i>
-                    <span>Owner Payouts</span>
-                </a>
-                <a href="/admin/payouts?status=pending" class="nav-item <?= $isActive('/admin/payouts?status=pending') ?>">
-                    <i class="fas fa-clock"></i>
-                    <span>Pending Payouts</span>
-                </a>
-                <a href="/admin/payouts?status=completed" class="nav-item <?= $isActive('/admin/payouts?status=completed') ?>">
-                    <i class="fas fa-check"></i>
-                    <span>Completed Payouts</span>
-                </a>
-                <a href="/admin/disputes" class="nav-item <?= $isActive('/admin/disputes') ?>">
-                    <i class="fas fa-gavel"></i>
-                    <span>Disputes</span>
-                    <?php if ($activeDisputes > 0): ?>
-                        <span class="badge-small danger"><?= $activeDisputes ?></span>
-                    <?php endif; ?>
-                </a>
-            </div>
-        </div>
+        <a href="/admin/pending-changes" class="nav-item <?= $isActive('/admin/pending-changes') ?>">
+            <i class="fas fa-edit"></i>
+            <span>Vehicle Updates</span>
+            <?php if ($pendingChanges > 0): ?>
+                <span class="badge-small"><?= $pendingChanges ?></span>
+            <?php endif; ?>
+        </a>
 
-        <!-- Communication & Support -->
-        <div class="nav-section">
-            <div class="section-title" onclick="toggleSection(this)">
-                <i class="fas fa-envelope"></i>
-                <span>Communication</span>
-                <?php if ($newContacts > 0): ?>
-                    <span class="notification-badge"><?= $newContacts ?></span>
-                <?php endif; ?>
-                <i class="fas fa-chevron-down toggle-icon"></i>
-            </div>
-            <div class="section-items">
-                <a href="/admin/contact-submissions?status=all" class="nav-item <?= $isActive('/admin/contact-submissions?status=all') ?>">
-                    <i class="fas fa-inbox"></i>
-                    <span>Contact Submissions</span>
-                    <?php if ($newContacts > 0): ?>
-                        <span class="badge-small"><?= $newContacts ?></span>
-                    <?php endif; ?>
-                </a>
-                <a href="/admin/contact-submissions?status=new" class="nav-item <?= $isActive('/admin/contact-submissions?status=new') ?>">
-                    <i class="fas fa-envelope"></i>
-                    <span>New Messages</span>
-                </a>
-                <a href="/admin/contact-submissions?status=responded" class="nav-item <?= $isActive('/admin/contact-submissions?status=responded') ?>">
-                    <i class="fas fa-reply"></i>
-                    <span>Responded</span>
-                </a>
-                <a href="/admin/email-settings" class="nav-item <?= $isActive('/admin/email-settings') ?>">
-                    <i class="fas fa-mail-bulk"></i>
-                    <span>Email Settings</span>
-                    <small>SMTP Configuration</small>
-                </a>
-                <a href="/admin/email-queue" class="nav-item <?= $isActive('/admin/email-queue') ?>">
-                    <i class="fas fa-list"></i>
-                    <span>Email Queue</span>
-                    <small>View Pending Emails</small>
-                </a>
-            </div>
-        </div>
+        <!-- Financial -->
+        <div class="nav-divider">Financial</div>
 
-        <!-- Reports & Analytics -->
-        <div class="nav-section">
-            <div class="section-title" onclick="toggleSection(this)">
-                <i class="fas fa-chart-line"></i>
-                <span>Reports & Analytics</span>
-                <i class="fas fa-chevron-down toggle-icon"></i>
-            </div>
-            <div class="section-items">
-                <a href="/admin/analytics" class="nav-item <?= $isActive('/admin/analytics') ?>">
-                    <i class="fas fa-chart-bar"></i>
-                    <span>Dashboard Analytics</span>
-                </a>
-                <a href="/admin/analytics/revenue" class="nav-item <?= $isActive('/admin/analytics/revenue') ?>">
-                    <i class="fas fa-dollar-sign"></i>
-                    <span>Revenue Reports</span>
-                </a>
-                <a href="/admin/analytics/bookings" class="nav-item <?= $isActive('/admin/analytics/bookings') ?>">
-                    <i class="fas fa-calendar"></i>
-                    <span>Booking Analytics</span>
-                </a>
-                <a href="/admin/analytics/vehicles" class="nav-item <?= $isActive('/admin/analytics/vehicles') ?>">
-                    <i class="fas fa-car"></i>
-                    <span>Vehicle Performance</span>
-                </a>
-                <a href="/admin/analytics/users" class="nav-item <?= $isActive('/admin/analytics/users') ?>">
-                    <i class="fas fa-users"></i>
-                    <span>User Statistics</span>
-                </a>
-            </div>
-        </div>
+        <a href="/admin/payments" class="nav-item <?= $isActive('/admin/payments') ?>">
+            <i class="fas fa-credit-card"></i>
+            <span>Payments</span>
+            <?php if ($failedPayments > 0): ?>
+                <span class="badge-small warning"><?= $failedPayments ?></span>
+            <?php endif; ?>
+        </a>
 
-        <!-- System Settings -->
-        <div class="nav-section">
-            <div class="section-title" onclick="toggleSection(this)">
-                <i class="fas fa-cog"></i>
-                <span>System Settings</span>
-                <i class="fas fa-chevron-down toggle-icon"></i>
-            </div>
-            <div class="section-items">
-                <a href="/admin/settings" class="nav-item <?= $isActive('/admin/settings') ?>">
-                    <i class="fas fa-sliders-h"></i>
-                    <span>General Settings</span>
-                    <small>Site Name, Logo, etc.</small>
-                </a>
-                <a href="/admin/settings/payment" class="nav-item <?= $isActive('/admin/settings/payment') ?>">
-                    <i class="fas fa-credit-card"></i>
-                    <span>Payment Settings</span>
-                    <small>Stripe Configuration</small>
-                </a>
-                <a href="/admin/settings/email" class="nav-item <?= $isActive('/admin/settings/email') ?>">
-                    <i class="fas fa-envelope-open-text"></i>
-                    <span>Email Configuration</span>
-                    <small>SMTP & Templates</small>
-                </a>
-                <a href="/admin/settings/commission" class="nav-item <?= $isActive('/admin/settings/commission') ?>">
-                    <i class="fas fa-percent"></i>
-                    <span>Commission Rates</span>
-                    <small>Platform Fees</small>
-                </a>
-                <a href="/admin/settings/booking" class="nav-item <?= $isActive('/admin/settings/booking') ?>">
-                    <i class="fas fa-calendar-alt"></i>
-                    <span>Booking Settings</span>
-                    <small>Rules & Policies</small>
-                </a>
-                <a href="/admin/settings/notifications" class="nav-item <?= $isActive('/admin/settings/notifications') ?>">
-                    <i class="fas fa-bell"></i>
-                    <span>Notification Settings</span>
-                    <small>Email Notifications</small>
-                </a>
-                <a href="/admin/system-config" class="nav-item <?= $isActive('/admin/system-config') ?>">
-                    <i class="fas fa-server"></i>
-                    <span>System Configuration</span>
-                    <small>Database, SMTP, API Keys</small>
-                </a>
-            </div>
-        </div>
+        <a href="/admin/payouts" class="nav-item <?= $isActive('/admin/payouts') ?>">
+            <i class="fas fa-money-bill-wave"></i>
+            <span>Payouts</span>
+        </a>
 
-        <!-- Security & Logs -->
-        <div class="nav-section">
-            <div class="section-title" onclick="toggleSection(this)">
-                <i class="fas fa-shield-alt"></i>
-                <span>Security & Logs</span>
-                <i class="fas fa-chevron-down toggle-icon"></i>
-            </div>
-            <div class="section-items">
-                <a href="/admin/security" class="nav-item <?= $isActive('/admin/security') ?>">
-                    <i class="fas fa-lock"></i>
-                    <span>Security Alerts</span>
-                </a>
-                <a href="/admin/audit-logs" class="nav-item <?= $isActive('/admin/audit-logs') ?>">
-                    <i class="fas fa-file-alt"></i>
-                    <span>Audit Logs</span>
-                    <small>User Actions</small>
-                </a>
-                <a href="/admin/logs/payment" class="nav-item <?= $isActive('/admin/logs/payment') ?>">
-                    <i class="fas fa-receipt"></i>
-                    <span>Payment Logs</span>
-                </a>
-                <a href="/admin/logs/email" class="nav-item <?= $isActive('/admin/logs/email') ?>">
-                    <i class="fas fa-mail-bulk"></i>
-                    <span>Email Logs</span>
-                </a>
-                <a href="/admin/logs/login" class="nav-item <?= $isActive('/admin/logs/login') ?>">
-                    <i class="fas fa-sign-in-alt"></i>
-                    <span>Login History</span>
-                </a>
-            </div>
-        </div>
+        <a href="/admin/disputes" class="nav-item <?= $isActive('/admin/disputes') ?>">
+            <i class="fas fa-gavel"></i>
+            <span>Disputes</span>
+            <?php if ($activeDisputes > 0): ?>
+                <span class="badge-small danger"><?= $activeDisputes ?></span>
+            <?php endif; ?>
+        </a>
 
-        <!-- Quick Actions -->
-        <div class="nav-section quick-actions">
-            <div class="section-title">
-                <i class="fas fa-bolt"></i>
-                <span>Quick Actions</span>
-            </div>
-            <div class="section-items">
-                <button class="nav-item action-btn" onclick="window.location='/admin/users?status=pending'">
-                    <i class="fas fa-user-check"></i>
-                    <span>Approve Users</span>
-                </button>
-                <button class="nav-item action-btn" onclick="window.location='/admin/vehicles?status=pending'">
-                    <i class="fas fa-car-side"></i>
-                    <span>Approve Vehicles</span>
-                </button>
-                <button class="nav-item action-btn" onclick="window.location='/admin/contact-submissions?status=new'">
-                    <i class="fas fa-reply"></i>
-                    <span>Reply to Messages</span>
-                </button>
-                <button class="nav-item action-btn" onclick="clearCache()">
-                    <i class="fas fa-sync"></i>
-                    <span>Clear Cache</span>
-                </button>
-            </div>
-        </div>
+        <!-- Communication & Content -->
+        <div class="nav-divider">Communication</div>
+
+        <a href="/admin/contact-submissions" class="nav-item <?= $isActive('/admin/contact-submissions') ?>">
+            <i class="fas fa-envelope"></i>
+            <span>Contact Messages</span>
+            <?php if ($newContacts > 0): ?>
+                <span class="badge-small"><?= $newContacts ?></span>
+            <?php endif; ?>
+        </a>
+
+        <a href="/admin/email-settings" class="nav-item <?= $isActive('/admin/email-settings') ?>">
+            <i class="fas fa-mail-bulk"></i>
+            <span>Email Settings</span>
+        </a>
+
+        <a href="/admin/cms" class="nav-item <?= $isActive('/admin/cms') ?>">
+            <i class="fas fa-file-alt"></i>
+            <span>CMS Pages</span>
+        </a>
+
+        <a href="/admin/images" class="nav-item <?= $isActive('/admin/images') ?>">
+            <i class="fas fa-images"></i>
+            <span>Website Images</span>
+        </a>
+
+        <!-- Analytics & Reports -->
+        <div class="nav-divider">Analytics</div>
+
+        <a href="/admin/analytics" class="nav-item <?= $isActive('/admin/analytics') ?>">
+            <i class="fas fa-chart-line"></i>
+            <span>Analytics Dashboard</span>
+        </a>
+
+        <a href="/admin/analytics/revenue" class="nav-item <?= $isActive('/admin/analytics/revenue') ?>">
+            <i class="fas fa-dollar-sign"></i>
+            <span>Revenue Reports</span>
+        </a>
+
+        <!-- Settings & System -->
+        <div class="nav-divider">System</div>
+
+        <a href="/admin/settings" class="nav-item <?= $isActive('/admin/settings') ?>">
+            <i class="fas fa-cog"></i>
+            <span>General Settings</span>
+        </a>
+
+        <a href="/admin/settings/payment" class="nav-item <?= $isActive('/admin/settings/payment') ?>">
+            <i class="fas fa-credit-card"></i>
+            <span>Payment Settings</span>
+        </a>
+
+        <a href="/admin/system-config" class="nav-item <?= $isActive('/admin/system-config') ?>">
+            <i class="fas fa-server"></i>
+            <span>System Configuration</span>
+        </a>
+
+        <a href="/admin/security" class="nav-item <?= $isActive('/admin/security') ?>">
+            <i class="fas fa-shield-alt"></i>
+            <span>Security & Logs</span>
+        </a>
     </div>
 
     <!-- Sidebar Footer -->
@@ -430,7 +171,7 @@ $isActive = function($path) use ($currentPath) {
 
 <style>
 .admin-sidebar {
-    width: 280px;
+    width: 250px;
     height: 100vh;
     background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
     color: #fff;
@@ -472,54 +213,27 @@ $isActive = function($path) use ($currentPath) {
     padding: 10px 0;
 }
 
-.nav-section {
-    margin-bottom: 5px;
-}
-
-.section-title {
-    padding: 12px 20px;
-    font-weight: 600;
-    font-size: 13px;
-    color: #C5A253;
+.nav-divider {
+    padding: 15px 20px 8px 20px;
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(197,162,83,0.6);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    transition: all 0.3s ease;
-    position: relative;
+    letter-spacing: 1px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    margin-top: 10px;
 }
 
-.section-title:hover {
-    background: rgba(197,162,83,0.1);
-}
-
-.section-title .toggle-icon {
-    margin-left: auto;
-    font-size: 10px;
-    transition: transform 0.3s ease;
-}
-
-.section-title.collapsed .toggle-icon {
-    transform: rotate(-90deg);
-}
-
-.section-items {
-    max-height: 1000px;
-    overflow: hidden;
-    transition: max-height 0.3s ease;
-}
-
-.section-items.collapsed {
-    max-height: 0;
+.nav-divider:first-child {
+    border-top: none;
+    margin-top: 0;
 }
 
 .nav-item {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 12px 20px 12px 45px;
+    padding: 12px 20px;
     color: rgba(255,255,255,0.85);
     text-decoration: none;
     transition: all 0.2s ease;
@@ -547,27 +261,6 @@ $isActive = function($path) use ($currentPath) {
     opacity: 0.8;
 }
 
-.nav-item small {
-    display: block;
-    font-size: 11px;
-    opacity: 0.6;
-    margin-top: 2px;
-}
-
-.notification-badge {
-    background: #e74c3c;
-    color: white;
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-size: 11px;
-    font-weight: 600;
-    margin-left: auto;
-}
-
-.notification-badge.warning {
-    background: #f39c12;
-}
-
 .badge-small {
     background: #e74c3c;
     color: white;
@@ -584,23 +277,6 @@ $isActive = function($path) use ($currentPath) {
 
 .badge-small.danger {
     background: #c0392b;
-}
-
-.action-btn {
-    background: none;
-    border: none;
-    width: 100%;
-    text-align: left;
-    cursor: pointer;
-    color: rgba(255,255,255,0.85);
-}
-
-.action-btn:hover {
-    background: rgba(197,162,83,0.15);
-}
-
-.quick-actions .nav-item {
-    padding-left: 40px;
 }
 
 .sidebar-footer {
@@ -625,10 +301,6 @@ $isActive = function($path) use ($currentPath) {
     border-radius: 50%;
     background: #2ecc71;
     animation: pulse 2s infinite;
-}
-
-.status-indicator.online {
-    background: #2ecc71;
 }
 
 @keyframes pulse {
@@ -677,7 +349,7 @@ $isActive = function($path) use ($currentPath) {
 }
 
 .main-content {
-    margin-left: 280px;
+    margin-left: 250px;
     flex: 1;
     min-height: 100vh;
     background: #f5f5f5;
@@ -699,72 +371,3 @@ $isActive = function($path) use ($currentPath) {
     }
 }
 </style>
-
-<script>
-function toggleSection(element) {
-    const sectionItems = element.nextElementSibling;
-    const toggleIcon = element.querySelector('.toggle-icon');
-
-    element.classList.toggle('collapsed');
-    sectionItems.classList.toggle('collapsed');
-}
-
-function clearCache() {
-    if (confirm('Are you sure you want to clear the system cache?')) {
-        fetch('/admin/api/clear-cache', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('Cache cleared successfully!');
-            } else {
-                alert('Failed to clear cache');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('An error occurred');
-        });
-    }
-}
-
-// Keep sections open/closed state in sessionStorage (resets on login)
-document.addEventListener('DOMContentLoaded', function() {
-    const sidebar = document.querySelector('.admin-sidebar');
-    const sectionTitles = document.querySelectorAll('.section-title');
-
-    // Restore scroll position
-    const savedScrollPos = sessionStorage.getItem('sidebar-scroll-position');
-    if (savedScrollPos) {
-        sidebar.scrollTop = parseInt(savedScrollPos);
-    }
-
-    // Save scroll position before navigation
-    const navItems = document.querySelectorAll('.nav-item');
-    navItems.forEach(item => {
-        item.addEventListener('click', function() {
-            sessionStorage.setItem('sidebar-scroll-position', sidebar.scrollTop);
-        });
-    });
-
-    // Restore section states
-    sectionTitles.forEach((title, index) => {
-        const storageKey = `sidebar-section-${index}`;
-        const isCollapsed = sessionStorage.getItem(storageKey) === 'true';
-
-        if (isCollapsed) {
-            title.classList.add('collapsed');
-            title.nextElementSibling.classList.add('collapsed');
-        }
-
-        title.addEventListener('click', function() {
-            const collapsed = this.classList.contains('collapsed');
-            sessionStorage.setItem(storageKey, !collapsed);
-        });
-    });
-});
-</script>
