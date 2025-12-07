@@ -56,7 +56,7 @@
                                 <td><span class="badge badge-<?= $booking['status'] === 'completed' ? 'success' : 'info' ?>"><?= ucfirst($booking['status']) ?></span></td>
                                 <td><span class="badge badge-<?= $booking['payment_status'] === 'paid' ? 'success' : 'warning' ?>"><?= ucfirst($booking['payment_status']) ?></span></td>
                                 <td>
-                                    <form method="POST" action="/admin/bookings/<?= $booking['id'] ?>/delete" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this booking? This will also delete all related payment records. This action cannot be undone.');">
+                                    <form method="POST" action="/admin/bookings/<?= $booking['id'] ?>/delete" style="display: inline;" onsubmit="return confirmDeleteBooking('<?= e($booking['booking_reference']) ?>', '<?= e($booking['status']) ?>', '<?= e($booking['payment_status']) ?>');">
                                         <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
                                         <button type="submit" class="btn" style="padding: 5px 10px; background: var(--danger); color: white;" title="Delete Booking">
                                             <i class="fas fa-trash"></i>
@@ -71,4 +71,39 @@
         </div>
     </div>
 </div>
+
+<script>
+function confirmDeleteBooking(bookingRef, status, paymentStatus) {
+    var isPaidOrCompleted = (paymentStatus === 'paid' || status === 'completed');
+    var warningLevel = isPaidOrCompleted ? '🔴 CRITICAL WARNING' : '⚠️ WARNING';
+    var extraWarning = isPaidOrCompleted ? '\n\n🔴 THIS IS A PAID/COMPLETED BOOKING!\n• Payment records will be PERMANENTLY deleted\n• Financial audit trail will be LOST\n• This may affect accounting and tax records' : '';
+
+    // First confirmation
+    if (!confirm(warningLevel + ': You are about to permanently delete booking ' + bookingRef + '.\n\n' +
+                 'Status: ' + status.toUpperCase() + '\n' +
+                 'Payment Status: ' + paymentStatus.toUpperCase() +
+                 extraWarning + '\n\n' +
+                 'This will DELETE:\n' +
+                 '• The booking record\n' +
+                 '• All payment records\n' +
+                 '• Financial history\n\n' +
+                 'This action CANNOT be undone!\n\n' +
+                 'Click OK to proceed to confirmation step.')) {
+        return false;
+    }
+
+    // Second confirmation - require typing DELETE
+    var confirmText = isPaidOrCompleted ? 'DELETE PAID BOOKING' : 'DELETE';
+    var confirmation = prompt('⚠️ FINAL CONFIRMATION REQUIRED\n\n' +
+                             'To confirm deletion of booking ' + bookingRef + ', please type "' + confirmText + '" exactly:');
+
+    if (confirmation === confirmText) {
+        return true;
+    } else {
+        alert('Deletion cancelled. You must type "' + confirmText + '" exactly to confirm.');
+        return false;
+    }
+}
+</script>
+
 <?php $content = ob_get_clean(); include __DIR__ . '/../layout.php'; ?>

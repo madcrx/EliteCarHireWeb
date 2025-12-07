@@ -225,7 +225,7 @@ class AdminController {
             return;
         }
 
-        // Check for paid or completed bookings (as customer or owner)
+        // Log warning if deleting user with paid bookings
         $paidBookings = db()->fetch(
             "SELECT COUNT(*) as count FROM bookings
              WHERE (customer_id = ? OR owner_id = ?)
@@ -234,9 +234,7 @@ class AdminController {
         );
 
         if ($paidBookings && $paidBookings['count'] > 0) {
-            flash('error', 'Cannot delete user with paid or completed bookings. Please contact support if you need to remove this account.');
-            redirect('/admin/users');
-            return;
+            error_log("WARNING: Deleting user ID {$id} with {$paidBookings['count']} paid/completed bookings. Admin: " . $_SESSION['user_id']);
         }
 
         try {
@@ -295,11 +293,9 @@ class AdminController {
             return;
         }
 
-        // Prevent deleting paid or completed bookings
+        // Log warning if deleting paid or completed booking
         if ($booking['payment_status'] === 'paid' || $booking['status'] === 'completed') {
-            flash('error', 'Cannot delete paid or completed bookings. This booking has financial records that must be preserved.');
-            redirect('/admin/bookings');
-            return;
+            error_log("WARNING: Deleting booking ID {$id} ({$booking['booking_reference']}) with status={$booking['status']}, payment_status={$booking['payment_status']}. Admin: " . $_SESSION['user_id']);
         }
 
         try {
