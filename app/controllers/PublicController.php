@@ -98,8 +98,7 @@ class PublicController {
     }
     
     public function faq() {
-        $page = db()->fetch("SELECT * FROM cms_pages WHERE page_key = 'faq'");
-        view('public/page', ['page' => $page, 'title' => 'FAQ']);
+        view('public/faq');
     }
     
     public function contact() {
@@ -195,13 +194,11 @@ class PublicController {
     }
 
     public function about() {
-        $page = db()->fetch("SELECT * FROM cms_pages WHERE page_key = 'about'");
-        view('public/page', ['page' => $page, 'title' => 'About Us']);
+        view('public/about');
     }
 
     public function services() {
-        $page = db()->fetch("SELECT * FROM cms_pages WHERE page_key = 'services'");
-        view('public/page', ['page' => $page, 'title' => 'Our Services']);
+        view('public/services');
     }
 
     public function support() {

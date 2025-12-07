@@ -3,7 +3,6 @@
 $pendingUsers = db()->fetch("SELECT COUNT(*) as count FROM users WHERE status='pending'")['count'] ?? 0;
 $pendingVehicles = db()->fetch("SELECT COUNT(*) as count FROM vehicles WHERE status='pending'")['count'] ?? 0;
 $pendingBookings = db()->fetch("SELECT COUNT(*) as count FROM bookings WHERE status='pending'")['count'] ?? 0;
-$pendingChanges = db()->fetch("SELECT COUNT(*) as count FROM pending_changes WHERE status='pending'")['count'] ?? 0;
 $newContacts = db()->fetch("SELECT COUNT(*) as count FROM contact_submissions WHERE status='new'")['count'] ?? 0;
 $activeDisputes = db()->fetch("SELECT COUNT(*) as count FROM disputes WHERE status IN ('open', 'investigating')")['count'] ?? 0;
 $failedPayments = db()->fetch("SELECT COUNT(*) as count FROM payments WHERE status='failed'")['count'] ?? 0;
@@ -61,14 +60,6 @@ $isActive = function($path) use ($currentPath) {
             <?php endif; ?>
         </a>
 
-        <a href="/admin/pending-changes" class="nav-item <?= $isActive('/admin/pending-changes') ?>">
-            <i class="fas fa-edit"></i>
-            <span>Vehicle Updates</span>
-            <?php if ($pendingChanges > 0): ?>
-                <span class="badge-small"><?= $pendingChanges ?></span>
-            <?php endif; ?>
-        </a>
-
         <!-- Financial -->
         <div class="nav-divider">Financial</div>
 
@@ -104,11 +95,6 @@ $isActive = function($path) use ($currentPath) {
             <?php endif; ?>
         </a>
 
-        <a href="/admin/email-settings" class="nav-item <?= $isActive('/admin/email-settings') ?>">
-            <i class="fas fa-mail-bulk"></i>
-            <span>Email Settings</span>
-        </a>
-
         <a href="/admin/cms" class="nav-item <?= $isActive('/admin/cms') ?>">
             <i class="fas fa-file-alt"></i>
             <span>CMS Pages</span>
@@ -138,11 +124,6 @@ $isActive = function($path) use ($currentPath) {
         <a href="/admin/settings" class="nav-item <?= $isActive('/admin/settings') ?>">
             <i class="fas fa-cog"></i>
             <span>General Settings</span>
-        </a>
-
-        <a href="/admin/settings/payment" class="nav-item <?= $isActive('/admin/settings/payment') ?>">
-            <i class="fas fa-credit-card"></i>
-            <span>Payment Settings</span>
         </a>
 
         <a href="/admin/system-config" class="nav-item <?= $isActive('/admin/system-config') ?>">
