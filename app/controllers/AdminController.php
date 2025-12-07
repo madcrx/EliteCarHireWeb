@@ -225,6 +225,20 @@ class AdminController {
             return;
         }
 
+        // Check for paid or completed bookings (as customer or owner)
+        $paidBookings = db()->fetch(
+            "SELECT COUNT(*) as count FROM bookings
+             WHERE (customer_id = ? OR owner_id = ?)
+             AND (payment_status = 'paid' OR status = 'completed')",
+            [$id, $id]
+        );
+
+        if ($paidBookings && $paidBookings['count'] > 0) {
+            flash('error', 'Cannot delete user with paid or completed bookings. Please contact support if you need to remove this account.');
+            redirect('/admin/users');
+            return;
+        }
+
         try {
             // Delete related records in correct order to satisfy foreign key constraints
 
@@ -277,6 +291,13 @@ class AdminController {
         $booking = db()->fetch("SELECT * FROM bookings WHERE id = ?", [$id]);
         if (!$booking) {
             flash('error', 'Booking not found');
+            redirect('/admin/bookings');
+            return;
+        }
+
+        // Prevent deleting paid or completed bookings
+        if ($booking['payment_status'] === 'paid' || $booking['status'] === 'completed') {
+            flash('error', 'Cannot delete paid or completed bookings. This booking has financial records that must be preserved.');
             redirect('/admin/bookings');
             return;
         }
