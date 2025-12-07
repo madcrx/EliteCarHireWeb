@@ -1156,6 +1156,29 @@ class OwnerController {
         view('owner/pending-changes', compact('changes'));
     }
 
+    public function notifications() {
+        $ownerId = $_SESSION['user_id'];
+
+        // Get all notifications for this owner
+        $allNotifications = db()->fetchAll(
+            "SELECT * FROM notifications
+             WHERE user_id = ?
+             ORDER BY created_at DESC
+             LIMIT 100",
+            [$ownerId]
+        );
+
+        // Mark all as read when viewing the notifications page
+        db()->execute(
+            "UPDATE notifications
+             SET is_read = 1
+             WHERE user_id = ? AND is_read = 0",
+            [$ownerId]
+        );
+
+        view('owner/notifications', compact('allNotifications'));
+    }
+
     private function sendBookingConfirmedEmail($booking) {
         $vehicleName = "{$booking['year']} {$booking['make']} {$booking['model']}";
         $paymentUrl = generateLoginUrl("/customer/bookings");
