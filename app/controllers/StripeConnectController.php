@@ -81,7 +81,9 @@ class StripeConnectController {
                 'suggested_capabilities[]' => 'transfers',
             ];
 
-            $connectUrl = 'https://connect.stripe.com/express/oauth/authorize?' . http_build_query($params);
+            // Use Standard Connect (works immediately without platform approval)
+            // Change to 'express/oauth/authorize' if using Express accounts after Stripe approves your platform
+            $connectUrl = 'https://connect.stripe.com/oauth/authorize?' . http_build_query($params);
 
             error_log("StripeConnectController::connect() - Redirecting to Stripe");
 
