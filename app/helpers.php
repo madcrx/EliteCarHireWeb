@@ -456,4 +456,3 @@ function markReminderSent($reminderId) {
         return false;
     }
 }
-
