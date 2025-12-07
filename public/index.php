@@ -8,6 +8,11 @@ ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 ini_set('error_log', __DIR__ . '/../storage/logs/error.log');
 
+// Load Composer autoloader (for Stripe SDK and other dependencies)
+if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
+    require __DIR__ . '/../vendor/autoload.php';
+}
+
 // Load configuration
 $config = require __DIR__ . '/../config/app.php';
 
