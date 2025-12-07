@@ -40,6 +40,7 @@
                             <th>Commission</th>
                             <th>Status</th>
                             <th>Payment</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -54,6 +55,14 @@
                                 <td><?= formatMoney($booking['commission_amount']) ?></td>
                                 <td><span class="badge badge-<?= $booking['status'] === 'completed' ? 'success' : 'info' ?>"><?= ucfirst($booking['status']) ?></span></td>
                                 <td><span class="badge badge-<?= $booking['payment_status'] === 'paid' ? 'success' : 'warning' ?>"><?= ucfirst($booking['payment_status']) ?></span></td>
+                                <td>
+                                    <form method="POST" action="/admin/bookings/<?= $booking['id'] ?>/delete" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this booking? This will also delete all related payment records. This action cannot be undone.');">
+                                        <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
+                                        <button type="submit" class="btn" style="padding: 5px 10px; background: var(--danger); color: white;" title="Delete Booking">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>

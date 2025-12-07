@@ -42,11 +42,67 @@
                 </a>
             </div>
         <?php else: ?>
-            <div class="card" style="background: #d4edda; border-left: 4px solid #28a745; margin-bottom: 1.5rem;">
-                <p style="margin: 0; color: #155724;">
-                    <i class="fas fa-check-circle"></i> <strong>Account Connected & Verified</strong> - You can receive payouts and confirm bookings.
-                </p>
-            </div>
+            <?php if ($stripeAccountStatus && $stripeAccountStatus['charges_enabled'] && $stripeAccountStatus['payouts_enabled']): ?>
+                <!-- Fully Verified and Active -->
+                <div class="card" style="background: #d4edda; border-left: 4px solid #28a745; margin-bottom: 1.5rem;">
+                    <h3 style="margin-top: 0; color: #155724;">
+                        <i class="fas fa-check-circle"></i> Account Fully Verified & Active
+                    </h3>
+                    <p style="margin: 0; color: #155724;">
+                        Your Stripe account is fully verified. You can accept bookings and receive payouts to your bank account.
+                    </p>
+                </div>
+            <?php elseif ($stripeAccountStatus && !empty($stripeAccountStatus['currently_due'])): ?>
+                <!-- Verification Required -->
+                <div class="card" style="background: #fff3cd; border-left: 4px solid #f39c12; margin-bottom: 1.5rem;">
+                    <h3 style="margin-top: 0; color: #d68910;">
+                        <i class="fas fa-exclamation-triangle"></i> Identity Verification Required
+                    </h3>
+                    <p style="margin-bottom: 1rem; color: #856404;">
+                        <strong>Almost there, <?= e($ownerName) ?>!</strong> Your Stripe account is connected, but we need a few more details to complete verification.
+                    </p>
+                    <div style="background: #ffffff; padding: 1rem; border-radius: var(--border-radius); margin-bottom: 1rem;">
+                        <h4 style="margin-top: 0; color: #d68910;">What's needed:</h4>
+                        <ul style="margin: 0.5rem 0; padding-left: 1.5rem; color: #856404;">
+                            <?php if (in_array('individual.verification.document', $stripeAccountStatus['currently_due'])): ?>
+                                <li><strong>Photo ID</strong> - Driver's license or passport</li>
+                            <?php endif; ?>
+                            <?php if (in_array('individual.verification.additional_document', $stripeAccountStatus['currently_due'])): ?>
+                                <li><strong>Additional Document</strong> - Proof of address or business registration</li>
+                            <?php endif; ?>
+                            <?php if (count($stripeAccountStatus['currently_due']) > 2 || !in_array('individual.verification.document', $stripeAccountStatus['currently_due'])): ?>
+                                <li>Additional verification information</li>
+                            <?php endif; ?>
+                        </ul>
+                    </div>
+                    <p style="margin-bottom: 1rem; color: #856404;">
+                        <i class="fas fa-envelope"></i> <strong>Check your email from Stripe</strong> for a secure link to upload your verification documents.
+                    </p>
+                    <p style="margin: 0; font-size: 0.9rem; color: #856404;">
+                        <i class="fas fa-clock"></i> Verification usually takes 24-48 hours after you submit your documents.
+                    </p>
+                </div>
+            <?php elseif ($stripeAccountStatus && $stripeAccountStatus['details_submitted'] && !$stripeAccountStatus['charges_enabled']): ?>
+                <!-- Pending Review -->
+                <div class="card" style="background: #e3f2fd; border-left: 4px solid #2196f3; margin-bottom: 1.5rem;">
+                    <h3 style="margin-top: 0; color: #1976d2;">
+                        <i class="fas fa-clock"></i> Verification in Progress
+                    </h3>
+                    <p style="margin-bottom: 0.5rem; color: #0d47a1;">
+                        <strong>Great news!</strong> Your documents have been submitted and are being reviewed by Stripe.
+                    </p>
+                    <p style="margin: 0; color: #0d47a1;">
+                        <i class="fas fa-hourglass-half"></i> This usually takes <strong>24-48 hours</strong>. We'll notify you once verification is complete.
+                    </p>
+                </div>
+            <?php else: ?>
+                <!-- Account Connected (default fallback) -->
+                <div class="card" style="background: #d4edda; border-left: 4px solid #28a745; margin-bottom: 1.5rem;">
+                    <p style="margin: 0; color: #155724;">
+                        <i class="fas fa-check-circle"></i> <strong>Account Connected</strong> - Verification in progress.
+                    </p>
+                </div>
+            <?php endif; ?>
         <?php endif; ?>
 
         <!-- Notifications -->

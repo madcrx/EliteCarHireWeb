@@ -40,6 +40,12 @@ class OwnerController {
             $hasStripeConnected = !empty($owner['stripe_account_id']);
             $ownerName = $owner['first_name'] ?? 'Owner';
 
+            // Get Stripe account verification status if connected
+            $stripeAccountStatus = null;
+            if ($hasStripeConnected) {
+                $stripeAccountStatus = $this->getStripeAccountStatus($owner['stripe_account_id']);
+            }
+
             error_log("OwnerController::dashboard() - Stripe Connected: " . ($hasStripeConnected ? 'Yes' : 'No'));
 
             // Initialize notifications as empty (graceful fallback)
@@ -107,7 +113,7 @@ class OwnerController {
             }
 
             error_log("OwnerController::dashboard() - Rendering view");
-            view('owner/dashboard', compact('stats', 'recentBookings', 'notifications', 'notificationCount', 'hasStripeConnected', 'ownerName'));
+            view('owner/dashboard', compact('stats', 'recentBookings', 'notifications', 'notificationCount', 'hasStripeConnected', 'ownerName', 'stripeAccountStatus'));
             error_log("OwnerController::dashboard() - Complete");
 
         } catch (\Exception $e) {
@@ -1177,6 +1183,63 @@ class OwnerController {
         );
 
         view('owner/notifications', compact('allNotifications'));
+    }
+
+    /**
+     * Get Stripe account verification status via API
+     *
+     * @param string $stripeAccountId
+     * @return array|null Array with status info, or null if error
+     */
+    private function getStripeAccountStatus($stripeAccountId) {
+        try {
+            // Get Stripe secret key
+            $stripeSecretKey = getenv('STRIPE_SECRET_KEY') ?: $_ENV['STRIPE_SECRET_KEY'] ?? '';
+
+            if (empty($stripeSecretKey)) {
+                error_log("Stripe secret key not configured for account status check");
+                return null;
+            }
+
+            // Call Stripe API to get account details
+            $ch = curl_init("https://api.stripe.com/v1/accounts/{$stripeAccountId}");
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_USERPWD, $stripeSecretKey . ':');
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                'Content-Type: application/x-www-form-urlencoded'
+            ]);
+
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($httpCode !== 200) {
+                error_log("Stripe API error getting account status: HTTP $httpCode");
+                return null;
+            }
+
+            $account = json_decode($response, true);
+
+            if (!$account) {
+                error_log("Failed to decode Stripe account response");
+                return null;
+            }
+
+            // Return relevant status information
+            return [
+                'charges_enabled' => $account['charges_enabled'] ?? false,
+                'payouts_enabled' => $account['payouts_enabled'] ?? false,
+                'details_submitted' => $account['details_submitted'] ?? false,
+                'currently_due' => $account['requirements']['currently_due'] ?? [],
+                'eventually_due' => $account['requirements']['eventually_due'] ?? [],
+                'past_due' => $account['requirements']['past_due'] ?? [],
+                'disabled_reason' => $account['requirements']['disabled_reason'] ?? null,
+            ];
+
+        } catch (\Exception $e) {
+            error_log("Exception getting Stripe account status: " . $e->getMessage());
+            return null;
+        }
     }
 
     private function sendBookingConfirmedEmail($booking) {

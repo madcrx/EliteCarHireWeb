@@ -62,6 +62,7 @@ $router->post('/admin/vehicles/{id}/images/upload', 'AdminController@uploadVehic
 $router->post('/admin/vehicles/{id}/images/{imageId}/set-primary', 'AdminController@setVehicleImagePrimary');
 $router->post('/admin/vehicles/{id}/images/{imageId}/delete', 'AdminController@deleteVehicleImage');
 $router->get('/admin/bookings', 'AdminController@bookings');
+$router->post('/admin/bookings/{id}/delete', 'AdminController@deleteBooking');
 $router->get('/admin/payments', 'AdminController@payments');
 $router->get('/admin/payouts', 'AdminController@payouts');
 $router->get('/admin/disputes', 'AdminController@disputes');

@@ -208,27 +208,99 @@ class AdminController {
         if (!verifyCsrf($token)) {
             flash('error', 'Invalid security token. Please try again.');
             redirect('/admin/users');
+            return;
         }
 
         $user = db()->fetch("SELECT * FROM users WHERE id = ?", [$id]);
         if (!$user) {
             flash('error', 'User not found');
             redirect('/admin/users');
+            return;
         }
 
         // Prevent deleting your own account
         if ($id == $_SESSION['user_id']) {
             flash('error', 'You cannot delete your own account');
             redirect('/admin/users');
+            return;
         }
 
-        // Delete user (cascade delete will handle related records)
-        db()->execute("DELETE FROM users WHERE id = ?", [$id]);
+        try {
+            // Delete related records in correct order to satisfy foreign key constraints
 
-        logAudit('delete_user', 'users', $id, $user);
+            // 1. Delete payments for bookings
+            db()->execute("DELETE FROM payments WHERE booking_id IN (SELECT id FROM bookings WHERE customer_id = ? OR owner_id = ?)", [$id, $id]);
 
-        flash('success', 'User deleted successfully');
+            // 2. Delete bookings (as customer or owner)
+            db()->execute("DELETE FROM bookings WHERE customer_id = ? OR owner_id = ?", [$id, $id]);
+
+            // 3. Delete vehicle images
+            db()->execute("DELETE FROM vehicle_images WHERE vehicle_id IN (SELECT id FROM vehicles WHERE owner_id = ?)", [$id]);
+
+            // 4. Delete vehicles (if owner)
+            db()->execute("DELETE FROM vehicles WHERE owner_id = ?", [$id]);
+
+            // 5. Delete notifications
+            db()->execute("DELETE FROM notifications WHERE user_id = ?", [$id]);
+
+            // 6. Delete payouts
+            db()->execute("DELETE FROM payouts WHERE owner_id = ?", [$id]);
+
+            // 7. Delete audit logs
+            db()->execute("DELETE FROM audit_logs WHERE user_id = ?", [$id]);
+
+            // 8. Finally delete the user
+            db()->execute("DELETE FROM users WHERE id = ?", [$id]);
+
+            logAudit('delete_user', 'users', $id, $user);
+
+            flash('success', 'User and all related data deleted successfully');
+        } catch (\Exception $e) {
+            error_log("Delete user error: " . $e->getMessage());
+            flash('error', 'Failed to delete user. Please try again or contact support.');
+        }
+
         redirect('/admin/users');
+    }
+
+    public function deleteBooking($id) {
+        requireAuth('admin');
+
+        // Verify CSRF token
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token. Please try again.');
+            redirect('/admin/bookings');
+            return;
+        }
+
+        $booking = db()->fetch("SELECT * FROM bookings WHERE id = ?", [$id]);
+        if (!$booking) {
+            flash('error', 'Booking not found');
+            redirect('/admin/bookings');
+            return;
+        }
+
+        try {
+            // Delete related payment records first
+            db()->execute("DELETE FROM payments WHERE booking_id = ?", [$id]);
+
+            // Delete the booking
+            db()->execute("DELETE FROM bookings WHERE id = ?", [$id]);
+
+            logAudit('delete_booking', 'bookings', $id, [
+                'booking_reference' => $booking['booking_reference'],
+                'customer_id' => $booking['customer_id'],
+                'owner_id' => $booking['owner_id']
+            ]);
+
+            flash('success', 'Booking deleted successfully');
+        } catch (\Exception $e) {
+            error_log("Delete booking error: " . $e->getMessage());
+            flash('error', 'Failed to delete booking. Please try again.');
+        }
+
+        redirect('/admin/bookings');
     }
 
     public function vehicles() {
