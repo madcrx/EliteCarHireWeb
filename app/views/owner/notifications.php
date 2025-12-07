@@ -103,7 +103,4 @@
 }
 </style>
 
-<?php
-$content = ob_get_clean();
-require __DIR__ . '/../layouts/owner.php';
-?>
+<?php $content = ob_get_clean(); include __DIR__ . '/../layout.php'; ?>
