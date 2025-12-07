@@ -72,6 +72,7 @@ class StripeConnectController {
             $params = [
                 'response_type' => 'code',
                 'client_id' => $clientId['setting_value'],
+                'scope' => 'read_write',
                 'state' => $state,
                 'stripe_user[email]' => $owner['email'],
                 'stripe_user[first_name]' => $owner['first_name'] ?? '',
