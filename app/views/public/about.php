@@ -22,7 +22,7 @@
                 Elite Car Hire was founded by automotive enthusiasts who recognized a gap in the Australian market - people wanted access to extraordinary vehicles for special occasions, but traditional rental companies couldn't meet these unique demands. We set out to create something different: a platform that celebrates automotive excellence while making luxury and classic vehicles accessible for life's important moments.
             </p>
             <p style="line-height: 1.8;">
-                What started as a passion project in Melbourne has grown into a comprehensive service connecting vehicle owners with customers across Victoria and beyond. Our team combines deep automotive knowledge with a commitment to outstanding customer service, ensuring every booking exceeds expectations.
+                What started as a passion project in Melbourne has grown into a comprehensive service connecting vehicle owners with customers across Australia. Our team combines deep automotive knowledge with a commitment to outstanding customer service, ensuring every booking exceeds expectations.
             </p>
             <p style="line-height: 1.8;">
                 Today, we work with carefully selected vehicle owners who share our values of quality, presentation, and professionalism. Every vehicle in our fleet is chosen for its condition, character, and ability to create remarkable experiences.
@@ -148,32 +148,38 @@
         <div class="card">
             <h2 style="color: var(--primary-gold);">Our Service Coverage</h2>
             <p style="margin-bottom: 1rem;">
-                <strong>Based in Melbourne,</strong> we proudly service all metropolitan areas and extend our reach throughout regional Victoria and beyond.
+                <strong>Based in Melbourne,</strong> we proudly service all of Australia with our premium chauffeur-driven vehicle experiences.
             </p>
 
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 1.5rem 0;">
                 <div style="padding: 1rem; background: var(--light-gray); border-radius: var(--border-radius);">
-                    <i class="fas fa-map-marker-alt" style="color: var(--primary-gold);"></i> <strong>Melbourne Metro</strong>
+                    <i class="fas fa-map-marker-alt" style="color: var(--primary-gold);"></i> <strong>Sydney</strong>
                 </div>
                 <div style="padding: 1rem; background: var(--light-gray); border-radius: var(--border-radius);">
-                    <i class="fas fa-map-marker-alt" style="color: var(--primary-gold);"></i> <strong>Mornington Peninsula</strong>
+                    <i class="fas fa-map-marker-alt" style="color: var(--primary-gold);"></i> <strong>Melbourne</strong>
                 </div>
                 <div style="padding: 1rem; background: var(--light-gray); border-radius: var(--border-radius);">
-                    <i class="fas fa-map-marker-alt" style="color: var(--primary-gold);"></i> <strong>Yarra Valley</strong>
+                    <i class="fas fa-map-marker-alt" style="color: var(--primary-gold);"></i> <strong>Brisbane</strong>
                 </div>
                 <div style="padding: 1rem; background: var(--light-gray); border-radius: var(--border-radius);">
-                    <i class="fas fa-map-marker-alt" style="color: var(--primary-gold);"></i> <strong>Dandenong Ranges</strong>
+                    <i class="fas fa-map-marker-alt" style="color: var(--primary-gold);"></i> <strong>Perth</strong>
                 </div>
                 <div style="padding: 1rem; background: var(--light-gray); border-radius: var(--border-radius);">
-                    <i class="fas fa-map-marker-alt" style="color: var(--primary-gold);"></i> <strong>Geelong Region</strong>
+                    <i class="fas fa-map-marker-alt" style="color: var(--primary-gold);"></i> <strong>Adelaide</strong>
                 </div>
                 <div style="padding: 1rem; background: var(--light-gray); border-radius: var(--border-radius);">
-                    <i class="fas fa-map-marker-alt" style="color: var(--primary-gold);"></i> <strong>Regional Victoria</strong>
+                    <i class="fas fa-map-marker-alt" style="color: var(--primary-gold);"></i> <strong>Gold Coast</strong>
+                </div>
+                <div style="padding: 1rem; background: var(--light-gray); border-radius: var(--border-radius);">
+                    <i class="fas fa-map-marker-alt" style="color: var(--primary-gold);"></i> <strong>Canberra</strong>
+                </div>
+                <div style="padding: 1rem; background: var(--light-gray); border-radius: var(--border-radius);">
+                    <i class="fas fa-map-marker-alt" style="color: var(--primary-gold);"></i> <strong>Regional Areas</strong>
                 </div>
             </div>
 
             <p style="margin-top: 1rem; font-style: italic; color: var(--medium-gray);">
-                Special arrangements available for interstate bookings. Contact us to discuss your requirements regardless of location.
+                No matter where you are in Australia, Elite Car Hire can provide exceptional vehicle experiences with professional chauffeur service. Contact us to discuss your requirements.
             </p>
         </div>
 
@@ -215,7 +221,7 @@
                     <i class="fas fa-envelope"></i> <strong>support@elitecarhire.au</strong>
                 </p>
                 <p style="font-size: 0.9rem; color: #999; margin-top: 0.5rem;">
-                    Servicing Melbourne and Victoria with pride since our establishment
+                    Servicing all of Australia with pride - Premium chauffeur-driven luxury car experiences
                 </p>
             </div>
         </div>

@@ -52,7 +52,7 @@
                 <li>Half-day and full-day packages</li>
                 <li>Static display or driving shots</li>
                 <li>Multiple vehicle bookings available</li>
-                <li>Location flexibility across Melbourne and Victoria</li>
+                <li>Location flexibility across Australia</li>
             </ul>
         </div>
 
@@ -98,31 +98,32 @@
 
         <div class="card">
             <h2 style="color: var(--primary-gold);"><i class="fas fa-route"></i> Scenic Tours & Experiences</h2>
-            <p>Why just hire a car when you can create an unforgettable experience? Explore Victoria's stunning landscapes in a luxury or classic vehicle with our curated tour options.</p>
+            <p>Why just hire a car when you can create an unforgettable experience? Explore Australia's stunning landscapes in a luxury or classic vehicle with our professional chauffeur service and curated tour options.</p>
             <ul>
                 <li><strong>Yarra Valley wine tours</strong> - Visit wineries in style</li>
                 <li><strong>Great Ocean Road drives</strong> - Iconic coastal touring</li>
                 <li><strong>Mornington Peninsula</strong> - Beaches, wineries, and hot springs</li>
-                <li><strong>Dandenong Ranges</strong> - Scenic mountain drives</li>
-                <li><strong>Custom itineraries</strong> - Design your own adventure</li>
-                <li><strong>Driver or self-drive options</strong> - Your choice of experience</li>
+                <li><strong>Hunter Valley experiences</strong> - Premium wine region tours</li>
+                <li><strong>Sydney Harbour & coastal routes</strong> - Scenic harbour and beach drives</li>
+                <li><strong>Custom itineraries nationwide</strong> - Design your own adventure anywhere in Australia</li>
             </ul>
         </div>
 
         <div class="card">
             <h2 style="color: var(--primary-gold);"><i class="fas fa-user-tie"></i> Professional Chauffeur Services</h2>
-            <p>All vehicles can be booked with our professional chauffeur service, ensuring a stress-free, luxurious experience from start to finish.</p>
+            <p>All Elite Car Hire bookings include our professional chauffeur service, ensuring a stress-free, luxurious experience from start to finish. We provide chauffeur-driven service only - no self-drive options.</p>
             <ul>
                 <li><strong>Fully licensed drivers</strong> - All chauffeurs hold appropriate passenger transport licenses</li>
                 <li><strong>Experienced professionals</strong> - Courteous, discreet, and reliable</li>
                 <li><strong>Comprehensive insurance</strong> - Full coverage for your peace of mind</li>
                 <li><strong>Impeccably presented</strong> - Professional attire and grooming standards</li>
-                <li><strong>Local expertise</strong> - Knowledge of Melbourne's best routes and locations</li>
+                <li><strong>Local expertise</strong> - Knowledge of best routes and locations across Australia</li>
                 <li><strong>Meet and greet service</strong> - Airport and event collection</li>
                 <li><strong>Flexible scheduling</strong> - Accommodating your timeline and requirements</li>
+                <li><strong>Nationwide service</strong> - Professional chauffeurs available across Australia</li>
             </ul>
             <p style="margin-top: 1rem; padding: 1rem; background: var(--light-gray); border-left: 4px solid var(--primary-gold);">
-                <i class="fas fa-info-circle"></i> <strong>Important:</strong> In accordance with passenger transport regulations, all chauffeured bookings are provided by licensed and accredited operators. Your safety and legal compliance are our priorities.
+                <i class="fas fa-info-circle"></i> <strong>Important:</strong> In accordance with passenger transport regulations, all bookings are provided with licensed and accredited chauffeur operators. Your safety and legal compliance are our priorities.
             </p>
         </div>
 
@@ -146,8 +147,8 @@
                     <p>Clear, competitive rates with no hidden fees. What you see is what you pay, with detailed quotes provided upfront.</p>
                 </div>
                 <div>
-                    <h3 style="color: var(--primary-gold); margin-bottom: 0.5rem;"><i class="fas fa-map-marked-alt"></i> Extensive Coverage</h3>
-                    <p>Servicing Melbourne, regional Victoria, and beyond. We can accommodate bookings across Australia with advance notice.</p>
+                    <h3 style="color: var(--primary-gold); margin-bottom: 0.5rem;"><i class="fas fa-map-marked-alt"></i> Australia-Wide Coverage</h3>
+                    <p>Servicing all major cities and regional areas across Australia. From Sydney to Perth, Melbourne to Brisbane, and everywhere in between.</p>
                 </div>
                 <div>
                     <h3 style="color: var(--primary-gold); margin-bottom: 0.5rem;"><i class="fas fa-comments"></i> Expert Guidance</h3>

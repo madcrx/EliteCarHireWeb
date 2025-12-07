@@ -27,8 +27,8 @@
             </div>
 
             <div style="margin-bottom: 2rem;">
-                <h3 style="color: var(--primary-gold); font-size: 1.1rem;">What deposit is required?</h3>
-                <p>A deposit is required to secure your booking. The amount varies depending on the vehicle and duration of hire. Full payment is typically required 7-14 days before your booking date.</p>
+                <h3 style="color: var(--primary-gold); font-size: 1.1rem;">What payment is required?</h3>
+                <p>Full payment is required once your booking is confirmed. We do not require a security deposit. Payment secures your vehicle and chauffeur service for your chosen date and time.</p>
             </div>
         </div>
 
@@ -38,7 +38,7 @@
 
             <div style="margin-bottom: 2rem;">
                 <h3 style="color: var(--primary-gold); font-size: 1.1rem;">Are all bookings chauffeured?</h3>
-                <p>We offer both chauffeured and self-drive options depending on the vehicle and type of booking. Wedding cars and special event bookings typically include a professional chauffeur. Self-drive options may be available for certain vehicles - please enquire when booking.</p>
+                <p>Yes, all Elite Car Hire bookings include professional chauffeur service. We provide chauffeur-driven experiences only - no self-drive options are available. This ensures the highest level of safety, service, and allows you to fully enjoy your experience.</p>
             </div>
 
             <div style="margin-bottom: 2rem;">
@@ -48,7 +48,7 @@
 
             <div style="margin-bottom: 2rem;">
                 <h3 style="color: var(--primary-gold); font-size: 1.1rem;">What areas do you service?</h3>
-                <p>We're based in Melbourne and service all metropolitan areas, as well as regional Victoria including the Yarra Valley, Mornington Peninsula, Geelong, and Dandenong Ranges. Interstate bookings can be arranged with advance notice.</p>
+                <p>We service all of Australia! While based in Melbourne, our professional chauffeur network covers Sydney, Brisbane, Perth, Adelaide, Gold Coast, Canberra, and all regional areas. No matter where you are in Australia, we can provide premium vehicle experiences.</p>
             </div>
 
             <div style="margin-bottom: 2rem;">
@@ -117,18 +117,18 @@
             <h2 style="color: var(--primary-gold); margin-top: 0;"><i class="fas fa-file-contract"></i> Requirements & Policies</h2>
 
             <div style="margin-bottom: 2rem;">
-                <h3 style="color: var(--primary-gold); font-size: 1.1rem;">What are the driver requirements for self-drive bookings?</h3>
-                <p>For self-drive bookings, you must be over 25 years old, hold a full Australian driver's license (held for at least 2 years), and have a clean driving record. Some high-performance vehicles may have additional requirements.</p>
+                <h3 style="color: var(--primary-gold); font-size: 1.1rem;">Do I need a driver's license?</h3>
+                <p>No driver's license is required as all our services are chauffeur-driven. You simply relax and enjoy the experience while our professional chauffeur handles all driving.</p>
             </div>
 
             <div style="margin-bottom: 2rem;">
                 <h3 style="color: var(--primary-gold); font-size: 1.1rem;">Is a security deposit required?</h3>
-                <p>A refundable security deposit may be required for self-drive bookings. This is held on your credit card and released after the vehicle is returned in the same condition. Chauffeured bookings do not require a security deposit.</p>
+                <p>No, we do not require a security deposit. Full payment is taken when you confirm your booking, and there are no additional holds or deposits required on your credit card.</p>
             </div>
 
             <div style="margin-bottom: 2rem;">
                 <h3 style="color: var(--primary-gold); font-size: 1.1rem;">What insurance is included?</h3>
-                <p>All vehicles are covered by comprehensive insurance. For self-drive bookings, there is an excess liability that you're responsible for in case of damage. This can be reduced with optional excess reduction cover.</p>
+                <p>All vehicles and chauffeur services are covered by comprehensive insurance. As a passenger in our professionally chauffeured vehicles, you have full coverage for your peace of mind.</p>
             </div>
 
             <div style="margin-bottom: 2rem;">
