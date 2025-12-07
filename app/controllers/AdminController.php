@@ -299,10 +299,15 @@ class AdminController {
         }
 
         try {
-            // Delete related payment records first
+            // Delete related records in correct order to satisfy foreign key constraints
+
+            // 1. Delete payouts related to this booking
+            db()->execute("DELETE FROM payouts WHERE booking_id = ?", [$id]);
+
+            // 2. Delete payment records
             db()->execute("DELETE FROM payments WHERE booking_id = ?", [$id]);
 
-            // Delete the booking
+            // 3. Delete the booking
             db()->execute("DELETE FROM bookings WHERE id = ?", [$id]);
 
             logAudit('delete_booking', 'bookings', $id, [
