@@ -140,6 +140,7 @@ $router->get('/owner/payouts', 'OwnerController@payouts');
 $router->get('/owner/reviews', 'OwnerController@reviews');
 $router->get('/owner/messages', 'OwnerController@messages');
 $router->get('/owner/pending-changes', 'OwnerController@pendingChanges');
+$router->get('/owner/notifications', 'OwnerController@notifications');
 
 // Owner - Stripe Connect routes
 $router->get('/owner/stripe/connect', 'StripeConnectController@connect');

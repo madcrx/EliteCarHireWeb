@@ -70,7 +70,9 @@ class StripeConnectController {
 
             // Build Stripe Connect OAuth URL
             $params = [
+                'response_type' => 'code',
                 'client_id' => $clientId['setting_value'],
+                'scope' => 'read_write',
                 'state' => $state,
                 'stripe_user[email]' => $owner['email'],
                 'stripe_user[first_name]' => $owner['first_name'] ?? '',
@@ -81,7 +83,9 @@ class StripeConnectController {
                 'suggested_capabilities[]' => 'transfers',
             ];
 
-            $connectUrl = 'https://connect.stripe.com/express/oauth/authorize?' . http_build_query($params);
+            // Use Standard Connect (works immediately without platform approval)
+            // Change to 'express/oauth/authorize' if using Express accounts after Stripe approves your platform
+            $connectUrl = 'https://connect.stripe.com/oauth/authorize?' . http_build_query($params);
 
             error_log("StripeConnectController::connect() - Redirecting to Stripe");
 
