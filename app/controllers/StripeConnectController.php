@@ -70,6 +70,7 @@ class StripeConnectController {
 
             // Build Stripe Connect OAuth URL
             $params = [
+                'response_type' => 'code',
                 'client_id' => $clientId['setting_value'],
                 'state' => $state,
                 'stripe_user[email]' => $owner['email'],
