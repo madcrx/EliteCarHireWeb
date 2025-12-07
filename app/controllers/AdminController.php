@@ -633,24 +633,58 @@ class AdminController {
         if (!verifyCsrf($token)) {
             flash('error', 'Invalid security token. Please try again.');
             redirect('/admin/vehicles');
+            return;
         }
 
         $vehicle = db()->fetch("SELECT * FROM vehicles WHERE id = ?", [$id]);
         if (!$vehicle) {
             flash('error', 'Vehicle not found');
             redirect('/admin/vehicles');
+            return;
         }
 
-        // Delete vehicle (cascade will handle related records)
-        db()->execute("DELETE FROM vehicles WHERE id = ?", [$id]);
+        // Log warning if deleting vehicle with paid bookings
+        $paidBookings = db()->fetch(
+            "SELECT COUNT(*) as count FROM bookings
+             WHERE vehicle_id = ?
+             AND (payment_status = 'paid' OR status = 'completed')",
+            [$id]
+        );
 
-        // Notify owner
-        createNotification($vehicle['owner_id'], 'notification', 'Vehicle Deleted',
-                          'Your vehicle listing (' . $vehicle['make'] . ' ' . $vehicle['model'] . ') has been removed by an administrator.');
+        if ($paidBookings && $paidBookings['count'] > 0) {
+            error_log("WARNING: Deleting vehicle ID {$id} ({$vehicle['make']} {$vehicle['model']}) with {$paidBookings['count']} paid/completed bookings. Admin: " . $_SESSION['user_id']);
+        }
 
-        logAudit('delete_vehicle', 'vehicles', $id, $vehicle);
+        try {
+            // Delete related records in correct order to satisfy foreign key constraints
 
-        flash('success', 'Vehicle deleted successfully');
+            // 1. Delete payouts for bookings of this vehicle
+            db()->execute("DELETE FROM payouts WHERE booking_id IN (SELECT id FROM bookings WHERE vehicle_id = ?)", [$id]);
+
+            // 2. Delete payments for bookings of this vehicle
+            db()->execute("DELETE FROM payments WHERE booking_id IN (SELECT id FROM bookings WHERE vehicle_id = ?)", [$id]);
+
+            // 3. Delete bookings for this vehicle
+            db()->execute("DELETE FROM bookings WHERE vehicle_id = ?", [$id]);
+
+            // 4. Delete vehicle images
+            db()->execute("DELETE FROM vehicle_images WHERE vehicle_id = ?", [$id]);
+
+            // 5. Delete the vehicle
+            db()->execute("DELETE FROM vehicles WHERE id = ?", [$id]);
+
+            // Notify owner
+            createNotification($vehicle['owner_id'], 'notification', 'Vehicle Deleted',
+                              'Your vehicle listing (' . $vehicle['make'] . ' ' . $vehicle['model'] . ') has been removed by an administrator.');
+
+            logAudit('delete_vehicle', 'vehicles', $id, $vehicle);
+
+            flash('success', 'Vehicle deleted successfully');
+        } catch (\Exception $e) {
+            error_log("Delete vehicle error: " . $e->getMessage());
+            flash('error', 'Failed to delete vehicle. Please try again.');
+        }
+
         redirect('/admin/vehicles');
     }
     

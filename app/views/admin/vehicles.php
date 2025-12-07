@@ -44,7 +44,7 @@
                                             <i class="fas fa-check"></i> Approve
                                         </a>
                                     <?php endif; ?>
-                                    <form method="POST" action="/admin/vehicles/<?= $vehicle['id'] ?>/delete" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this vehicle? This will also delete all related bookings and data. This action cannot be undone.');">
+                                    <form method="POST" action="/admin/vehicles/<?= $vehicle['id'] ?>/delete" style="display: inline;" onsubmit="return confirmDeleteVehicle('<?= e($vehicle['year'] . ' ' . $vehicle['make'] . ' ' . $vehicle['model']) ?>');">
                                         <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
                                         <button type="submit" class="btn" style="padding: 5px 10px; background: var(--danger); color: white;">
                                             <i class="fas fa-trash"></i> Delete
@@ -59,4 +59,32 @@
         </div>
     </div>
 </div>
+
+<script>
+function confirmDeleteVehicle(vehicleName) {
+    // First confirmation
+    if (!confirm('⚠️ WARNING: You are about to permanently delete ' + vehicleName + '.\n\n' +
+                 'This will DELETE ALL related data including:\n' +
+                 '• All bookings (even paid/completed ones)\n' +
+                 '• All payment records\n' +
+                 '• All payout records\n' +
+                 '• All vehicle images\n\n' +
+                 'This action CANNOT be undone!\n\n' +
+                 'Click OK to proceed to confirmation step.')) {
+        return false;
+    }
+
+    // Second confirmation - require typing DELETE
+    var confirmation = prompt('⚠️ FINAL CONFIRMATION REQUIRED\n\n' +
+                             'To confirm deletion of ' + vehicleName + ', please type DELETE in capital letters:');
+
+    if (confirmation === 'DELETE') {
+        return true;
+    } else {
+        alert('Deletion cancelled. You must type DELETE exactly to confirm.');
+        return false;
+    }
+}
+</script>
+
 <?php $content = ob_get_clean(); include __DIR__ . '/../layout.php'; ?>
