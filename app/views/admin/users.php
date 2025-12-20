@@ -82,7 +82,7 @@
                                     <?php endforeach; ?>
 
                                     <!-- Delete Button -->
-                                    <form method="POST" action="/admin/users/<?= $user['id'] ?>/delete" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this user? This will also delete all their related data. This action cannot be undone.');">
+                                    <form method="POST" action="/admin/users/<?= $user['id'] ?>/delete" style="display: inline;" onsubmit="return confirmDeleteUser('<?= e($user['first_name']) ?> <?= e($user['last_name']) ?>');">
                                         <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
                                         <button type="submit" class="btn" style="padding: 5px 10px; background: var(--danger); color: white;"><i class="fas fa-trash"></i></button>
                                     </form>
@@ -95,4 +95,32 @@
         </div>
     </div>
 </div>
+
+<script>
+function confirmDeleteUser(userName) {
+    // First confirmation
+    if (!confirm('⚠️ WARNING: You are about to permanently delete ' + userName + '.\n\n' +
+                 'This will DELETE ALL related data including:\n' +
+                 '• All bookings (even paid/completed ones)\n' +
+                 '• All payment records\n' +
+                 '• All vehicles\n' +
+                 '• All financial history\n\n' +
+                 'This action CANNOT be undone!\n\n' +
+                 'Click OK to proceed to confirmation step.')) {
+        return false;
+    }
+
+    // Second confirmation - require typing DELETE
+    var confirmation = prompt('⚠️ FINAL CONFIRMATION REQUIRED\n\n' +
+                             'To confirm deletion of ' + userName + ', please type DELETE in capital letters:');
+
+    if (confirmation === 'DELETE') {
+        return true;
+    } else {
+        alert('Deletion cancelled. You must type DELETE exactly to confirm.');
+        return false;
+    }
+}
+</script>
+
 <?php $content = ob_get_clean(); include __DIR__ . '/../layout.php'; ?>

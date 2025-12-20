@@ -6,7 +6,7 @@ return [
         'name' => 'Elite Car Hire',
         'env' => getenv('APP_ENV') ?: 'production',
         'debug' => getenv('APP_DEBUG') === 'true',
-        'url' => getenv('APP_URL') ?: 'http://ech.cyberlogicit.com.au',
+        'url' => getenv('APP_URL') ?: 'https://elitecarhire.au',
         'timezone' => 'Australia/Melbourne',
     ],
     
