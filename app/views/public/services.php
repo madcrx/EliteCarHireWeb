@@ -148,7 +148,7 @@
                 </div>
                 <div>
                     <h3 style="color: var(--primary-gold); margin-bottom: 0.5rem;"><i class="fas fa-map-marked-alt"></i> Australia-Wide Coverage</h3>
-                    <p>Servicing all major cities and regional areas across Australia. From Sydney to Perth, Brisbane to Adelaide, and everywhere in between.</p>
+                    <p>Servicing all states and territories across Australia. From New South Wales to Western Australia, Queensland to Tasmania, and everywhere in between - including all regional areas.</p>
                 </div>
                 <div>
                     <h3 style="color: var(--primary-gold); margin-bottom: 0.5rem;"><i class="fas fa-comments"></i> Expert Guidance</h3>

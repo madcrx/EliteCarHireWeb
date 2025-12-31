@@ -153,28 +153,28 @@
 
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 1.5rem 0;">
                 <div style="padding: 1rem; background: var(--light-gray); border-radius: var(--border-radius);">
-                    <i class="fas fa-map-marker-alt" style="color: var(--primary-gold);"></i> <strong>Sydney</strong>
+                    <i class="fas fa-map-marker-alt" style="color: var(--primary-gold);"></i> <strong>New South Wales</strong>
                 </div>
                 <div style="padding: 1rem; background: var(--light-gray); border-radius: var(--border-radius);">
-                    <i class="fas fa-map-marker-alt" style="color: var(--primary-gold);"></i> <strong>Brisbane</strong>
+                    <i class="fas fa-map-marker-alt" style="color: var(--primary-gold);"></i> <strong>Victoria</strong>
                 </div>
                 <div style="padding: 1rem; background: var(--light-gray); border-radius: var(--border-radius);">
-                    <i class="fas fa-map-marker-alt" style="color: var(--primary-gold);"></i> <strong>Perth</strong>
+                    <i class="fas fa-map-marker-alt" style="color: var(--primary-gold);"></i> <strong>Queensland</strong>
                 </div>
                 <div style="padding: 1rem; background: var(--light-gray); border-radius: var(--border-radius);">
-                    <i class="fas fa-map-marker-alt" style="color: var(--primary-gold);"></i> <strong>Adelaide</strong>
+                    <i class="fas fa-map-marker-alt" style="color: var(--primary-gold);"></i> <strong>South Australia</strong>
                 </div>
                 <div style="padding: 1rem; background: var(--light-gray); border-radius: var(--border-radius);">
-                    <i class="fas fa-map-marker-alt" style="color: var(--primary-gold);"></i> <strong>Gold Coast</strong>
+                    <i class="fas fa-map-marker-alt" style="color: var(--primary-gold);"></i> <strong>Western Australia</strong>
                 </div>
                 <div style="padding: 1rem; background: var(--light-gray); border-radius: var(--border-radius);">
-                    <i class="fas fa-map-marker-alt" style="color: var(--primary-gold);"></i> <strong>Canberra</strong>
+                    <i class="fas fa-map-marker-alt" style="color: var(--primary-gold);"></i> <strong>Tasmania</strong>
                 </div>
                 <div style="padding: 1rem; background: var(--light-gray); border-radius: var(--border-radius);">
-                    <i class="fas fa-map-marker-alt" style="color: var(--primary-gold);"></i> <strong>Hobart</strong>
+                    <i class="fas fa-map-marker-alt" style="color: var(--primary-gold);"></i> <strong>Australian Capital Territory</strong>
                 </div>
                 <div style="padding: 1rem; background: var(--light-gray); border-radius: var(--border-radius);">
-                    <i class="fas fa-map-marker-alt" style="color: var(--primary-gold);"></i> <strong>Regional Areas</strong>
+                    <i class="fas fa-map-marker-alt" style="color: var(--primary-gold);"></i> <strong>Northern Territory</strong>
                 </div>
             </div>
 
