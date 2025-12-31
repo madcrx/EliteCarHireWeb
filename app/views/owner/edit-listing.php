@@ -93,6 +93,84 @@
             </form>
         </div>
 
+        <!-- Vehicle Images Section -->
+        <div class="card">
+            <h3 style="margin-bottom: 1.5rem;"><i class="fas fa-images"></i> Vehicle Images</h3>
+
+            <?php
+            // Fetch existing images
+            $images = db()->fetchAll("SELECT * FROM vehicle_images WHERE vehicle_id = ? ORDER BY is_primary DESC, display_order ASC", [$vehicle['id']]);
+            ?>
+
+            <?php if (!empty($images)): ?>
+                <div style="margin-bottom: 2rem;">
+                    <h4>Current Images</h4>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                        <?php foreach ($images as $image): ?>
+                            <div style="position: relative; border: 2px solid <?= $image['is_primary'] ? 'var(--primary-gold)' : 'var(--medium-gray)' ?>; border-radius: var(--border-radius); padding: 0.5rem;">
+                                <img src="/<?= e($image['image_path']) ?>" alt="Vehicle Image"
+                                     style="width: 100%; height: 150px; object-fit: cover; border-radius: var(--border-radius);">
+
+                                <?php if ($image['is_primary']): ?>
+                                    <span class="badge badge-success" style="position: absolute; top: 1rem; right: 1rem;">
+                                        <i class="fas fa-star"></i> Primary
+                                    </span>
+                                <?php endif; ?>
+
+                                <div style="margin-top: 0.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                    <?php if (!$image['is_primary']): ?>
+                                        <form method="POST" action="/owner/listings/<?= $vehicle['id'] ?>/images/<?= $image['id'] ?>/set-primary" style="display: inline;">
+                                            <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
+                                            <button type="submit" class="btn btn-sm" style="background: var(--primary-gold); color: white; font-size: 0.75rem;">
+                                                <i class="fas fa-star"></i> Set Primary
+                                            </button>
+                                        </form>
+                                    <?php endif; ?>
+
+                                    <form method="POST" action="/owner/listings/<?= $vehicle['id'] ?>/images/<?= $image['id'] ?>/delete"
+                                          style="display: inline;"
+                                          onsubmit="return confirm('Delete this image?');">
+                                        <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
+                                        <button type="submit" class="btn btn-sm btn-danger" style="font-size: 0.75rem;">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            <?php else: ?>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No images uploaded for this vehicle. Upload images below to improve visibility and attract more customers.
+                </div>
+            <?php endif; ?>
+
+            <!-- Upload New Images -->
+            <div style="background: var(--light-gray); padding: 1.5rem; border-radius: var(--border-radius); margin-top: 1.5rem;">
+                <h4><i class="fas fa-upload"></i> Upload New Images</h4>
+                <form method="POST" action="/owner/listings/<?= $vehicle['id'] ?>/images/upload" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
+
+                    <div class="form-group">
+                        <label for="images">Select Images</label>
+                        <input type="file" name="images[]" id="images" multiple accept="image/jpeg,image/jpg,image/png,image/webp" required>
+                        <small style="display: block; margin-top: 0.5rem; color: var(--dark-gray);">
+                            <i class="fas fa-info-circle"></i>
+                            Accepted formats: JPG, PNG, WebP. Max 2MB per image (server limit).
+                            <?php if (empty($images)): ?>
+                                The first image will be set as the primary image.
+                            <?php endif; ?>
+                        </small>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-cloud-upload-alt"></i> Upload Images
+                    </button>
+                </form>
+            </div>
+        </div>
+
         <div class="card" style="background: var(--light-gray);">
             <h3><i class="fas fa-info-circle"></i> Update Guidelines</h3>
             <ul>
@@ -100,6 +178,8 @@
                 <li><strong>Active Bookings:</strong> Cannot modify vehicles with active bookings</li>
                 <li><strong>Pricing Updates:</strong> New rates only apply to future bookings</li>
                 <li><strong>Status:</strong> Only approved vehicles are visible to customers</li>
+                <li><strong>Images:</strong> High-quality photos significantly improve booking chances</li>
+                <li><strong>Primary Image:</strong> The primary image is the first one customers see in listings</li>
             </ul>
         </div>
     </div>

@@ -1282,4 +1282,201 @@ class OwnerController {
 
         sendEmail($booking['customer_email'], "Booking Confirmed - {$booking['booking_reference']}", $body);
     }
+
+    public function uploadVehicleImages($vehicleId) {
+        requireAuth('owner');
+
+        // Verify CSRF token
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token. Please try again.');
+            redirect('/owner/listings/' . $vehicleId . '/edit');
+        }
+
+        $ownerId = $_SESSION['user_id'];
+
+        // Verify ownership
+        $vehicle = db()->fetch("SELECT * FROM vehicles WHERE id = ? AND owner_id = ?", [$vehicleId, $ownerId]);
+        if (!$vehicle) {
+            flash('error', 'Vehicle not found or access denied');
+            redirect('/owner/listings');
+        }
+
+        // Check if images exist
+        $hasExistingImages = db()->fetch("SELECT COUNT(*) as count FROM vehicle_images WHERE vehicle_id = ?", [$vehicleId])['count'] > 0;
+
+        // Handle image uploads
+        if (empty($_FILES['images']['name'][0])) {
+            flash('error', 'No images selected');
+            redirect('/owner/listings/' . $vehicleId . '/edit');
+        }
+
+        $uploadedCount = 0;
+        $errors = [];
+
+        foreach ($_FILES['images']['name'] as $key => $name) {
+            if ($_FILES['images']['error'][$key] !== UPLOAD_ERR_OK) {
+                $errors[] = "Upload error for {$name}";
+                continue;
+            }
+
+            $file = [
+                'name' => $_FILES['images']['name'][$key],
+                'type' => $_FILES['images']['type'][$key],
+                'tmp_name' => $_FILES['images']['tmp_name'][$key],
+                'error' => $_FILES['images']['error'][$key],
+                'size' => $_FILES['images']['size'][$key],
+            ];
+
+            // Validate file type by MIME type
+            $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+            if (!in_array(strtolower($file['type']), $allowedTypes)) {
+                $errors[] = "{$name}: Invalid file type ({$file['type']})";
+                continue;
+            }
+
+            // Validate file size - use PHP's upload limit
+            $phpMaxSize = $this->parseSize(ini_get('upload_max_filesize'));
+            $configMaxSize = 5 * 1024 * 1024; // 5MB from config
+            $maxSize = min($phpMaxSize, $configMaxSize);
+
+            if ($file['size'] > $maxSize) {
+                $maxMB = round($maxSize / 1024 / 1024, 1);
+                $actualMB = round($file['size'] / 1024 / 1024, 2);
+                $errors[] = "{$name}: File too large ({$actualMB}MB, max {$maxMB}MB - server limit)";
+                continue;
+            }
+
+            $path = uploadFile($file, 'vehicles');
+            if ($path) {
+                // Set first image as primary if no existing images
+                $isPrimary = (!$hasExistingImages && $key === 0) ? 1 : 0;
+
+                db()->execute("INSERT INTO vehicle_images (vehicle_id, image_path, is_primary, display_order) VALUES (?, ?, ?, ?)",
+                             [$vehicleId, $path, $isPrimary, $key]);
+                $uploadedCount++;
+            } else {
+                $errors[] = "{$name}: Upload failed (check server permissions)";
+            }
+        }
+
+        if ($uploadedCount > 0) {
+            logAudit('upload_vehicle_images', 'vehicles', $vehicleId, ['count' => $uploadedCount]);
+            flash('success', $uploadedCount . ' image(s) uploaded successfully');
+
+            if (!empty($errors)) {
+                flash('warning', 'Some images failed: ' . implode(', ', $errors));
+            }
+        } else {
+            if (!empty($errors)) {
+                flash('error', 'Upload failed: ' . implode('; ', $errors));
+            } else {
+                flash('error', 'No valid images were uploaded. Please ensure files are JPG, PNG, or WebP format.');
+            }
+        }
+
+        redirect('/owner/listings/' . $vehicleId . '/edit');
+    }
+
+    public function setVehicleImagePrimary($vehicleId, $imageId) {
+        requireAuth('owner');
+
+        // Verify CSRF token
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token. Please try again.');
+            redirect('/owner/listings/' . $vehicleId . '/edit');
+        }
+
+        $ownerId = $_SESSION['user_id'];
+
+        // Verify ownership
+        $vehicle = db()->fetch("SELECT * FROM vehicles WHERE id = ? AND owner_id = ?", [$vehicleId, $ownerId]);
+        if (!$vehicle) {
+            flash('error', 'Vehicle not found or access denied');
+            redirect('/owner/listings');
+        }
+
+        $image = db()->fetch("SELECT * FROM vehicle_images WHERE id = ? AND vehicle_id = ?", [$imageId, $vehicleId]);
+        if (!$image) {
+            flash('error', 'Image not found');
+            redirect('/owner/listings/' . $vehicleId . '/edit');
+        }
+
+        // Remove primary status from all images for this vehicle
+        db()->execute("UPDATE vehicle_images SET is_primary = 0 WHERE vehicle_id = ?", [$vehicleId]);
+
+        // Set this image as primary
+        db()->execute("UPDATE vehicle_images SET is_primary = 1 WHERE id = ?", [$imageId]);
+
+        logAudit('set_primary_vehicle_image', 'vehicle_images', $imageId, ['vehicle_id' => $vehicleId]);
+
+        flash('success', 'Primary image updated successfully');
+        redirect('/owner/listings/' . $vehicleId . '/edit');
+    }
+
+    public function deleteVehicleImage($vehicleId, $imageId) {
+        requireAuth('owner');
+
+        // Verify CSRF token
+        $token = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrf($token)) {
+            flash('error', 'Invalid security token. Please try again.');
+            redirect('/owner/listings/' . $vehicleId . '/edit');
+        }
+
+        $ownerId = $_SESSION['user_id'];
+
+        // Verify ownership
+        $vehicle = db()->fetch("SELECT * FROM vehicles WHERE id = ? AND owner_id = ?", [$vehicleId, $ownerId]);
+        if (!$vehicle) {
+            flash('error', 'Vehicle not found or access denied');
+            redirect('/owner/listings');
+        }
+
+        $image = db()->fetch("SELECT * FROM vehicle_images WHERE id = ? AND vehicle_id = ?", [$imageId, $vehicleId]);
+        if (!$image) {
+            flash('error', 'Image not found');
+            redirect('/owner/listings/' . $vehicleId . '/edit');
+        }
+
+        $wasPrimary = $image['is_primary'];
+
+        // Delete the image record
+        db()->execute("DELETE FROM vehicle_images WHERE id = ?", [$imageId]);
+
+        // Delete the physical file
+        $filePath = __DIR__ . '/../../' . $image['image_path'];
+        if (file_exists($filePath)) {
+            @unlink($filePath);
+        }
+
+        // If this was the primary image, set the first remaining image as primary
+        if ($wasPrimary) {
+            $firstImage = db()->fetch("SELECT id FROM vehicle_images WHERE vehicle_id = ? ORDER BY display_order LIMIT 1", [$vehicleId]);
+            if ($firstImage) {
+                db()->execute("UPDATE vehicle_images SET is_primary = 1 WHERE id = ?", [$firstImage['id']]);
+            }
+        }
+
+        logAudit('delete_vehicle_image', 'vehicle_images', $imageId, ['vehicle_id' => $vehicleId]);
+
+        flash('success', 'Image deleted successfully');
+        redirect('/owner/listings/' . $vehicleId . '/edit');
+    }
+
+    private function parseSize($size) {
+        $unit = strtoupper(substr($size, -1));
+        $value = (int) $size;
+
+        if ($unit == 'K') {
+            return $value * 1024;
+        } elseif ($unit == 'M') {
+            return $value * 1024 * 1024;
+        } elseif ($unit == 'G') {
+            return $value * 1024 * 1024 * 1024;
+        }
+
+        return (int) $size;
+    }
 }
