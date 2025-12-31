@@ -9,7 +9,7 @@
         <div class="card">
             <h2 style="color: var(--primary-gold);">Who We Are</h2>
             <p style="font-size: 1.1rem; line-height: 1.8;">
-                Elite Car Hire is Melbourne's trusted marketplace for premium vehicle experiences, connecting customers with Australia's finest collection of luxury exotics, classic muscle cars, and vintage automobiles. We've created a platform where exceptional vehicles meet people seeking extraordinary experiences.
+                Elite Car Hire is Australia's trusted marketplace for premium vehicle experiences, connecting customers with the nation's finest collection of luxury exotics, classic muscle cars, and vintage automobiles. We've created a platform where exceptional vehicles meet people seeking extraordinary experiences.
             </p>
             <p style="font-size: 1.1rem; line-height: 1.8;">
                 Whether you're planning your dream wedding, celebrating a milestone, creating content for social media, or simply want to experience the thrill of driving your dream car, Elite Car Hire provides access to vehicles that turn ordinary moments into unforgettable memories.
@@ -22,7 +22,7 @@
                 Elite Car Hire was founded by automotive enthusiasts who recognized a gap in the Australian market - people wanted access to extraordinary vehicles for special occasions, but traditional rental companies couldn't meet these unique demands. We set out to create something different: a platform that celebrates automotive excellence while making luxury and classic vehicles accessible for life's important moments.
             </p>
             <p style="line-height: 1.8;">
-                What started as a passion project in Melbourne has grown into a comprehensive service connecting vehicle owners with customers across Australia. Our team combines deep automotive knowledge with a commitment to outstanding customer service, ensuring every booking exceeds expectations.
+                What started as a passion project has grown into a comprehensive service connecting vehicle owners with customers across Australia. Our team combines deep automotive knowledge with a commitment to outstanding customer service, ensuring every booking exceeds expectations.
             </p>
             <p style="line-height: 1.8;">
                 Today, we work with carefully selected vehicle owners who share our values of quality, presentation, and professionalism. Every vehicle in our fleet is chosen for its condition, character, and ability to create remarkable experiences.
@@ -148,15 +148,12 @@
         <div class="card">
             <h2 style="color: var(--primary-gold);">Our Service Coverage</h2>
             <p style="margin-bottom: 1rem;">
-                <strong>Based in Melbourne,</strong> we proudly service all of Australia with our premium chauffeur-driven vehicle experiences.
+                We proudly service all of Australia with our premium chauffeur-driven vehicle experiences.
             </p>
 
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 1.5rem 0;">
                 <div style="padding: 1rem; background: var(--light-gray); border-radius: var(--border-radius);">
                     <i class="fas fa-map-marker-alt" style="color: var(--primary-gold);"></i> <strong>Sydney</strong>
-                </div>
-                <div style="padding: 1rem; background: var(--light-gray); border-radius: var(--border-radius);">
-                    <i class="fas fa-map-marker-alt" style="color: var(--primary-gold);"></i> <strong>Melbourne</strong>
                 </div>
                 <div style="padding: 1rem; background: var(--light-gray); border-radius: var(--border-radius);">
                     <i class="fas fa-map-marker-alt" style="color: var(--primary-gold);"></i> <strong>Brisbane</strong>
@@ -172,6 +169,9 @@
                 </div>
                 <div style="padding: 1rem; background: var(--light-gray); border-radius: var(--border-radius);">
                     <i class="fas fa-map-marker-alt" style="color: var(--primary-gold);"></i> <strong>Canberra</strong>
+                </div>
+                <div style="padding: 1rem; background: var(--light-gray); border-radius: var(--border-radius);">
+                    <i class="fas fa-map-marker-alt" style="color: var(--primary-gold);"></i> <strong>Hobart</strong>
                 </div>
                 <div style="padding: 1rem; background: var(--light-gray); border-radius: var(--border-radius);">
                     <i class="fas fa-map-marker-alt" style="color: var(--primary-gold);"></i> <strong>Regional Areas</strong>

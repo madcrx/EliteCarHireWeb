@@ -12,7 +12,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $title ?? 'Elite Car Hire' ?> - Luxury Vehicle Hire Melbourne</title>
+    <title><?= $title ?? 'Elite Car Hire' ?> - Luxury Vehicle Hire Australia</title>
     <link rel="stylesheet" href="/assets/css/style.css?v=<?= filemtime(__DIR__ . '/../../public/assets/css/style.css') ?>">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
@@ -70,7 +70,7 @@ try {
             <div class="footer-content">
                 <div>
                     <h3>Elite Car Hire</h3>
-                    <p>Melbourne's premier luxury vehicle hire service</p>
+                    <p>Australia's premier luxury vehicle hire service</p>
                     <p><i class="fas fa-envelope"></i> support@elitecarhire.au</p>
                 </div>
                 <div>
