@@ -58,3 +58,22 @@ DirectoryIndex index.php
     Header set X-Frame-Options "SAMEORIGIN"
     Header set X-XSS-Protection "1; mode=block"
 </IfModule>
+
+# ========================================
+# Email Configuration
+# ========================================
+# IMPORTANT: Configure these settings for email notifications to work
+# See docs/EMAIL_SETUP.md for detailed instructions
+
+# SMTP Server Settings (REQUIRED for emails to work)
+# Uncomment and configure with your SMTP credentials:
+# SetEnv SMTP_HOST "mail.elitecarhire.au"
+# SetEnv SMTP_PORT "587"
+# SetEnv SMTP_USER "noreply@elitecarhire.au"
+# SetEnv SMTP_PASS "your-smtp-password-here"
+
+# Email Addresses (Optional - defaults will be used if not set)
+# SetEnv ADMIN_EMAIL "admin@elitecarhire.au"
+# SetEnv BOOKING_EMAIL "bookings@elitecarhire.au"
+# SetEnv PAYMENT_EMAIL "payments@elitecarhire.au"
+# SetEnv SUPPORT_EMAIL "support@elitecarhire.au"

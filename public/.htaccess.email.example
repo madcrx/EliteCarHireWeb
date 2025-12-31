@@ -1,0 +1,69 @@
+# Elite Car Hire - Email Configuration Example
+# Copy these lines to your main .htaccess file in the public directory
+# Replace the placeholder values with your actual SMTP credentials
+
+# ========================================
+# SMTP Configuration
+# ========================================
+
+# SMTP Server Settings
+SetEnv SMTP_HOST "mail.elitecarhire.au"
+SetEnv SMTP_PORT "587"
+SetEnv SMTP_USER "noreply@elitecarhire.au"
+SetEnv SMTP_PASS "your-smtp-password-here"
+
+# ========================================
+# Email Addresses for Different Functions
+# ========================================
+
+# General admin email
+SetEnv ADMIN_EMAIL "admin@elitecarhire.au"
+
+# Booking confirmations
+SetEnv BOOKING_EMAIL "bookings@elitecarhire.au"
+
+# Payment confirmations
+SetEnv PAYMENT_EMAIL "payments@elitecarhire.au"
+
+# Cancellation notifications
+SetEnv CANCELLATION_EMAIL "cancellations@elitecarhire.au"
+
+# Dispute notifications
+SetEnv DISPUTES_EMAIL "disputes@elitecarhire.au"
+
+# Contact form submissions
+SetEnv CONTACT_EMAIL "inquiries@elitecarhire.au"
+
+# Vehicle approval requests
+SetEnv VEHICLE_EMAIL "vehicles@elitecarhire.au"
+
+# Support inquiries
+SetEnv SUPPORT_EMAIL "support@elitecarhire.au"
+
+# ========================================
+# Common SMTP Provider Examples
+# ========================================
+
+# GMAIL (For testing only - not recommended for production)
+# SetEnv SMTP_HOST "smtp.gmail.com"
+# SetEnv SMTP_PORT "587"
+# SetEnv SMTP_USER "your-email@gmail.com"
+# SetEnv SMTP_PASS "your-app-password"
+
+# SENDGRID (Recommended for production)
+# SetEnv SMTP_HOST "smtp.sendgrid.net"
+# SetEnv SMTP_PORT "587"
+# SetEnv SMTP_USER "apikey"
+# SetEnv SMTP_PASS "your-sendgrid-api-key"
+
+# MAILGUN (Recommended for production)
+# SetEnv SMTP_HOST "smtp.mailgun.org"
+# SetEnv SMTP_PORT "587"
+# SetEnv SMTP_USER "postmaster@your-domain.mailgun.org"
+# SetEnv SMTP_PASS "your-mailgun-smtp-password"
+
+# CPANEL/HOSTING SMTP (Most common for shared hosting)
+# SetEnv SMTP_HOST "mail.elitecarhire.au"
+# SetEnv SMTP_PORT "587"
+# SetEnv SMTP_USER "noreply@elitecarhire.au"
+# SetEnv SMTP_PASS "your-email-password"
