@@ -90,7 +90,7 @@
                 <li><strong>Anniversaries</strong> - Romantic experiences for couples</li>
                 <li><strong>Proposals</strong> - Create unforgettable engagement moments</li>
                 <li><strong>Date nights</strong> - Surprise your partner with luxury transport</li>
-                <li><strong>Race day transport</strong> - Melbourne Cup, Formula 1, and sporting events</li>
+                <li><strong>Race day transport</strong> - Formula 1, horse racing, and major sporting events</li>
                 <li><strong>Bachelor/Bachelorette parties</strong> - Celebrate in style with your crew</li>
                 <li><strong>Weekend experiences</strong> - Romantic getaways and adventure drives</li>
             </ul>
@@ -148,7 +148,7 @@
                 </div>
                 <div>
                     <h3 style="color: var(--primary-gold); margin-bottom: 0.5rem;"><i class="fas fa-map-marked-alt"></i> Australia-Wide Coverage</h3>
-                    <p>Servicing all major cities and regional areas across Australia. From Sydney to Perth, Melbourne to Brisbane, and everywhere in between.</p>
+                    <p>Servicing all states and territories across Australia. From New South Wales to Western Australia, Queensland to Tasmania, and everywhere in between - including all regional areas.</p>
                 </div>
                 <div>
                     <h3 style="color: var(--primary-gold); margin-bottom: 0.5rem;"><i class="fas fa-comments"></i> Expert Guidance</h3>
@@ -169,7 +169,7 @@
                 </a>
             </div>
             <p style="margin-top: 2rem; font-size: 0.95rem; color: #ccc;">
-                <i class="fas fa-phone"></i> Need immediate assistance? Our team is ready to help you find the perfect vehicle.
+                <i class="fas fa-envelope"></i> Need assistance? Contact us and our team will help you find the perfect vehicle.
             </p>
         </div>
     </div>

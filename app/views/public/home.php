@@ -1,7 +1,7 @@
 <?php ob_start(); ?>
 <div class="hero">
     <div class="container">
-        <h1>Luxury Vehicle Hire in Melbourne</h1>
+        <h1>Luxury Vehicle Hire Across Australia</h1>
         <p>Experience elegance and sophistication with our premium fleet</p>
         <a href="/vehicles" class="btn btn-primary">View Our Fleet</a>
     </div>

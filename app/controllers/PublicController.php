@@ -51,8 +51,17 @@ class PublicController {
 
         $vehicles = db()->fetchAll($sql, $params);
 
-        // Get unique states for filter dropdown
-        $states = db()->fetchAll("SELECT DISTINCT state FROM vehicles WHERE status = 'approved' AND state IS NOT NULL AND state != '' ORDER BY state");
+        // Define all Australian states and territories for filter dropdown
+        $states = [
+            ['state' => 'Australian Capital Territory'],
+            ['state' => 'New South Wales'],
+            ['state' => 'Northern Territory'],
+            ['state' => 'Queensland'],
+            ['state' => 'South Australia'],
+            ['state' => 'Tasmania'],
+            ['state' => 'Victoria'],
+            ['state' => 'Western Australia']
+        ];
 
         // Get categories for filter dropdown
         $categories = db()->fetchAll("SELECT DISTINCT category FROM vehicles WHERE status = 'approved' ORDER BY category");

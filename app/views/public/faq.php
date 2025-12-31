@@ -48,7 +48,7 @@
 
             <div style="margin-bottom: 2rem;">
                 <h3 style="color: var(--primary-gold); font-size: 1.1rem;">What areas do you service?</h3>
-                <p>We service all of Australia! While based in Melbourne, our professional chauffeur network covers Sydney, Brisbane, Perth, Adelaide, Gold Coast, Canberra, and all regional areas. No matter where you are in Australia, we can provide premium vehicle experiences.</p>
+                <p>We service all of Australia! Our professional chauffeur network covers all states and territories including New South Wales, Victoria, Queensland, South Australia, Western Australia, Tasmania, Australian Capital Territory, and Northern Territory. No matter where you are in Australia, we can provide premium vehicle experiences.</p>
             </div>
 
             <div style="margin-bottom: 2rem;">
@@ -177,7 +177,7 @@
                 </a>
             </div>
             <p style="margin-top: 2rem; font-size: 0.95rem; color: #ccc;">
-                <i class="fas fa-phone"></i> We're ready to help you plan your perfect experience
+                <i class="fas fa-envelope"></i> We're ready to help you plan your perfect experience
             </p>
         </div>
 

@@ -21,12 +21,7 @@
                 <label>Email *</label>
                 <input type="email" name="email" required>
             </div>
-            
-            <div class="form-group">
-                <label>Phone</label>
-                <input type="tel" name="phone">
-            </div>
-            
+
             <div class="form-group">
                 <label>Subject</label>
                 <input type="text" name="subject">

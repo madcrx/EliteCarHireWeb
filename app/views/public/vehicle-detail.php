@@ -146,7 +146,7 @@
                             
                             <div class="form-group">
                                 <label>Pickup Location</label>
-                                <input type="text" name="pickup_location" placeholder="Melbourne, VIC" required>
+                                <input type="text" name="pickup_location" placeholder="City, State" required>
                             </div>
                             
                             <div class="form-group">
@@ -178,7 +178,7 @@
                     
                     <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--medium-gray);">
                         <p style="text-align: center;">
-                            <small>Need help? Call us!</small>
+                            <small>Need help? <a href="/contact">Contact us</a>!</small>
                         </p>
                     </div>
                 </div>
