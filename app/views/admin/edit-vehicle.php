@@ -43,7 +43,7 @@
 
                     <div class="form-group">
                         <label for="year">Year *</label>
-                        <input type="number" name="year" id="year" value="<?= e($vehicle['year']) ?>" required min="1990" max="<?= date('Y') + 1 ?>">
+                        <input type="number" name="year" id="year" value="<?= e($vehicle['year']) ?>" required min="1925" max="<?= date('Y') + 1 ?>">
                     </div>
 
                     <div class="form-group">

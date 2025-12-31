@@ -27,7 +27,7 @@
 
                     <div class="form-group">
                         <label for="year">Year *</label>
-                        <input type="number" name="year" id="year" required min="1990" max="<?= date('Y') + 1 ?>" placeholder="<?= date('Y') ?>">
+                        <input type="number" name="year" id="year" required min="1925" max="<?= date('Y') + 1 ?>" placeholder="<?= date('Y') ?>">
                     </div>
 
                     <div class="form-group">
