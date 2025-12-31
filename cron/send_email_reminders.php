@@ -11,7 +11,7 @@
  */
 
 // Include application bootstrap
-require_once __DIR__ . '/../app/bootstrap.php';
+$config = require_once __DIR__ . '/../app/bootstrap.php';
 
 echo "[" . date('Y-m-d H:i:s') . "] Starting email reminder check...\n";
 

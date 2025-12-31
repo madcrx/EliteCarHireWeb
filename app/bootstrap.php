@@ -10,6 +10,11 @@ ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 ini_set('error_log', __DIR__ . '/../storage/logs/error.log');
 
+// Load Composer autoloader (for PHPMailer and other dependencies)
+if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
+    require __DIR__ . '/../vendor/autoload.php';
+}
+
 // Load configuration
 $config = require __DIR__ . '/../config/app.php';
 
@@ -29,3 +34,6 @@ require __DIR__ . '/helpers.php';
 
 // Set timezone
 date_default_timezone_set(config('app.timezone', 'UTC'));
+
+// Return config for scripts that need it
+return $config;

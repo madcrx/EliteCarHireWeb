@@ -9,15 +9,12 @@
  * Usage: php scripts/process-email-queue.php
  */
 
-// Load application
-require __DIR__ . '/../config/app.php';
-require __DIR__ . '/../app/Database.php';
-
-$config = require __DIR__ . '/../config/app.php';
+// Load application bootstrap
+$config = require __DIR__ . '/../app/bootstrap.php';
 
 // Initialize database
 try {
-    $db = Database::getInstance();
+    $db = db();
 } catch (Exception $e) {
     echo "[ERROR] Database connection failed: " . $e->getMessage() . "\n";
     exit(1);
